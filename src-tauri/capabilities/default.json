@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for the widget and settings windows.",
+  "windows": ["main", "settings"],
+  "permissions": ["core:default", "default", "mcp-bridge:default"]
+}

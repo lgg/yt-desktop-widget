@@ -1,0 +1,28 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "allow-app-commands"
+description = "Allows the widget webviews to invoke the app commands."
+commands.allow = [
+  "load_settings",
+  "save_settings",
+  "show_window",
+  "hide_window",
+  "set_main_window_height",
+  "close_widget",
+  "hide_widget_stack",
+  "exit_app",
+  "open_repository",
+  "companion_has_auth",
+  "companion_discover",
+  "companion_connect",
+  "companion_disconnect",
+  "companion_request_auth_code",
+  "companion_complete_auth",
+  "companion_clear_auth",
+  "companion_send_command"
+]
+
+[default]
+description = "Default application permissions for the widget UI."
+permissions = ["allow-app-commands"]

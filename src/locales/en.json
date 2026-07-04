@@ -1,0 +1,159 @@
+{
+  "app": {
+    "title": "YTM Desktop Widget",
+    "loading": "Preparing the widget…",
+    "settings": "Settings",
+    "retry": "Reconnect",
+    "close": "Hide to tray",
+    "closeWidget": "Close widget",
+    "exitApp": "Exit app",
+    "hideToTray": "Hide to tray"
+  },
+  "status": {
+    "discovering": "Searching",
+    "connected": "Live",
+    "auth_required": "Authorization needed",
+    "authenticating": "Authorizing",
+    "reconnecting": "Reconnecting",
+    "disconnected": "Waiting",
+    "error": "Attention"
+  },
+  "widget": {
+    "transport": {
+      "previous": "Previous",
+      "play": "Play",
+      "pause": "Pause",
+      "next": "Next"
+    },
+    "states": {
+      "discovering": {
+        "eyebrow": "Companion",
+        "title": "Finding your player",
+        "body": "Looking for a local YTMDesktop Companion Server and restoring the previous session."
+      },
+      "disconnected": {
+        "eyebrow": "Waiting",
+        "title": "Open YTMDesktop to continue",
+        "body": "The widget only talks to the official Companion Server API. Start YTMDesktop and keep its Companion Server enabled."
+      },
+      "auth_required": {
+        "eyebrow": "Secure pairing",
+        "title": "Authorize this widget",
+        "body": "Generate a pairing code, compare it with the YTMDesktop prompt, and confirm access."
+      },
+      "authenticating": {
+        "eyebrow": "Pairing",
+        "title": "Waiting for approval",
+        "body": "Approve the code inside YTMDesktop. The widget will connect as soon as the Companion Server grants access."
+      },
+      "paused": {
+        "eyebrow": "Paused",
+        "title": "Playback is paused",
+        "body": "Your last track is ready whenever you want to continue."
+      },
+      "empty": {
+        "eyebrow": "Connected",
+        "title": "Nothing is playing",
+        "body": "Pick a track in YTMDesktop and the widget will update instantly."
+      },
+      "reconnecting": {
+        "eyebrow": "Holding connection",
+        "title": "The stream is waking back up",
+        "body": "Companion updates paused for a moment. The widget is retrying with backoff in the background."
+      },
+      "error": {
+        "eyebrow": "Companion",
+        "title": "The connection needs attention",
+        "body": "The API responded with an unexpected error. You can retry now or re-authorize the widget from settings."
+      }
+    },
+    "auth": {
+      "generate": "Generate code",
+      "confirm": "Confirm in YTMDesktop",
+      "regenerate": "New code",
+      "clear": "Clear authorization",
+      "codeLabel": "Pairing code"
+    },
+    "actions": {
+      "openSettings": "Open settings",
+      "closeWidget": "Close widget"
+    },
+    "adPlaying": "Advertisement"
+  },
+  "settingsWindow": {
+    "title": "Widget Settings",
+    "subtitle": "Refine the connection, display, and window behavior without leaving the now-playing surface.",
+    "sections": {
+      "api": {
+        "title": "API / Connection",
+        "description": "Manage Companion API availability, pairing state, and recovery actions.",
+        "endpoint": "Companion endpoint",
+        "endpointPlaceholder": "127.0.0.1:9863",
+        "endpointInvalid": "Use the format host:port, for example 127.0.0.1:9863.",
+        "mode": "Data source",
+        "connected": "Connection state",
+        "paired": "Authorization",
+        "pairedYes": "Stored securely",
+        "pairedNo": "Not authorized"
+      },
+      "ui": {
+        "title": "UI / Display",
+        "description": "Control how much UI stays visible when the widget is idle.",
+        "hideControls": "Hide playback controls",
+        "hideControlsDescription": "Keep transport buttons hidden even when the pointer is over the widget.",
+        "hideProgress": "Hide progress bar",
+        "hideProgressDescription": "Remove elapsed time and the scrubber from the compact layout.",
+        "hideSettingsButton": "Hide settings button",
+        "hideSettingsButtonDescription": "When enabled, the settings button appears only while hovering over the widget.",
+        "hideCloseButton": "Hide close button",
+        "hideCloseButtonDescription": "When enabled, the close button appears only while hovering over the widget.",
+        "theme": "Theme mode",
+        "themeDescription": "Dark keeps the glass surface moody; System follows the Windows theme."
+      },
+      "window": {
+        "title": "Window / Behavior",
+        "description": "Tune the widget’s desktop presence on Windows.",
+        "alwaysOnTop": "Always on top",
+        "alwaysOnTopDescription": "Keep the widget floating above your regular windows.",
+        "startup": "Launch on startup",
+        "startupDescription": "Start the widget automatically when you sign in to Windows.",
+        "closeButtonAction": "Close button behavior"
+      },
+      "dev": {
+        "title": "Developer",
+        "description": "Use the simulator without weakening the production integration path.",
+        "sourceMode": "Preferred data source",
+        "sourceModeDescription": "Auto uses the real Companion bridge in Tauri and the simulator in browser previews."
+      },
+      "about": {
+        "title": "About",
+        "description": "Project metadata for this v1 desktop widget.",
+        "repo": "GitHub repository",
+        "version": "Version"
+      }
+    },
+    "actions": {
+      "reconnect": "Reconnect now",
+      "pair": "Generate code",
+      "confirmPair": "Confirm pairing",
+      "clearAuth": "Clear auth",
+      "openRepo": "yt-desktop-widget",
+      "runDebugMockMode": "Run debug mockup mode",
+      "stopDebugMockMode": "Stop debug mockup mode",
+      "close": "Hide settings"
+    },
+    "theme": {
+      "dark": "Dark",
+      "system": "System"
+    },
+    "sourceMode": {
+      "auto": "Auto",
+      "real": "Real API",
+      "simulator": "Simulator"
+    },
+    "closeButtonAction": {
+      "exit": "Exit app",
+      "hideToTray": "Hide to tray"
+    }
+  }
+}

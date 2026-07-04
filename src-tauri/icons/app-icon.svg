@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="132" fill="url(#background)" />
+  <rect x="54" y="54" width="404" height="404" rx="112" fill="url(#surface)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.32" stroke-width="8" />
+  <rect x="118" y="118" width="276" height="276" rx="76" fill="url(#cover)" />
+  <path d="M215 192.5C215 183.387 224.861 177.716 232.707 182.314L329.199 238.814C337.011 243.391 337.011 254.609 329.199 259.186L232.707 315.686C224.861 320.284 215 314.613 215 305.5V192.5Z" fill="white" />
+  <defs>
+    <linearGradient id="background" x1="43" y1="42" x2="458" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101826" />
+      <stop offset="0.52" stop-color="#3B1E2A" />
+      <stop offset="1" stop-color="#0E131E" />
+    </linearGradient>
+    <linearGradient id="surface" x1="85" y1="70" x2="418" y2="446" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.28" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.06" />
+    </linearGradient>
+    <linearGradient id="cover" x1="118" y1="118" x2="394" y2="394" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F24E1E" />
+      <stop offset="1" stop-color="#D83E74" />
+    </linearGradient>
+  </defs>
+</svg>

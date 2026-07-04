@@ -1,0 +1,205 @@
+# Architecture
+
+## Goals
+
+The widget is designed around four hard constraints:
+
+- Companion API only
+- polished always-on-top desktop widget UX
+- low idle overhead
+- easy future extension for more window modes, locales, and platforms
+
+## Layered structure
+
+### App shell
+
+- `src/app/AppRoot.tsx`
+- `src/app/AppProvider.tsx`
+- `src/app/WidgetWindow.tsx`
+- `src/app/SettingsWindow.tsx`
+
+Responsibilities:
+
+- bootstrapping settings and runtime mode
+- choosing real vs simulator gateway
+- wiring theme, i18n, and window-specific UI
+- exposing a simple app model to components
+
+### Playback domain
+
+- `src/domain/playback/types.ts`
+- `src/domain/playback/connectionMachine.ts`
+- `src/domain/playback/controller.ts`
+- `src/domain/playback/mapping.ts`
+- `src/domain/playback/progress.ts`
+
+Responsibilities:
+
+- explicit connection state machine
+- Companion raw-state to UI-state mapping
+- reconnect scheduling with backoff
+- progress smoothing between realtime updates
+- stable command surface for UI components
+
+### Integration layer
+
+- Real gateway: `src/integration/companion/realGateway.ts`
+- Tauri invoke/event bridge: `src/integration/companion/tauriBridge.ts`
+- Simulator gateway: `src/integration/simulator/simulatorGateway.ts`
+
+Responsibilities:
+
+- keeping frontend code unaware of transport details
+- separating runtime-only bridge concerns from UI/domain code
+- providing a realistic simulator without replacing the real architecture
+
+### Native backend
+
+- `src-tauri/src/companion.rs`
+- `src-tauri/src/settings.rs`
+- `src-tauri/src/startup.rs`
+- `src-tauri/src/lib.rs`
+
+Responsibilities:
+
+- Companion API HTTP + realtime socket integration
+- token storage via keyring
+- settings persistence on disk
+- tray integration and hide-to-tray behavior
+- launch-on-startup on Windows
+- window creation and position persistence
+
+### UI components and visual system
+
+- `src/components/**`
+- `src/styles/global.css`
+- `src/locales/en.json`
+
+Responsibilities:
+
+- reusable glass panels, artwork layers, controls, and settings sections
+- visual consistency across widget and settings windows
+- externalized user-facing strings from day one
+
+## Runtime topology
+
+```mermaid
+flowchart LR
+  UI["React widget UI"] --> Domain["PlaybackController + state machine"]
+  Domain --> Gateway{"Source mode"}
+  Gateway -->|real| Bridge["Tauri invoke/event bridge"]
+  Gateway -->|simulator| Sim["Local simulator"]
+  Bridge --> Rust["Rust backend"]
+  Rust --> Companion["YTMDesktop Companion Server API"]
+  Rust --> Storage["Keyring + settings JSON + Windows integration"]
+```
+
+## Connection model
+
+The connection state machine exposes these explicit states:
+
+- `disconnected`
+- `discovering`
+- `auth_required`
+- `authenticating`
+- `connected`
+- `reconnecting`
+- `error`
+
+Why this matters:
+
+- UI states stay intentional instead of stringly-typed
+- reconnect logic is isolated from rendering
+- simulator and real gateway can drive the same domain layer
+- future telemetry and richer diagnostics can attach to the same transitions
+
+## Real Companion flow
+
+1. Frontend starts `PlaybackController`.
+2. Controller asks the gateway whether stored auth exists.
+3. Rust backend probes `GET /api/v1/metadata`.
+4. If auth is missing, the UI moves to `auth_required`.
+5. If auth exists, Rust fetches `GET /api/v1/state` and opens the realtime socket.
+6. Rust emits Companion events back to the frontend.
+7. The controller maps raw Companion payloads into UI-ready playback snapshots.
+8. Commands from the UI flow back through the same bridge.
+
+## Simulator flow
+
+The simulator exists for UI development, unit tests, and Playwright coverage.
+
+Design rules:
+
+- it implements the same `CompanionGateway` interface as the real client
+- it emits realistic track changes and time progression
+- it does not bypass the domain controller
+- it is opt-in and clearly separated from production integration
+
+## Settings and persistence
+
+Settings are grouped by feature area:
+
+1. API / Connection
+2. UI / Display
+3. Window / Behavior
+4. Development / About
+
+Persistence model:
+
+- Tauri runtime: JSON settings in the app config directory
+- browser preview: `localStorage`
+- auth token: OS keyring through Rust, not in frontend storage
+
+## Window model
+
+### Main widget window
+
+- frameless
+- transparent
+- fixed-size v1 layout
+- always-on-top capable
+- draggable on free surface
+- hidden to tray on close
+
+### Settings window
+
+- separate window label
+- opened on demand
+- remembers its own position
+- shares the same app model and visual language
+
+## Performance notes
+
+Performance-sensitive choices in the current implementation:
+
+- expensive artwork styling only changes when artwork URLs change
+- progress is smoothed locally instead of forcing constant transport updates
+- simulator and transport logic are kept outside presentation components
+- reconnect timing is handled in the controller instead of in React render paths
+- UI animation is mostly CSS-driven and short in duration
+
+## Extensibility plan
+
+The current structure is intentionally ready for:
+
+- future window size presets
+- future manual resize support
+- future locale JSON bundles
+- future macOS window behavior work
+- richer diagnostics and logging around Companion reconnects
+- enabling or disabling seek behavior with minimal UI churn
+
+## Testing strategy
+
+Current coverage focuses on the highest-value layers first:
+
+- unit tests for connection-state transitions
+- unit tests for Companion raw-state mapping
+- simulator behavior coverage
+- widget rendering coverage for key states
+- Playwright smoke flow for widget and settings views in simulator mode
+- live Tauri MCP validation against a running debug app
+
+## Development tooling note
+
+The project is also wired for the Tauri MCP server named `tauri`, using the MCP bridge plugin in debug builds. Reference repo: <https://github.com/hypothesi/mcp-server-tauri>
