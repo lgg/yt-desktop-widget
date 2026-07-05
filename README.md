@@ -2,6 +2,8 @@
 
 A premium Windows desktop widget for YTMDesktop built with Tauri v2, React, TypeScript, and Vite.
 
+Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, and markdown project-tracking rules.
+
 The app integrates with YTMDesktop only through the official Companion Server API. It does not scrape UI, inject scripts, parse window titles, use OCR, or fall back to platform media sessions.
 
 ## What it does
@@ -151,6 +153,19 @@ Installer outputs are intentionally not produced by default right now.
 
 - High-level architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Key engineering decisions: [DECISIONS.md](./DECISIONS.md)
+- Project tracking, roadmap, tasks, reports, decisions, and checklists: [project-tracking/README.md](./project-tracking/README.md)
+
+## Project tracking
+
+Markdown files under `project-tracking/` are the source of truth for work planning and reports.
+
+- Roadmap: [project-tracking/roadmap/0000-roadmap.md](./project-tracking/roadmap/0000-roadmap.md)
+- Current tasks: [project-tracking/tasks/](./project-tracking/tasks/)
+- Completion and verification reports: [project-tracking/reports/](./project-tracking/reports/)
+- Decisions: [project-tracking/decisions/](./project-tracking/decisions/)
+- Definition of Done: [project-tracking/checklists/0000-definition-of-done.md](./project-tracking/checklists/0000-definition-of-done.md)
+
+Beads was removed as the active tracker. Its full migration archive is preserved in [project-tracking/archive/beads-export-2026-07-05.jsonl](./project-tracking/archive/beads-export-2026-07-05.jsonl), with the ID-to-file map in [project-tracking/archive/beads-migration-map.md](./project-tracking/archive/beads-migration-map.md).
 
 ## Auth and storage
 
