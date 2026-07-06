@@ -37,29 +37,28 @@ Tauri keeps the widget small, fast, and close to the platform while still lettin
 
 ## Companion API research and verified assumptions
 
-Integration design was based on the official YTMDesktop Companion documentation and examples:
+Integration design is based on the official YTMDesktop Companion Server API documentation for YTMDesktop v2.0.0 and higher:
 
-- Official wiki page: <https://github.com/ytmdesktop/ytmdesktop/wiki/Companion-Server>
-- Raw wiki source used during implementation: <https://raw.githubusercontent.com/wiki/ytmdesktop/ytmdesktop/Companion-Server.md>
+- Official wiki page: <https://github.com/ytmdesktop/ytmdesktop/wiki/v2-%E2%80%90-Companion-Server-API-v1>
 
-Verified from upstream docs before implementation:
+Verified from upstream docs during the latest protocol audit:
 
 - Base API path: `http://<host>:<port>/api/v1`
-- Metadata endpoint: `GET /api/v1/metadata`
+- Public metadata endpoint: `GET /metadata` without the `/api/v1` prefix
 - Auth code endpoint: `POST /api/v1/auth/requestcode`
+  - request body: `appId`, `appName`, `appVersion`
+  - `appId` must be lowercase alphanumeric, without spaces, 2-32 characters
 - Auth completion endpoint: `POST /api/v1/auth/request`
+  - request body: `appId`, `code`
+- Authenticated REST requests pass the token as the raw `Authorization` header value
 - Playback state endpoint: `GET /api/v1/state`
-- Playback commands:
-  - `POST /api/v1/previous`
-  - `POST /api/v1/play-pause`
-  - `POST /api/v1/pause`
-  - `POST /api/v1/play`
-  - `POST /api/v1/next`
-  - `POST /api/v1/seek-to/<seconds>`
+- Playback command endpoint: `POST /api/v1/command`
+  - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "seekTo", "data": 42 }`
 - Realtime socket namespace: `/api/v1/realtime`
+- Realtime transport: websocket only
+- Realtime auth payload contains the token at `auth.token`
 - Realtime event: `state-update`
-- Socket auth payload contains the bearer token
-- Upstream guidance prefers `127.0.0.1` over `localhost`
+- Upstream guidance prefers `127.0.0.1` over `localhost` to avoid IPv6 localhost issues on some systems
 
 The real client is written so any unconfirmed response-shape differences are isolated to the backend bridge and mapping layer.
 
@@ -172,10 +171,11 @@ Beads was removed as the active tracker. Its full migration archive is preserved
 - Companion tokens are stored through the Rust `keyring` crate, which maps to Windows Credential Manager on Windows.
 - App settings are persisted in the Tauri app config directory as JSON.
 - Browser preview stores settings in `localStorage` only for local development.
+- The Companion `appId` used for auth is `ytmdesktopwidget`, matching the v2 API lowercase-alphanumeric constraint.
 
-## Validation completed
+## Validation history
 
-Validated in this workspace:
+Previously validated in earlier workspaces:
 
 - `npm run lint`
 - `npm test`
@@ -185,7 +185,7 @@ Validated in this workspace:
 - `cargo check -j1` for the Tauri/Rust backend
 - Tauri MCP attach via the `tauri` server against a live `tauri dev` process
 
-Because this machine was low on free disk space during Rust validation, the Rust checks were run with:
+Because that machine was low on free disk space during Rust validation, the Rust checks were run with:
 
 - `CARGO_INCREMENTAL=0`
 - `CARGO_PROFILE_DEV_DEBUG=0`
@@ -193,9 +193,9 @@ Because this machine was low on free disk space during Rust validation, the Rust
 
 Those environment variables were only a local validation workaround. They are not required by the project itself.
 
-## What could not be validated against a live Companion API here
+## What still needs live Companion validation
 
-A live YTMDesktop Companion instance was not available during this session, so these paths were implemented from upstream docs and left clearly isolated for later real-world verification:
+A live YTMDesktop Companion instance was not available during the latest protocol-audit session, so these paths remain open for real-world verification:
 
 - the full auth approval round-trip inside a running YTMDesktop instance
 - realtime updates from a live Companion socket
@@ -209,6 +209,6 @@ A live YTMDesktop Companion instance was not available during this session, so t
 - No manual resize yet
 - Windows-only delivery focus for v1
 - English-only locale bundle, though the i18n structure is ready for more JSON locales
-- Seek UI is implemented as a best-effort path because the endpoint is documented, but live seek behavior was not verified against a local YTMDesktop instance here
+- Seek UI is implemented as a best-effort path because the `seekTo` command is documented, but live seek behavior was not verified against a local YTMDesktop instance here
 - No macOS packaging work yet
 - Further visual refinements and alternate window modes are intentionally deferred
