@@ -145,9 +145,18 @@ async fn companion_connect(
   let settings = state.settings.load();
   let token = companion::load_token(&settings.api)?.ok_or_else(CommandError::auth_required)?;
   let mut manager = state.companion.lock().await;
-  let initial_state = manager
+  let initial_state = match manager
     .connect(&app, &settings.api, &token, COMPANION_EVENT)
-    .await?;
+    .await
+  {
+    Ok(initial_state) => initial_state,
+    Err(companion::CompanionError::AuthRequired) => {
+      drop(manager);
+      companion::clear_token(&settings.api)?;
+      return Err(CommandError::auth_required());
+    }
+    Err(error) => return Err(error.into()),
+  };
   Ok(CompanionConnectResponse { initial_state })
 }
 
@@ -196,8 +205,15 @@ async fn companion_send_command(
   let settings = state.settings.load();
   let token = companion::load_token(&settings.api)?.ok_or_else(CommandError::auth_required)?;
   let manager = state.companion.lock().await;
-  manager.send_command(&settings.api, &token, &command).await?;
-  Ok(())
+  match manager.send_command(&settings.api, &token, &command).await {
+    Ok(()) => Ok(()),
+    Err(companion::CompanionError::AuthRequired) => {
+      drop(manager);
+      companion::clear_token(&settings.api)?;
+      Err(CommandError::auth_required())
+    }
+    Err(error) => Err(error.into()),
+  }
 }
 
 fn app_window(app: &AppHandle, label: &str) -> Result<WebviewWindow, CommandError> {
