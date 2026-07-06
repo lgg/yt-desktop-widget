@@ -173,6 +173,37 @@ export const AppProvider = ({
   }, []);
 
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      return undefined;
+    }
+
+    let active = true;
+    let unlisten: (() => void) | null = null;
+
+    void tauriBridge
+      .listenToSettingsChanges((nextSettings) => {
+        if (!active || areSettingsEqual(settingsRef.current, nextSettings)) {
+          return;
+        }
+
+        settingsRef.current = nextSettings;
+        if (nextSettings.api.sourceMode !== 'simulator') {
+          previousSourceModeRef.current = nextSettings.api.sourceMode;
+        }
+        setSettings(nextSettings);
+      })
+      .then((nextUnlisten) => {
+        unlisten = nextUnlisten;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
     if (windowLabel !== 'settings' || !isTauriRuntime()) {
       setWindowVisible(true);
       return undefined;
