@@ -1,7 +1,7 @@
-﻿use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex};
 
 use futures_util::FutureExt;
-use reqwest::StatusCode;
+use reqwest::{header::AUTHORIZATION, StatusCode};
 use rust_socketio::asynchronous::{Client, ClientBuilder};
 use rust_socketio::{Payload, TransportType};
 use serde::Serialize;
@@ -10,7 +10,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::models::{CommandError, CompanionEvent, ConnectionSettings, DiscoveryInfo, PlaybackCommand};
 
-const APP_ID: &str = "io.github.lgg.ytm-desktop-widget";
+const APP_ID: &str = "ytmdesktopwidget";
 const APP_NAME: &str = "YTM Desktop Widget";
 const APP_VERSION: &str = "1.0.0";
 const KEYRING_SERVICE: &str = "io.github.lgg.ytm-desktop-widget";
@@ -55,7 +55,7 @@ pub struct CompanionManager {
 
 impl CompanionManager {
   pub async fn discover(&self, settings: &ConnectionSettings) -> DiscoveryInfo {
-    let url = format!("{}/api/v1/metadata", base_url(settings));
+    let url = format!("{}/metadata", base_url(settings));
     match self.client.get(url).send().await {
       Ok(response) if response.status().is_success() => {
         let body = response.json::<Value>().await.unwrap_or_else(|_| Value::Null);
@@ -98,7 +98,10 @@ impl CompanionManager {
         supports_realtime: true,
         supports_seek: true,
         using_browser_bridge: false,
-        detail: Some(format!("Waiting for the YTMDesktop Companion Server on {}:{}.", settings.host, settings.port)),
+        detail: Some(format!(
+          "Waiting for the YTMDesktop Companion Server on {}:{}.",
+          settings.host, settings.port
+        )),
       },
     }
   }
@@ -122,7 +125,6 @@ impl CompanionManager {
         detail: None,
       },
     );
-
 
     let latest_state = Arc::clone(&self.latest_state);
     let app_for_state = app.clone();
@@ -208,6 +210,11 @@ impl CompanionManager {
     let response = self
       .client
       .post(format!("{}/api/v1/auth/requestcode", base_url(settings)))
+      .json(&json!({
+        "appId": APP_ID,
+        "appName": APP_NAME,
+        "appVersion": APP_VERSION,
+      }))
       .send()
       .await
       .map_err(|_| CompanionError::NotRunning)?;
@@ -217,8 +224,9 @@ impl CompanionManager {
       .json::<Value>()
       .await
       .map_err(|error| CompanionError::Unknown(error.to_string()))?;
-    let code = extract_token_like_value(&body, &["code"])
-      .ok_or_else(|| CompanionError::Unknown("Companion Server did not return an auth code.".to_string()))?;
+    let code = extract_token_like_value(&body, &["code"]).ok_or_else(|| {
+      CompanionError::Unknown("Companion Server did not return an auth code.".to_string())
+    })?;
 
     Ok(AuthCodeResponse { code })
   }
@@ -233,8 +241,6 @@ impl CompanionManager {
       .post(format!("{}/api/v1/auth/request", base_url(settings)))
       .json(&json!({
         "appId": APP_ID,
-        "appName": APP_NAME,
-        "appVersion": APP_VERSION,
         "code": code,
       }))
       .send()
@@ -247,8 +253,9 @@ impl CompanionManager {
       .await
       .map_err(|error| CompanionError::Unknown(error.to_string()))?;
 
-    extract_token_like_value(&body, &["token", "authorization", "accessToken"])
-      .ok_or_else(|| CompanionError::Unknown("Companion Server did not return an auth token.".to_string()))
+    extract_token_like_value(&body, &["token", "authorization", "accessToken"]).ok_or_else(|| {
+      CompanionError::Unknown("Companion Server did not return an auth token.".to_string())
+    })
   }
 
   pub async fn send_command(
@@ -257,19 +264,11 @@ impl CompanionManager {
     token: &str,
     command: &PlaybackCommand,
   ) -> Result<(), CompanionError> {
-    let path = match command {
-      PlaybackCommand::PlayPause => "/api/v1/play-pause".to_string(),
-      PlaybackCommand::Play => "/api/v1/play".to_string(),
-      PlaybackCommand::Pause => "/api/v1/pause".to_string(),
-      PlaybackCommand::Next => "/api/v1/next".to_string(),
-      PlaybackCommand::Previous => "/api/v1/previous".to_string(),
-      PlaybackCommand::SeekTo { seconds } => format!("/api/v1/seek-to/{}", seconds.round() as i64),
-    };
-
     let response = self
       .client
-      .post(format!("{}{}", base_url(settings), path))
-      .bearer_auth(token)
+      .post(format!("{}/api/v1/command", base_url(settings)))
+      .header(AUTHORIZATION, token)
+      .json(&command_request_body(command))
       .send()
       .await
       .map_err(|error| CompanionError::Network(error.to_string()))?;
@@ -285,7 +284,7 @@ impl CompanionManager {
     let response = self
       .client
       .get(format!("{}/api/v1/state", base_url(settings)))
-      .bearer_auth(token)
+      .header(AUTHORIZATION, token)
       .send()
       .await
       .map_err(|_| CompanionError::NotRunning)?;
@@ -327,6 +326,20 @@ fn emit_event(app: &AppHandle, event_name: &str, payload: CompanionEvent) {
 
 fn base_url(settings: &ConnectionSettings) -> String {
   format!("http://{}:{}", settings.host, settings.port)
+}
+
+fn command_request_body(command: &PlaybackCommand) -> Value {
+  match command {
+    PlaybackCommand::PlayPause => json!({ "command": "playPause" }),
+    PlaybackCommand::Play => json!({ "command": "play" }),
+    PlaybackCommand::Pause => json!({ "command": "pause" }),
+    PlaybackCommand::Next => json!({ "command": "next" }),
+    PlaybackCommand::Previous => json!({ "command": "previous" }),
+    PlaybackCommand::SeekTo { seconds } => json!({
+      "command": "seekTo",
+      "data": seconds.round() as i64,
+    }),
+  }
 }
 
 fn validate_status(status: StatusCode) -> Result<(), CompanionError> {
@@ -374,3 +387,31 @@ fn payload_to_string(payload: Payload) -> String {
   }
 }
 
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn app_id_matches_companion_v2_constraints() {
+    assert!(APP_ID.len() >= 2);
+    assert!(APP_ID.len() <= 32);
+    assert!(APP_ID.chars().all(|character| character.is_ascii_lowercase() || character.is_ascii_digit()));
+  }
+
+  #[test]
+  fn maps_basic_commands_to_v2_command_payloads() {
+    assert_eq!(command_request_body(&PlaybackCommand::PlayPause), json!({ "command": "playPause" }));
+    assert_eq!(command_request_body(&PlaybackCommand::Play), json!({ "command": "play" }));
+    assert_eq!(command_request_body(&PlaybackCommand::Pause), json!({ "command": "pause" }));
+    assert_eq!(command_request_body(&PlaybackCommand::Next), json!({ "command": "next" }));
+    assert_eq!(command_request_body(&PlaybackCommand::Previous), json!({ "command": "previous" }));
+  }
+
+  #[test]
+  fn maps_seek_to_v2_command_payload() {
+    assert_eq!(
+      command_request_body(&PlaybackCommand::SeekTo { seconds: 42.4 }),
+      json!({ "command": "seekTo", "data": 42 })
+    );
+  }
+}
