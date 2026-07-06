@@ -337,9 +337,17 @@ fn command_request_body(command: &PlaybackCommand) -> Value {
     PlaybackCommand::Previous => json!({ "command": "previous" }),
     PlaybackCommand::SeekTo { seconds } => json!({
       "command": "seekTo",
-      "data": seconds.round() as i64,
+      "data": sanitize_seek_seconds(*seconds),
     }),
   }
+}
+
+fn sanitize_seek_seconds(seconds: f64) -> i64 {
+  if !seconds.is_finite() {
+    return 0;
+  }
+
+  seconds.max(0.0).round() as i64
 }
 
 fn validate_status(status: StatusCode) -> Result<(), CompanionError> {
@@ -430,6 +438,18 @@ mod tests {
     assert_eq!(
       command_request_body(&PlaybackCommand::SeekTo { seconds: 42.4 }),
       json!({ "command": "seekTo", "data": 42 })
+    );
+  }
+
+  #[test]
+  fn clamps_invalid_seek_payloads_to_zero() {
+    assert_eq!(
+      command_request_body(&PlaybackCommand::SeekTo { seconds: -12.6 }),
+      json!({ "command": "seekTo", "data": 0 })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::SeekTo { seconds: f64::NAN }),
+      json!({ "command": "seekTo", "data": 0 })
     );
   }
 }
