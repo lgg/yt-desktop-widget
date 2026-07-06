@@ -390,21 +390,39 @@ fn payload_to_string(payload: Payload) -> String {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use serde_json::json;
 
   #[test]
   fn app_id_matches_companion_v2_constraints() {
     assert!(APP_ID.len() >= 2);
     assert!(APP_ID.len() <= 32);
-    assert!(APP_ID.chars().all(|character| character.is_ascii_lowercase() || character.is_ascii_digit()));
+    assert!(APP_ID
+      .chars()
+      .all(|character| character.is_ascii_lowercase() || character.is_ascii_digit()));
   }
 
   #[test]
   fn maps_basic_commands_to_v2_command_payloads() {
-    assert_eq!(command_request_body(&PlaybackCommand::PlayPause), json!({ "command": "playPause" }));
-    assert_eq!(command_request_body(&PlaybackCommand::Play), json!({ "command": "play" }));
-    assert_eq!(command_request_body(&PlaybackCommand::Pause), json!({ "command": "pause" }));
-    assert_eq!(command_request_body(&PlaybackCommand::Next), json!({ "command": "next" }));
-    assert_eq!(command_request_body(&PlaybackCommand::Previous), json!({ "command": "previous" }));
+    assert_eq!(
+      command_request_body(&PlaybackCommand::PlayPause),
+      json!({ "command": "playPause" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Play),
+      json!({ "command": "play" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Pause),
+      json!({ "command": "pause" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Next),
+      json!({ "command": "next" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Previous),
+      json!({ "command": "previous" })
+    );
   }
 
   #[test]
