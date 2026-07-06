@@ -9,7 +9,7 @@ export const useSmoothedProgress = (
   playback: PlaybackSnapshot | null,
   overrideSeconds?: number | null,
 ): number => {
-  const [frameNow, setFrameNow] = useState(() => performance.now());
+  const [frameNow, setFrameNow] = useState(() => Date.now());
   const animationFrameRef = useRef<number | null>(null);
   const playbackId = playback?.id;
   const playbackState = playback?.playbackState;
@@ -21,7 +21,7 @@ export const useSmoothedProgress = (
     }
 
     const tick = () => {
-      setFrameNow(performance.now());
+      setFrameNow(Date.now());
       animationFrameRef.current = requestAnimationFrame(tick);
     };
 
