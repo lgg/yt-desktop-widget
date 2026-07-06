@@ -150,9 +150,15 @@ Status: accepted with caution
 
 Reasoning:
 
-- upstream docs document a seek endpoint
+- upstream v2 docs document `seekTo` as a `POST /api/v1/command` payload
 - the UI and command model support seek cleanly today
 - the feature should not block v1 delivery when a live Companion server is unavailable locally
+
+Implementation notes:
+
+- seek is sent as `{ "command": "seekTo", "data": seconds }`
+- the REST token is sent as the raw `Authorization` header value, matching the v2 docs
+- live seek behavior still needs verification against a real YTMDesktop Companion instance
 
 Trade-off:
 
