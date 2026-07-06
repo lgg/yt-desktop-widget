@@ -28,6 +28,10 @@ export interface BackendCommandError {
 export const tauriBridge = {
   loadSettings: () => invoke<AppSettings>('load_settings'),
   saveSettings: (settings: AppSettings) => invoke<AppSettings>('save_settings', { settings }),
+  listenToSettingsChanges: (handler: (settings: AppSettings) => void) =>
+    listen<AppSettings>('app-settings://changed', (event) => {
+      handler(event.payload);
+    }),
   showWindow: (label: string) => invoke<void>('show_window', { label }),
   hideWindow: (label: string) => invoke<void>('hide_window', { label }),
   setMainWindowHeight: (height: number) => invoke<void>('set_main_window_height', { height }),
