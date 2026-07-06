@@ -27,10 +27,13 @@ describe('useSmoothedProgress', () => {
   });
 
   it('advances playing tracks using the same clock as Companion snapshots', () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({
+      toFake: ['Date', 'requestAnimationFrame', 'cancelAnimationFrame'],
+    });
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
 
-    const { result } = renderHook(() => useSmoothedProgress(makePlayback(Date.now())));
+    const playback = makePlayback(Date.now());
+    const { result } = renderHook(() => useSmoothedProgress(playback));
 
     expect(result.current).toBe(30);
 
