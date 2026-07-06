@@ -117,12 +117,14 @@ Why this matters:
 
 1. Frontend starts `PlaybackController`.
 2. Controller asks the gateway whether stored auth exists.
-3. Rust backend probes `GET /api/v1/metadata`.
+3. Rust backend probes public `GET /metadata`.
 4. If auth is missing, the UI moves to `auth_required`.
-5. If auth exists, Rust fetches `GET /api/v1/state` and opens the realtime socket.
-6. Rust emits Companion events back to the frontend.
-7. The controller maps raw Companion payloads into UI-ready playback snapshots.
-8. Commands from the UI flow back through the same bridge.
+5. Auth uses `POST /api/v1/auth/requestcode` followed by `POST /api/v1/auth/request`.
+6. If auth exists, Rust fetches `GET /api/v1/state` with the raw token in the `Authorization` header and opens the realtime socket.
+7. Realtime connects to `/api/v1/realtime` over websocket with the token in `auth.token`.
+8. Rust emits Companion events back to the frontend.
+9. The controller maps raw Companion payloads into UI-ready playback snapshots.
+10. Commands from the UI flow back through `POST /api/v1/command` with `{ command, data }` payloads.
 
 ## Simulator flow
 
@@ -195,6 +197,7 @@ Current coverage focuses on the highest-value layers first:
 
 - unit tests for connection-state transitions
 - unit tests for Companion raw-state mapping
+- unit tests for native Companion v2 request payload construction
 - simulator behavior coverage
 - widget rendering coverage for key states
 - Playwright smoke flow for widget and settings views in simulator mode
