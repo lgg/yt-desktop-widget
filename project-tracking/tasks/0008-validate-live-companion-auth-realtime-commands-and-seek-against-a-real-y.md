@@ -20,6 +20,8 @@ Run the implemented integration against a live local YTMDesktop Companion instan
 
 A 2026-07-07 protocol audit found that the implementation and README still described parts of an older Companion API contract. The backend bridge and documentation were updated to the official YTMDesktop v2 Companion Server API v1 contract before live validation.
 
+A follow-up audit found two hardening gaps in the v2 update: stale keyring tokens could survive an `auth_required` response after the `appId` correction, and malformed seek values could still be serialized into command payloads if a caller bypassed normal UI constraints.
+
 ## Goal
 
 Preserve and continue the work described by the migrated Beads issue in the markdown project-tracking system. Keep the code and docs aligned with the current Companion Server v2 API, then complete live validation against a real YTMDesktop instance.
@@ -31,6 +33,7 @@ Included:
 - Keep the original Beads context, status, priority, dependencies, and history visible in markdown.
 - Continue or verify the product work described by this task according to the current project rules.
 - Audit and correct Companion Server v2 API assumptions in native backend code and documentation.
+- Harden stale-token and command-payload edge cases found during follow-up review.
 
 Out of scope:
 
@@ -40,11 +43,11 @@ Out of scope:
 
 ## Affected Areas
 
-- Backend: Companion HTTP auth, metadata discovery, state requests, command requests, realtime socket setup.
+- Backend: Companion HTTP auth, metadata discovery, state requests, command requests, realtime socket setup, stale-token cleanup.
 - Frontend: Tauri bridge and domain command surface reviewed; no UI contract change required in this audit.
 - Database/migrations: Not applicable.
 - API/contracts: YTMDesktop Companion API v2 contract is affected.
-- Tests: Native unit tests added for appId constraints and v2 command payload mapping.
+- Tests: Native unit tests added for appId constraints, v2 command payload mapping, and invalid seek clamping.
 - Documentation: README, architecture notes, decisions, and reports must stay aligned with the current API contract.
 - Deploy/config: Not applicable.
 - Other: Windows-first Tauri runtime behavior remains relevant for live validation.
@@ -58,6 +61,8 @@ Out of scope:
 - [x] Native backend uses a lowercase-alphanumeric `appId` that satisfies v2 constraints.
 - [x] Native backend sends REST auth as the raw `Authorization` header value.
 - [x] Native backend sends playback commands through `POST /api/v1/command` with `{ command, data }` payloads.
+- [x] Native backend clears stale stored tokens when Companion returns auth-required during connect or command execution.
+- [x] Native backend clamps invalid `seekTo` seconds to a safe `0` payload.
 - [x] Relevant implementation, documentation, and verification notes are captured or linked.
 - [ ] Live YTMDesktop Companion auth, realtime, commands, and seek are verified on a real local instance.
 - [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
@@ -75,6 +80,7 @@ Out of scope:
 ## Progress History
 
 - 2026-07-07: Audited the implementation against the official v2 Companion Server API v1 wiki. Found outdated assumptions in README and Rust bridge: old metadata path, old command endpoints, missing auth-code request body, invalid dotted/hyphenated `appId`, and Bearer-style REST auth. Updated `src-tauri/src/companion.rs`, README, architecture notes, and decision notes to the v2 contract. Live YTMDesktop validation remains open.
+- 2026-07-07: Follow-up audit found and fixed stale keyring token handling after auth-required failures and invalid seek payload edge cases. Updated `src-tauri/src/lib.rs`, `src-tauri/src/companion.rs`, and this tracking set.
 
 ## Dependencies
 
@@ -92,7 +98,8 @@ Out of scope:
 | --- | --- | --- |
 | Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
 | Is live Companion validation complete? | Open | No. The code now matches the official v2 docs, but a real local YTMDesktop Companion instance is still required for auth, realtime, commands, and seek verification. |
-| Does the auth `appId` change affect existing users? | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. Users with an older stored token may need to clear auth and approve the app again. |
+| Does the auth `appId` change affect existing users? | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. If a stored token becomes invalid, the native bridge now clears it when Companion returns auth-required. |
+| Can malformed seek seconds reach Companion? | Resolved | The UI already constrains normal seek input; the native command payload builder now also clamps negative or non-finite seconds to `0`. |
 
 ## Risks
 
@@ -100,7 +107,7 @@ Out of scope:
 | --- | --- | --- |
 | Migrated task loses subtle Beads context. | Medium | Keep the raw JSONL archive and the progress history in this file. |
 | Runtime behavior differs from documented assumptions. | Medium | Verify with portable Windows build and live YTMDesktop Companion where required. |
-| Existing stored Companion token was created under the previous invalid appId assumption. | Low | Keep token storage isolated in keyring and use the existing clear-auth flow before re-auth if needed. |
+| Existing stored Companion token was created under the previous invalid appId assumption. | Low | Clear stale tokens automatically on auth-required connect/command failures and use the existing re-auth flow. |
 | `rust_socketio` payload shape differs from live Companion `state-update` events. | Medium | Keep realtime payload mapping isolated and verify against a live YTMDesktop instance. |
 
 ## Links
