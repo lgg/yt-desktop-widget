@@ -2,7 +2,11 @@ import { waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PlaybackController } from '@/domain/playback/controller';
-import type { CompanionGateway, DiscoveryInfo } from '@/domain/playback/types';
+import {
+  GatewayError,
+  type CompanionGateway,
+  type DiscoveryInfo,
+} from '@/domain/playback/types';
 
 const availableDiscovery: DiscoveryInfo = {
   available: true,
@@ -16,6 +20,11 @@ interface DeferredAuth {
   resolve?: () => void;
 }
 
+const createConnection = () => ({
+  send: vi.fn(() => Promise.resolve()),
+  disconnect: vi.fn(() => Promise.resolve()),
+});
+
 const createGateway = (completeAuth?: CompanionGateway['completeAuth']) => {
   let storedAuth = false;
 
@@ -26,10 +35,7 @@ const createGateway = (completeAuth?: CompanionGateway['completeAuth']) => {
     connect: vi.fn(() =>
       Promise.resolve({
         initialState: null,
-        connection: {
-          send: vi.fn(() => Promise.resolve()),
-          disconnect: vi.fn(() => Promise.resolve()),
-        },
+        connection: createConnection(),
       }),
     ),
     requestAuthCode: vi.fn(() => Promise.resolve({ code: '2413' })),
@@ -77,6 +83,42 @@ describe('PlaybackController auth flow', () => {
       expect(snapshot.connection.hasStoredAuth).toBe(true);
       expect(snapshot.connection.authCode).toBeNull();
     });
+  });
+
+  it('retries a transient post-approval auth failure before returning to auth required', async () => {
+    const gateway = createGateway();
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
+    vi.mocked(gateway.connect)
+      .mockRejectedValueOnce(
+        new GatewayError(
+          'auth_required',
+          'Companion authorization is required before the widget can connect.',
+        ),
+      )
+      .mockResolvedValueOnce({
+        initialState: null,
+        connection: createConnection(),
+      });
+    const controller = new PlaybackController(gateway);
+
+    await controller.requestAuthCode();
+
+    await waitFor(() => {
+      expect(gateway.connect).toHaveBeenCalledTimes(1);
+      expect(gateway.connect).toHaveBeenLastCalledWith(
+        expect.any(Object),
+        { preserveAuthOnFailure: true },
+      );
+      expect(controller.getSnapshot().connection.status).toBe('reconnecting');
+    });
+
+    await waitFor(
+      () => {
+        expect(gateway.connect).toHaveBeenCalledTimes(2);
+        expect(controller.getSnapshot().connection.status).toBe('connected');
+      },
+      { timeout: 1500 },
+    );
   });
 
   it('returns to an actionable auth state when Companion approval fails', async () => {
