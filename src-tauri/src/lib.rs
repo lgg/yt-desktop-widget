@@ -524,21 +524,26 @@ fn handle_window_event(window: &Window, event: &WindowEvent) {
 }
 
 pub fn run() {
-  tauri::Builder::default()
-    .plugin(tauri_plugin_opener::init())
+  let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+
+  #[cfg(debug_assertions)]
+  let builder = builder.plugin(
+    tauri_plugin_mcp_bridge::Builder::new()
+      .base_port(MCP_BRIDGE_BASE_PORT)
+      .build(),
+  );
+
+  builder
     .setup(|app| {
-      let app_config_dir = app
-        .path()
-        .app_config_dir()
-        .map_err(|error| Box::new(CommandError::unknown(error.to_string())))?;
-      let settings_path = app_config_dir.join("settings.json");
-      let settings_store = SettingsStore::new(settings_path)
-        .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)?;
-      app.manage(AppState::new(settings_store));
-      setup_tray(app.handle()).map_err(|error| Box::new(error) as Box<dyn std::error::Error>)?;
-      let initial_settings = app.state::<AppState>().settings.load();
-      apply_window_preferences(app.handle(), &initial_settings)
-        .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)?;
+      let config_dir = app.path().app_config_dir()?;
+      std::fs::create_dir_all(&config_dir)?;
+      let settings_store = SettingsStore::new(config_dir.join("settings.json"))?;
+      let state = AppState::new(settings_store);
+      let settings = state.settings.load();
+      app.manage(state);
+      apply_window_preferences(app.handle(), &settings)?;
+      startup::set_launch_on_startup(app.handle(), settings.window.launch_on_startup)?;
+      setup_tray(app.handle())?;
       Ok(())
     })
     .on_window_event(handle_window_event)
@@ -559,9 +564,8 @@ pub fn run() {
       companion_request_auth_code,
       companion_complete_auth,
       companion_clear_auth,
-      companion_send_command,
+      companion_send_command
     ])
-    .plugin(tauri_plugin_mcp_bridge::Builder::new(MCP_BRIDGE_BASE_PORT).build())
     .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .expect("error while running YTM Desktop Widget");
 }
