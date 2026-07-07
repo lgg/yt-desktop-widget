@@ -29,10 +29,10 @@ export interface CompanionConnectOptions {
   preserveAuthOnFailure?: boolean;
 }
 
-const companionConnectArgs = (options: CompanionConnectOptions) =>
-  options.preserveAuthOnFailure === undefined
-    ? {}
-    : { preserveAuthOnFailure: options.preserveAuthOnFailure };
+const companionConnectArgs = (options: CompanionConnectOptions) => {
+  const { preserveAuthOnFailure } = options;
+  return preserveAuthOnFailure === undefined ? {} : { preserveAuthOnFailure };
+};
 
 export const tauriBridge = {
   loadSettings: () => invoke<AppSettings>('load_settings'),
