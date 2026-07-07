@@ -8,6 +8,7 @@ import type {
   ConnectionState,
   DiscoveryInfo,
   GatewayConnection,
+  GatewayConnectOptions,
   GatewayDisconnectOptions,
   GatewayDisconnectReason,
   GatewayError,
@@ -17,13 +18,18 @@ import type {
 
 const SOCKET_RECONNECT_DELAYS = [1250, 2500, 5000, 10000, 15000] as const;
 const DISCOVERY_RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000] as const;
+const POST_AUTH_CONNECT_RETRY_DELAYS = [400, 1000, 2000] as const;
 const AUTH_CODE_READY_DETAIL =
   'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
 const AUTH_FAILED_DETAIL =
   'Pairing was not completed. Generate a new code or retry, then press Allow in YTMDesktop.';
+const POST_AUTH_RETRY_DETAIL =
+  'YTMDesktop accepted the pairing request. Waiting for the Companion token to become active.';
 
 interface BeginConnectOptions {
   skipStoredAuthGate?: boolean;
+  preserveAuthOnFailure?: boolean;
+  authRetryAttempt?: number;
 }
 
 interface DisposeOptions {
@@ -241,7 +247,11 @@ export class PlaybackController {
   private async reconnectAfterAuth() {
     this.clearReconnectTimer();
     await this.disconnectInternal();
-    await this.beginConnect(true, { skipStoredAuthGate: true });
+    await this.beginConnect(true, {
+      skipStoredAuthGate: true,
+      preserveAuthOnFailure: true,
+      authRetryAttempt: 0,
+    });
   }
 
   private emit() {
@@ -316,27 +326,33 @@ export class PlaybackController {
       }
 
       const connectedHasStoredAuth = hasStoredAuth || this.gateway.kind === 'real';
-      const { connection, initialState } = await this.gateway.connect({
-        onConnected: () => {
-          this.patchConnection((state) =>
-            reduceConnectionState(state, {
-              type: 'connected',
-              hasStoredAuth: connectedHasStoredAuth,
-            }),
-          );
+      const connectOptions: GatewayConnectOptions = {
+        preserveAuthOnFailure: options.preserveAuthOnFailure,
+      };
+      const { connection, initialState } = await this.gateway.connect(
+        {
+          onConnected: () => {
+            this.patchConnection((state) =>
+              reduceConnectionState(state, {
+                type: 'connected',
+                hasStoredAuth: connectedHasStoredAuth,
+              }),
+            );
+          },
+          onError: (detail) => {
+            this.patchConnection((state) =>
+              reduceConnectionState(state, { type: 'error', message: detail }),
+            );
+          },
+          onDisconnected: (reason, detail) => {
+            this.scheduleReconnect(reason, detail);
+          },
+          onState: (rawState) => {
+            this.patchPlayback(rawState);
+          },
         },
-        onError: (detail) => {
-          this.patchConnection((state) =>
-            reduceConnectionState(state, { type: 'error', message: detail }),
-          );
-        },
-        onDisconnected: (reason, detail) => {
-          this.scheduleReconnect(reason, detail);
-        },
-        onState: (rawState) => {
-          this.patchPlayback(rawState);
-        },
-      });
+        connectOptions,
+      );
 
       this.connection = connection;
       this.patchConnection((state) =>
@@ -352,6 +368,10 @@ export class PlaybackController {
     } catch (error) {
       const gatewayError = error as GatewayError;
       if (gatewayError?.code === 'auth_required') {
+        if (this.schedulePostAuthConnectRetry(options)) {
+          return;
+        }
+
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
@@ -372,6 +392,38 @@ export class PlaybackController {
 
       this.scheduleReconnect('socket_error', toErrorMessage(error));
     }
+  }
+
+  private schedulePostAuthConnectRetry(options: BeginConnectOptions) {
+    if (!options.preserveAuthOnFailure) {
+      return false;
+    }
+
+    const attempt = options.authRetryAttempt ?? 0;
+    const delay = POST_AUTH_CONNECT_RETRY_DELAYS[attempt];
+    if (delay == null) {
+      return false;
+    }
+
+    this.clearReconnectTimer();
+    const retryAt = Date.now() + delay;
+    this.patchConnection((state) =>
+      reduceConnectionState(state, {
+        type: 'retry_scheduled',
+        retryAttempt: state.retryAttempt + 1,
+        retryAt,
+        detail: POST_AUTH_RETRY_DETAIL,
+      }),
+    );
+
+    this.reconnectTimer = window.setTimeout(() => {
+      void this.beginConnect(true, {
+        ...options,
+        authRetryAttempt: attempt + 1,
+      });
+    }, delay);
+
+    return true;
   }
 
   private scheduleReconnect(reason: GatewayDisconnectReason, detail?: string) {
