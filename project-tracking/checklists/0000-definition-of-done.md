@@ -10,6 +10,7 @@ Use this checklist before closing any non-trivial task.
 - [ ] Open questions are recorded.
 - [ ] Blocking product, security, data, packaging, or irreversible migration questions are clarified before implementation.
 - [ ] Iteration start time is recorded in the task before implementation, or the report explains why tracking is approximate or missing.
+- [ ] The pass branch is identified, or a documented exception explains why work stayed on the current branch.
 
 ## Implementation
 
@@ -75,3 +76,11 @@ Use this checklist before closing any non-trivial task.
 - [ ] The report records what could not be verified.
 - [ ] The report includes Time Tracking.
 - [ ] Residual risks and next steps are recorded.
+
+## Git Completion
+
+- [ ] Work is committed on the pass branch.
+- [ ] The pass branch was audited and validated before merge.
+- [ ] The pass branch is merged into `master` when checks have no blocking failures.
+- [ ] `master` is pushed after a successful merge.
+- [ ] Any skipped commit, push, or merge step is explained in the report.

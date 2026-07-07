@@ -11,7 +11,7 @@ use std::time::Duration;
 
 use companion::CompanionManager;
 use models::{
-  AppSettings, CommandError, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand,
+  AppSettings, CommandError, CompanionAuthEvent, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand,
   WindowPosition,
 };
 use settings::SettingsStore;
@@ -25,6 +25,7 @@ use tauri_plugin_opener::OpenerExt;
 
 const REPOSITORY_URL: &str = "https://github.com/lgg/yt-desktop-widget";
 const COMPANION_EVENT: &str = "companion://event";
+const COMPANION_AUTH_CHANGED_EVENT: &str = "companion://auth-changed";
 const SETTINGS_CHANGED_EVENT: &str = "app-settings://changed";
 const WINDOW_VISIBILITY_EVENT: &str = "app-window://visibility";
 const WINDOW_LABELS: [&str; 2] = ["main", "settings"];
@@ -182,21 +183,33 @@ async fn companion_request_auth_code(
 
 #[tauri::command]
 async fn companion_complete_auth(
+  app: AppHandle,
   state: tauri::State<'_, AppState>,
   code: String,
 ) -> Result<(), CommandError> {
   let settings = state.settings.load();
   let token = companion::complete_auth(&settings.api, &code).await?;
   companion::store_token(&settings.api, &token)?;
+  let _ = app.emit(
+    COMPANION_AUTH_CHANGED_EVENT,
+    CompanionAuthEvent { authorized: true },
+  );
   Ok(())
 }
 
 #[tauri::command]
-async fn companion_clear_auth(state: tauri::State<'_, AppState>) -> Result<(), CommandError> {
+async fn companion_clear_auth(
+  app: AppHandle,
+  state: tauri::State<'_, AppState>,
+) -> Result<(), CommandError> {
   let settings = state.settings.load();
   companion::clear_token(&settings.api)?;
   let mut manager = state.companion.lock().await;
   manager.disconnect().await?;
+  let _ = app.emit(
+    COMPANION_AUTH_CHANGED_EVENT,
+    CompanionAuthEvent { authorized: false },
+  );
   Ok(())
 }
 

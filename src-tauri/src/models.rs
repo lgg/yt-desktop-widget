@@ -122,6 +122,12 @@ pub enum CompanionEvent {
   Status { status: String, detail: Option<String> },
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanionAuthEvent {
+  pub authorized: bool,
+}
+
 #[derive(Debug, Clone, Serialize, thiserror::Error)]
 #[error("{message}")]
 #[serde(rename_all = "camelCase")]
