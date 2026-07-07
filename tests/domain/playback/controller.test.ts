@@ -12,6 +12,10 @@ const availableDiscovery: DiscoveryInfo = {
   usingBrowserBridge: false,
 };
 
+interface DeferredAuth {
+  resolve?: () => void;
+}
+
 const createGateway = (completeAuth?: CompanionGateway['completeAuth']) => {
   let storedAuth = false;
 
@@ -74,11 +78,11 @@ describe('PlaybackController auth flow', () => {
   });
 
   it('reuses the active token exchange when confirm is pressed again', async () => {
-    let resolveAuth: (() => void) | null = null;
+    const deferredAuth: DeferredAuth = {};
     const completeAuth = vi.fn(
       () =>
         new Promise<void>((resolve) => {
-          resolveAuth = resolve;
+          deferredAuth.resolve = resolve;
         }),
     );
     const gateway = createGateway(completeAuth);
@@ -89,9 +93,10 @@ describe('PlaybackController auth flow', () => {
 
     await waitFor(() => {
       expect(completeAuth).toHaveBeenCalledTimes(1);
+      expect(deferredAuth.resolve).toBeDefined();
     });
 
-    resolveAuth?.();
+    deferredAuth.resolve?.();
     await secondAttempt;
   });
 });
