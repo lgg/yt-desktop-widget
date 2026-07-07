@@ -2,6 +2,7 @@
 import clsx from 'clsx';
 
 import { useArtworkTransition } from '@/utils/artwork';
+import { toCssUrl } from '@/utils/css';
 
 interface ArtworkBackgroundProps {
   artworkUrl: string | null;
@@ -19,13 +20,13 @@ export const ArtworkBackground = memo(function ArtworkBackground({
       {previousUrl ? (
         <div
           className="artwork-background__layer artwork-background__layer--previous"
-          style={{ backgroundImage: `url(${previousUrl})` }}
+          style={{ backgroundImage: toCssUrl(previousUrl) }}
         />
       ) : null}
       {currentUrl ? (
         <div
           className="artwork-background__layer artwork-background__layer--current"
-          style={{ backgroundImage: `url(${currentUrl})` }}
+          style={{ backgroundImage: toCssUrl(currentUrl) }}
         />
       ) : null}
       <div className="artwork-background__veil" />
