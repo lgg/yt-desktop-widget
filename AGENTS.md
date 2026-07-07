@@ -7,22 +7,30 @@ This file is required reading before any work on this repository. Keep it aligne
 1. Before non-trivial changes, read:
    - `README.md`
    - `AGENTS.md`
+   - `project-tracking/bootstrap-sync.md`
    - `project-tracking/roadmap/0000-roadmap.md`
    - relevant tasks, reports, decisions, and checklists under `project-tracking/`
 2. Do not start implementation until the task, acceptance criteria, affected areas, and verification plan are clear.
 3. If a choice can be resolved safely without the user, choose the conservative option that fits the current architecture and record it in the task/report.
 4. If a choice affects product behavior, security, user data, credentials, release packaging, or irreversible migration, ask the user explicitly.
 5. Keep changes minimal and scoped to the task. Avoid side refactors unless they are required for the requested work.
+6. At the start of each substantial AI work iteration, record the start time. Before final commit, push, or user handoff, record finish time and duration as described in section 14.
 
-## 2. Git
+## 2. Git and GitHub
 
 If you create a git commit in this repository, use:
 
 - `user.name = lgg`
 - `user.email = lgg@users.noreply.github.com`
 
-Do not commit, amend, or push unless the user explicitly asks.
-Do not overwrite or delete user changes without direct permission.
+Rules:
+
+1. If the user asks to work through GitHub App, do not use console `git push`.
+2. Prefer GitHub App / connector tools for remote repository writes when requested.
+3. Do not commit, amend, or push unless the user explicitly asks or the current connector workflow requires a GitHub contents commit.
+4. Do not overwrite or delete user changes without direct permission.
+5. Keep commits small enough for review and use messages that explain what changed.
+6. The last process/documentation commit before handoff should include current task, report, bootstrap-sync, and time-log updates when applicable.
 
 ## 3. Project Tracking
 
@@ -33,6 +41,8 @@ Use `project-tracking/` for all project planning and reporting:
 ```text
 project-tracking/
   README.md
+  bootstrap-sync.md
+  time-log.md
   roadmap/
   tasks/
   reports/
@@ -48,7 +58,9 @@ Rules:
 2. During work, record scope changes, questions, risks, and durable decisions in the task or a decision file.
 3. After completion or meaningful verification, create or update the matching report in `project-tracking/reports/`.
 4. Update the roadmap when task status, priority, phase, or delivery expectations change.
-5. Do not keep a parallel issue tracker or markdown TODO list outside `project-tracking/`.
+5. Record substantial AI iteration time in `project-tracking/time-log.md`.
+6. Update `project-tracking/bootstrap-sync.md` whenever rules from `lgg/chatgpt-coding-projects-bootstrap` are synchronized.
+7. Do not keep a parallel issue tracker or markdown TODO list outside `project-tracking/`.
 
 Beads was removed as the project tracker. Historical Beads state is preserved in:
 
@@ -78,6 +90,7 @@ Each task should include:
 - goal
 - included and excluded scope
 - affected areas
+- time tracking: `iteration_id`, `started_at`, `finished_at`, `time_spent_minutes`, `tracking_status`, and time-log link
 - acceptance criteria
 - verification plan
 - questions and answers
@@ -95,6 +108,7 @@ Each report should include:
 - changed files and affected areas
 - checks performed
 - check results
+- time tracking summary and where it is recorded in `project-tracking/time-log.md`
 - what could not be verified and why
 - resolved and open questions
 - residual risks
@@ -107,11 +121,12 @@ Use `project-tracking/templates/report-template.md` for new reports.
 A task is not complete until:
 
 1. Implementation matches the task and acceptance criteria.
-2. Related areas are updated together: frontend, native backend, domain/API contracts, tests, documentation, build/release config, roadmap, task, and report.
+2. Related areas are updated together: frontend, native backend, domain/API contracts, tests, documentation, build/release config, roadmap, task, report, bootstrap-sync, and time-log when relevant.
 3. Available checks were run locally or in CI.
 4. Any skipped checks are explained in the report.
 5. There is no known mismatch between UI, native backend, Companion API assumptions, tests, docs, and release config.
 6. Open questions are recorded in the task or a decision file.
+7. Time tracking is filled in the task, report, and `project-tracking/time-log.md`, or the report explicitly explains why it is approximate or not tracked.
 
 See `project-tracking/checklists/0000-definition-of-done.md`.
 
@@ -177,6 +192,46 @@ Rules adapted from the bootstrap repository:
 When durable project rules change:
 
 1. Update `AGENTS.md`.
-2. Add or update a decision file in `project-tracking/decisions/`.
+2. Add or update a decision file in `project-tracking/decisions/` when the rule is architecture, product, release, or process durable enough to need a record beyond bootstrap sync.
 3. Mention the rule change in the relevant task/report.
 4. Check that README and project-tracking docs do not contradict the new rule.
+5. If the rule comes from `lgg/chatgpt-coding-projects-bootstrap`, update `project-tracking/bootstrap-sync.md`.
+
+## 13. Bootstrap Rule Synchronization
+
+This project adapts shared process rules from `https://github.com/lgg/chatgpt-coding-projects-bootstrap`.
+
+Rules:
+
+1. `project-tracking/bootstrap-sync.md` records the latest adapted bootstrap version in `synced_through`.
+2. Before a bootstrap-sync task, read the source `bootstrap-versioning/VERSION.md` and only apply versions newer than the current `synced_through`, unless the user asks for a full sync audit.
+3. Adapt rules to this repository's Tauri desktop context. Do not copy server-only Docker/Coolify files into the app root unless a task introduces deployment support.
+4. After sync, update `bootstrap-sync.md`, the relevant task/report, and `time-log.md`.
+
+## 14. AI Iteration Time Tracking
+
+The goal is to make project effort auditable later by task, report, feature, bootstrap sync, or PR.
+
+Required flow:
+
+1. At the start of each substantial iteration, capture current time in ISO 8601 with timezone, for example with `date -Iseconds` or an equivalent tool.
+2. Record the start in the current task file. If no task exists, create or update the closest relevant task before implementation.
+3. Before final commit, push, or user handoff, capture finish time.
+4. Compute `time_spent_minutes` as integer minutes, rounded up.
+5. Update the task, matching report, and `project-tracking/time-log.md` with the same core fields.
+6. If the start time was not captured, do not invent precision. Use `tracking_status: approximate` or `tracking_status: not_tracked` and explain why.
+
+Minimum fields:
+
+| Field | Requirement |
+| --- | --- |
+| `iteration_id` | Unique row ID, for example `2026-07-07-0016-a` |
+| `task` | Task path or `not linked` |
+| `report` | Report path or `pending` |
+| `started_at` | ISO 8601 timestamp with timezone |
+| `finished_at` | ISO 8601 timestamp with timezone |
+| `time_spent_minutes` | Integer minutes, rounded up |
+| `tracking_status` | `tracked`, `approximate`, or `not_tracked` |
+| `commit_or_pr` | Commit SHA, branch, PR link, or `pending` |
+
+Before handoff, verify task, report, and time-log do not contradict each other.
