@@ -193,6 +193,11 @@ export const AppProvider = ({
         setSettings(nextSettings);
       })
       .then((nextUnlisten) => {
+        if (!active) {
+          nextUnlisten();
+          return;
+        }
+
         unlisten = nextUnlisten;
       })
       .catch(() => undefined);
