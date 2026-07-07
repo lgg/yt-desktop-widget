@@ -43,7 +43,7 @@ export const ProgressScrubber = ({
 
   const valueFromPointer = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
-    if (!rect || durationSeconds <= 0) {
+    if (!rect || rect.width <= 0 || durationSeconds <= 0) {
       return 0;
     }
 
