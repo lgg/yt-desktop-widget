@@ -222,21 +222,6 @@ impl CompanionManager {
     Ok(())
   }
 
-  pub async fn request_auth_code(
-    &self,
-    settings: &ConnectionSettings,
-  ) -> Result<AuthCodeResponse, CompanionError> {
-    request_auth_code_with_client(&self.client, settings).await
-  }
-
-  pub async fn complete_auth(
-    &self,
-    settings: &ConnectionSettings,
-    code: &str,
-  ) -> Result<String, CompanionError> {
-    complete_auth_with_client(&self.client, settings, code).await
-  }
-
   pub async fn send_command(
     &self,
     settings: &ConnectionSettings,
