@@ -2,7 +2,7 @@
 
 A premium Windows desktop widget for YTMDesktop built with Tauri v2, React, TypeScript, and Vite.
 
-Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, and markdown project-tracking rules.
+Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, bootstrap-sync status, time tracking, and markdown project-tracking rules.
 
 The app integrates with YTMDesktop only through the official Companion Server API. It does not scrape UI, inject scripts, parse window titles, use OCR, or fall back to platform media sessions.
 
@@ -152,7 +152,7 @@ Installer outputs are intentionally not produced by default right now.
 
 - High-level architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Key engineering decisions: [DECISIONS.md](./DECISIONS.md)
-- Project tracking, roadmap, tasks, reports, decisions, and checklists: [project-tracking/README.md](./project-tracking/README.md)
+- Project tracking, roadmap, tasks, reports, decisions, checklists, bootstrap sync, and time log: [project-tracking/README.md](./project-tracking/README.md)
 
 ## Project tracking
 
@@ -163,6 +163,10 @@ Markdown files under `project-tracking/` are the source of truth for work planni
 - Completion and verification reports: [project-tracking/reports/](./project-tracking/reports/)
 - Decisions: [project-tracking/decisions/](./project-tracking/decisions/)
 - Definition of Done: [project-tracking/checklists/0000-definition-of-done.md](./project-tracking/checklists/0000-definition-of-done.md)
+- Bootstrap sync status: [project-tracking/bootstrap-sync.md](./project-tracking/bootstrap-sync.md)
+- AI iteration time log: [project-tracking/time-log.md](./project-tracking/time-log.md)
+
+Before a substantial AI iteration, record start time in the task. Before handoff, record finish time and duration in the task, matching report, and `project-tracking/time-log.md`.
 
 Beads was removed as the active tracker. Its full migration archive is preserved in [project-tracking/archive/beads-export-2026-07-05.jsonl](./project-tracking/archive/beads-export-2026-07-05.jsonl), with the ID-to-file map in [project-tracking/archive/beads-migration-map.md](./project-tracking/archive/beads-migration-map.md).
 
@@ -172,6 +176,12 @@ Beads was removed as the active tracker. Its full migration archive is preserved
 - App settings are persisted in the Tauri app config directory as JSON.
 - Browser preview stores settings in `localStorage` only for local development.
 - The Companion `appId` used for auth is `ytmdesktopwidget`, matching the v2 API lowercase-alphanumeric constraint.
+
+## Bootstrap sync
+
+This repository adapts shared process rules from <https://github.com/lgg/chatgpt-coding-projects-bootstrap>.
+
+Current sync status is tracked in `project-tracking/bootstrap-sync.md`. The rules are adapted to this project as a Windows-first Tauri desktop app. Server-only Docker/Coolify examples from the bootstrap are not copied into the app root unless a future numbered task introduces deployment support.
 
 ## Validation history
 
