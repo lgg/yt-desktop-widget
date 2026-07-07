@@ -21,6 +21,13 @@ describe('Companion endpoint helpers', () => {
     });
   });
 
+  it('keeps an explicitly entered default HTTP port', () => {
+    expect(parseCompanionEndpoint('http://127.0.0.1:80')).toEqual({
+      host: '127.0.0.1',
+      port: 80,
+    });
+  });
+
   it('rejects endpoints without a valid port', () => {
     expect(parseCompanionEndpoint('127.0.0.1')).toBeNull();
     expect(parseCompanionEndpoint('127.0.0.1:0')).toBeNull();
