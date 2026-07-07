@@ -51,10 +51,10 @@ const invokeBridge = async <T>(operation: () => Promise<T>): Promise<T> => {
   }
 };
 
-const bridgeConnectOptions = (options?: GatewayConnectOptions) =>
-  options?.preserveAuthOnFailure === undefined
-    ? undefined
-    : { preserveAuthOnFailure: options.preserveAuthOnFailure };
+const bridgeConnectOptions = (options?: GatewayConnectOptions) => {
+  const preserveAuthOnFailure = options?.preserveAuthOnFailure;
+  return preserveAuthOnFailure === undefined ? undefined : { preserveAuthOnFailure };
+};
 
 export const createRealGateway = (): CompanionGateway => ({
   kind: 'real',
