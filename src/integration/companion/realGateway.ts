@@ -1,6 +1,7 @@
 ﻿import {
   GatewayError,
   type CompanionGateway,
+  type GatewayConnectOptions,
   type GatewayConnectResult,
 } from '@/domain/playback/types';
 import {
@@ -49,6 +50,11 @@ const invokeBridge = async <T>(operation: () => Promise<T>): Promise<T> => {
     throw normalizeBridgeError(error);
   }
 };
+
+const bridgeConnectOptions = (options?: GatewayConnectOptions) =>
+  options?.preserveAuthOnFailure === undefined
+    ? undefined
+    : { preserveAuthOnFailure: options.preserveAuthOnFailure };
 
 export const createRealGateway = (): CompanionGateway => ({
   kind: 'real',
@@ -102,9 +108,7 @@ export const createRealGateway = (): CompanionGateway => ({
 
     try {
       const result = await invokeBridge(() =>
-        tauriBridge.companionConnect({
-          preserveAuthOnFailure: options?.preserveAuthOnFailure,
-        }),
+        tauriBridge.companionConnect(bridgeConnectOptions(options)),
       );
       return {
         initialState: result.initialState,
