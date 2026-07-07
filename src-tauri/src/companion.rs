@@ -226,27 +226,7 @@ impl CompanionManager {
     &self,
     settings: &ConnectionSettings,
   ) -> Result<AuthCodeResponse, CompanionError> {
-    let response = self
-      .client
-      .post(format!("{}/api/v1/auth/requestcode", base_url(settings)))
-      .json(&json!({
-        "appId": APP_ID,
-        "appName": APP_NAME,
-        "appVersion": APP_VERSION,
-      }))
-      .send()
-      .await
-      .map_err(|_| CompanionError::NotRunning)?;
-
-    let body = parse_json_response(response, "auth code request").await?;
-    let code = extract_token_like_value(&body, &["code"]).ok_or_else(|| {
-      CompanionError::Unknown(format!(
-        "Companion Server did not return an auth code. Response: {}",
-        summarize_json(&body)
-      ))
-    })?;
-
-    Ok(AuthCodeResponse { code })
+    request_auth_code_with_client(&self.client, settings).await
   }
 
   pub async fn complete_auth(
@@ -254,25 +234,7 @@ impl CompanionManager {
     settings: &ConnectionSettings,
     code: &str,
   ) -> Result<String, CompanionError> {
-    let response = self
-      .client
-      .post(format!("{}/api/v1/auth/request", base_url(settings)))
-      .json(&json!({
-        "appId": APP_ID,
-        "code": code,
-      }))
-      .send()
-      .await
-      .map_err(|_| CompanionError::NotRunning)?;
-
-    let body = parse_json_response(response, "auth token request").await?;
-
-    extract_token_like_value(&body, &["token", "authorization", "accessToken"]).ok_or_else(|| {
-      CompanionError::Unknown(format!(
-        "Companion Server did not return an auth token. Response: {}",
-        summarize_json(&body)
-      ))
-    })
+    complete_auth_with_client(&self.client, settings, code).await
   }
 
   pub async fn send_command(
@@ -281,16 +243,26 @@ impl CompanionManager {
     token: &str,
     command: &PlaybackCommand,
   ) -> Result<(), CompanionError> {
-    let response = self
-      .client
-      .post(format!("{}/api/v1/command", base_url(settings)))
-      .header(AUTHORIZATION, token)
-      .json(&command_request_body(command))
-      .send()
-      .await
-      .map_err(|error| CompanionError::Network(error.to_string()))?;
+    let url = format!("{}/api/v1/command", base_url(settings));
+    let auth_values = authorization_header_values(token);
+    for (index, auth_value) in auth_values.iter().enumerate() {
+      let response = self
+        .client
+        .post(&url)
+        .header(AUTHORIZATION, auth_value)
+        .json(&command_request_body(command))
+        .send()
+        .await
+        .map_err(|error| CompanionError::Network(error.to_string()))?;
 
-    validate_status(response.status())
+      match validate_status(response.status()) {
+        Ok(()) => return Ok(()),
+        Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
+        Err(error) => return Err(error),
+      }
+    }
+
+    Err(CompanionError::AuthRequired)
   }
 
   async fn fetch_state(
@@ -298,20 +270,44 @@ impl CompanionManager {
     settings: &ConnectionSettings,
     token: &str,
   ) -> Result<Value, CompanionError> {
-    let response = self
-      .client
-      .get(format!("{}/api/v1/state", base_url(settings)))
-      .header(AUTHORIZATION, token)
-      .send()
-      .await
-      .map_err(|_| CompanionError::NotRunning)?;
+    let url = format!("{}/api/v1/state", base_url(settings));
+    let auth_values = authorization_header_values(token);
+    for (index, auth_value) in auth_values.iter().enumerate() {
+      let response = self
+        .client
+        .get(&url)
+        .header(AUTHORIZATION, auth_value)
+        .send()
+        .await
+        .map_err(|_| CompanionError::NotRunning)?;
 
-    validate_status(response.status())?;
-    response
-      .json::<Value>()
-      .await
-      .map_err(|error| CompanionError::Unknown(error.to_string()))
+      match validate_status(response.status()) {
+        Ok(()) => {
+          return response
+            .json::<Value>()
+            .await
+            .map_err(|error| CompanionError::Unknown(error.to_string()));
+        }
+        Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
+        Err(error) => return Err(error),
+      }
+    }
+
+    Err(CompanionError::AuthRequired)
   }
+}
+
+pub async fn request_auth_code(
+  settings: &ConnectionSettings,
+) -> Result<AuthCodeResponse, CompanionError> {
+  request_auth_code_with_client(&reqwest::Client::new(), settings).await
+}
+
+pub async fn complete_auth(
+  settings: &ConnectionSettings,
+  code: &str,
+) -> Result<String, CompanionError> {
+  complete_auth_with_client(&reqwest::Client::new(), settings, code).await
 }
 
 pub fn load_token(settings: &ConnectionSettings) -> Result<Option<String>, CommandError> {
@@ -349,6 +345,65 @@ fn connection_key(settings: &ConnectionSettings, token: &str) -> String {
   format!("{}|{}", base_url(settings), token)
 }
 
+fn request_code_body() -> Value {
+  json!({
+    "appId": APP_ID,
+    "appName": APP_NAME,
+    "appVersion": APP_VERSION,
+  })
+}
+
+fn request_token_body(code: &str) -> Value {
+  json!({
+    "appId": APP_ID,
+    "code": code,
+  })
+}
+
+async fn request_auth_code_with_client(
+  client: &reqwest::Client,
+  settings: &ConnectionSettings,
+) -> Result<AuthCodeResponse, CompanionError> {
+  let response = client
+    .post(format!("{}/api/v1/auth/requestcode", base_url(settings)))
+    .json(&request_code_body())
+    .send()
+    .await
+    .map_err(|_| CompanionError::NotRunning)?;
+
+  let body = parse_json_response(response, "auth code request").await?;
+  let code = extract_token_like_value(&body, &["code"]).ok_or_else(|| {
+    CompanionError::Unknown(format!(
+      "Companion Server did not return an auth code. Response: {}",
+      summarize_json(&body)
+    ))
+  })?;
+
+  Ok(AuthCodeResponse { code })
+}
+
+async fn complete_auth_with_client(
+  client: &reqwest::Client,
+  settings: &ConnectionSettings,
+  code: &str,
+) -> Result<String, CompanionError> {
+  let response = client
+    .post(format!("{}/api/v1/auth/request", base_url(settings)))
+    .json(&request_token_body(code))
+    .send()
+    .await
+    .map_err(|_| CompanionError::NotRunning)?;
+
+  let body = parse_json_response(response, "auth token request").await?;
+
+  extract_token_like_value(&body, &["token", "authorization", "accessToken"]).ok_or_else(|| {
+    CompanionError::Unknown(format!(
+      "Companion Server did not return an auth token. Response: {}",
+      summarize_json(&body)
+    ))
+  })
+}
+
 fn command_request_body(command: &PlaybackCommand) -> Value {
   match command {
     PlaybackCommand::PlayPause => json!({ "command": "playPause" }),
@@ -369,6 +424,15 @@ fn sanitize_seek_seconds(seconds: f64) -> i64 {
   }
 
   seconds.max(0.0).round() as i64
+}
+
+fn authorization_header_values(token: &str) -> Vec<String> {
+  let trimmed = token.trim();
+  if trimmed.to_ascii_lowercase().starts_with("bearer ") {
+    return vec![trimmed.to_string()];
+  }
+
+  vec![trimmed.to_string(), format!("Bearer {}", trimmed)]
 }
 
 async fn parse_json_response(
@@ -564,6 +628,37 @@ mod tests {
     assert_eq!(
       connection_key(&settings, "token"),
       "http://127.0.0.1:9863|token"
+    );
+  }
+
+  #[test]
+  fn provides_plain_and_bearer_authorization_fallbacks() {
+    assert_eq!(
+      authorization_header_values(" token "),
+      vec!["token".to_string(), "Bearer token".to_string()]
+    );
+    assert_eq!(
+      authorization_header_values("Bearer token"),
+      vec!["Bearer token".to_string()]
+    );
+  }
+
+  #[test]
+  fn builds_companion_auth_request_bodies() {
+    assert_eq!(
+      request_code_body(),
+      json!({
+        "appId": APP_ID,
+        "appName": APP_NAME,
+        "appVersion": APP_VERSION,
+      })
+    );
+    assert_eq!(
+      request_token_body("2413"),
+      json!({
+        "appId": APP_ID,
+        "code": "2413",
+      })
     );
   }
 
