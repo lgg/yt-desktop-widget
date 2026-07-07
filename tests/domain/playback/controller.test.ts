@@ -58,6 +58,24 @@ describe('PlaybackController auth flow', () => {
     await waitFor(() => {
       expect(gateway.completeAuth).toHaveBeenCalledWith('2413');
       expect(controller.getSnapshot().connection.status).toBe('connected');
+      expect(controller.getSnapshot().connection.hasStoredAuth).toBe(true);
+    });
+  });
+
+  it('connects after approval even when the auth probe still reports no stored token', async () => {
+    const gateway = createGateway();
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
+    const controller = new PlaybackController(gateway);
+
+    await controller.requestAuthCode();
+
+    await waitFor(() => {
+      const snapshot = controller.getSnapshot();
+      expect(gateway.completeAuth).toHaveBeenCalledWith('2413');
+      expect(gateway.connect).toHaveBeenCalledTimes(1);
+      expect(snapshot.connection.status).toBe('connected');
+      expect(snapshot.connection.hasStoredAuth).toBe(true);
+      expect(snapshot.connection.authCode).toBeNull();
     });
   });
 
