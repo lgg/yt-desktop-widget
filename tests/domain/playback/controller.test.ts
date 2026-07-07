@@ -117,4 +117,22 @@ describe('PlaybackController auth flow', () => {
     deferredAuth.resolve?.();
     await secondAttempt;
   });
+
+  it('can dispose a frontend listener without closing the shared backend connection', async () => {
+    const disconnect = vi.fn(() => Promise.resolve());
+    const gateway = createGateway();
+    vi.mocked(gateway.connect).mockResolvedValue({
+      initialState: null,
+      connection: {
+        send: vi.fn(() => Promise.resolve()),
+        disconnect,
+      },
+    });
+    const controller = new PlaybackController(gateway);
+
+    await controller.start();
+    await controller.dispose({ disconnectGateway: false });
+
+    expect(disconnect).toHaveBeenCalledWith({ closeBackend: false });
+  });
 });
