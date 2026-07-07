@@ -4,10 +4,12 @@
 
 - ...
 
-## Task / Report
+## Task / Report / Time Log
 
 - Task: `project-tracking/tasks/NNNN-...md`
 - Report: `project-tracking/reports/NNNN-...-report.md`
+- Time log: `project-tracking/time-log.md`
+- Bootstrap sync, if relevant: `project-tracking/bootstrap-sync.md`
 
 ## Checklist
 
@@ -25,7 +27,16 @@
 - [ ] Tests updated if logic or UI behavior changed.
 - [ ] Documentation updated.
 - [ ] Roadmap/task/report updated.
+- [ ] `project-tracking/bootstrap-sync.md` updated if bootstrap rules were synced.
+- [ ] `project-tracking/time-log.md` updated for substantial AI work.
 - [ ] Decisions updated if architecture, product, process, packaging, or release rules changed.
+
+### Time Tracking
+
+- [ ] Task includes `started_at`, `finished_at`, `time_spent_minutes`, and `tracking_status`.
+- [ ] Report includes the same core time tracking values.
+- [ ] `project-tracking/time-log.md` has a matching row.
+- [ ] Approximate or missing tracking is explicitly explained.
 
 ### Desktop Runtime
 
