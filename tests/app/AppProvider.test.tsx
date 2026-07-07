@@ -41,6 +41,7 @@ const appProviderMocks = vi.hoisted(() => ({
     subscribe: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
     reconnectNow: ReturnType<typeof vi.fn>;
+    handleExternalAuthChanged: ReturnType<typeof vi.fn>;
     dispose: ReturnType<typeof vi.fn>;
   }>,
 }));
@@ -83,6 +84,7 @@ vi.mock('@/domain/playback/controller', () => ({
       }),
       start: vi.fn(() => Promise.resolve()),
       reconnectNow: vi.fn(() => Promise.resolve()),
+      handleExternalAuthChanged: vi.fn(() => Promise.resolve()),
       dispose: vi.fn(() => Promise.resolve()),
     };
 
@@ -109,7 +111,9 @@ describe('AppProvider auth change handling', () => {
     });
 
     await waitFor(() => {
-      expect(appProviderMocks.controllerInstances[0]?.reconnectNow).toHaveBeenCalledTimes(1);
+      expect(
+        appProviderMocks.controllerInstances[0]?.handleExternalAuthChanged,
+      ).toHaveBeenCalledWith(true);
     });
   });
 });

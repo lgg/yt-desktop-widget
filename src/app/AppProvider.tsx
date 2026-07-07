@@ -227,12 +227,12 @@ export const AppProvider = ({
     let unlisten: (() => void) | null = null;
 
     void tauriBridge
-      .listenToCompanionAuthChanges(() => {
+      .listenToCompanionAuthChanges((payload) => {
         if (!active) {
           return;
         }
 
-        void controllerRef.current?.reconnectNow();
+        void controllerRef.current?.handleExternalAuthChanged(payload.authorized);
       })
       .then((nextUnlisten) => {
         if (!active) {
