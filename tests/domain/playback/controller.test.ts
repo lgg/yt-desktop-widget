@@ -85,11 +85,13 @@ describe('PlaybackController auth flow', () => {
     const controller = new PlaybackController(gateway);
 
     await controller.requestAuthCode();
-    await controller.completeAuthentication();
-    resolveAuth?.();
+    const secondAttempt = controller.completeAuthentication();
 
     await waitFor(() => {
       expect(completeAuth).toHaveBeenCalledTimes(1);
     });
+
+    resolveAuth?.();
+    await secondAttempt;
   });
 });
