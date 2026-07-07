@@ -26,6 +26,11 @@ export const SettingsWindow = () => {
   const [endpointDraft, setEndpointDraft] = useState(formatCompanionEndpoint(settings.api.host, settings.api.port));
   const [endpointError, setEndpointError] = useState<string | null>(null);
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
+  const authBusy = session.connection.status === 'authenticating';
+  const authStatusDetail =
+    session.connection.status === 'auth_required' || session.connection.status === 'authenticating'
+      ? session.connection.detail
+      : null;
 
   useEffect(() => {
     setEndpointDraft(formatCompanionEndpoint(settings.api.host, settings.api.port));
@@ -132,14 +137,19 @@ export const SettingsWindow = () => {
               </SettingsRow>
             </div>
             <div className="settings-actions-row">
-              <button className="secondary-button" type="button" onClick={() => void generateAuthCode()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void generateAuthCode()}
+                disabled={authBusy}
+              >
                 {t('settingsWindow.actions.pair')}
               </button>
               <button
                 className="primary-button"
                 type="button"
                 onClick={() => void confirmAuthentication()}
-                disabled={!session.connection.authCode}
+                disabled={!session.connection.authCode || authBusy}
               >
                 {t('settingsWindow.actions.confirmPair')}
               </button>
@@ -147,6 +157,9 @@ export const SettingsWindow = () => {
                 {t('settingsWindow.actions.clearAuth')}
               </button>
             </div>
+            {authStatusDetail ? (
+              <p className="settings-field__hint">{authStatusDetail}</p>
+            ) : null}
             {session.connection.authCode ? (
               <div className="code-chip code-chip--inline">
                 <span>{t('widget.auth.codeLabel')}</span>
