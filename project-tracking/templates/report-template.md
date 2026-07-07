@@ -8,6 +8,22 @@ Briefly describe the result.
 
 - ...
 
+## Time Tracking
+
+| Field | Value |
+| --- | --- |
+| Iteration ID | `YYYY-MM-DD-NNNN-a` |
+| Started at | `YYYY-MM-DDTHH:MM:SS+TZ` |
+| Finished at | `YYYY-MM-DDTHH:MM:SS+TZ` |
+| Time spent minutes | `0` |
+| Tracking status | `tracked` / `approximate` / `not_tracked` |
+| Time log row | `project-tracking/time-log.md#...` |
+
+Notes:
+
+- Use integer minutes rounded up.
+- If the value is approximate or not tracked, explain why here and in `project-tracking/time-log.md`.
+
 ## Changed Areas
 
 | Area | Status | Notes |
@@ -18,6 +34,9 @@ Briefly describe the result.
 | Tests | Not applicable | ... |
 | Documentation | Not applicable | ... |
 | Build/release/config | Not applicable | ... |
+| Bootstrap sync | Not applicable | ... |
+| Time tracking | Not applicable | ... |
+| Project tracking | Not applicable | ... |
 
 ## Changed Files
 
@@ -33,6 +52,7 @@ Briefly describe the result.
 | Manual QA | Not run | ... |
 | Docs review | Not run | ... |
 | Release/config review | Not run | ... |
+| Time tracking review | Not run | ... |
 
 ## Not Verified
 
