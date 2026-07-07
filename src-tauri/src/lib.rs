@@ -177,8 +177,7 @@ async fn companion_request_auth_code(
   state: tauri::State<'_, AppState>,
 ) -> Result<companion::AuthCodeResponse, CommandError> {
   let settings = state.settings.load();
-  let manager = state.companion.lock().await;
-  Ok(manager.request_auth_code(&settings.api).await?)
+  Ok(companion::request_auth_code(&settings.api).await?)
 }
 
 #[tauri::command]
@@ -187,8 +186,7 @@ async fn companion_complete_auth(
   code: String,
 ) -> Result<(), CommandError> {
   let settings = state.settings.load();
-  let manager = state.companion.lock().await;
-  let token = manager.complete_auth(&settings.api, &code).await?;
+  let token = companion::complete_auth(&settings.api, &code).await?;
   companion::store_token(&settings.api, &token)?;
   Ok(())
 }
