@@ -30,6 +30,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Companion auth UX - [`0018-fix-companion-auth-completion-flow.md`](../tasks/0018-fix-companion-auth-completion-flow.md) - code generation now starts `/auth/request` token exchange automatically and duplicate confirm clicks are deduplicated
 - Completed P1: TypeScript build fix - [`0019-fix-controller-auth-test-typescript-build.md`](../tasks/0019-fix-controller-auth-test-typescript-build.md) - fixed `TS2349` in the controller auth regression test after local build feedback
 - Completed P1: Live Companion auth post-approval fix - [`0020-fix-live-companion-auth-post-approval-stall.md`](../tasks/0020-fix-live-companion-auth-post-approval-stall.md) - after successful Allow, the controller now attempts `companion_connect` directly and records successful real connects as authorized
+- Completed P1: Full code audit after auth fixes - [`0021-full-code-audit-after-auth-fixes.md`](../tasks/0021-full-code-audit-after-auth-fixes.md) - fixed multi-window Companion socket lifecycle conflict and made Playwright smoke test build before preview
 
 ## Deferred Post-v1 Roadmap
 
