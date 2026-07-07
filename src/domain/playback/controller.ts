@@ -8,6 +8,7 @@ import type {
   ConnectionState,
   DiscoveryInfo,
   GatewayConnection,
+  GatewayDisconnectOptions,
   GatewayDisconnectReason,
   GatewayError,
   PlaybackCommand,
@@ -23,6 +24,10 @@ const AUTH_FAILED_DETAIL =
 
 interface BeginConnectOptions {
   skipStoredAuthGate?: boolean;
+}
+
+interface DisposeOptions {
+  disconnectGateway?: boolean;
 }
 
 const toErrorMessage = (error: unknown): string => {
@@ -174,10 +179,10 @@ export class PlaybackController {
     await this.connection?.send(command);
   }
 
-  async dispose() {
+  async dispose(options: DisposeOptions = {}) {
     this.disposed = true;
     this.clearReconnectTimer();
-    await this.disconnectInternal();
+    await this.disconnectInternal({ closeBackend: options.disconnectGateway ?? true });
     this.subscribers.clear();
   }
 
@@ -400,13 +405,13 @@ export class PlaybackController {
     }
   }
 
-  private async disconnectInternal() {
+  private async disconnectInternal(options?: GatewayDisconnectOptions) {
     if (!this.connection) {
       return;
     }
 
     const activeConnection = this.connection;
     this.connection = null;
-    await activeConnection.disconnect();
+    await activeConnection.disconnect(options);
   }
 }
