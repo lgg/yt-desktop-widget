@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Completed
 
 ## Context
 
@@ -46,27 +46,27 @@ Out of scope:
 | --- | --- |
 | Iteration ID | `2026-07-07-0022-a` |
 | Started at | `2026-07-07T03:35:45+02:00` |
-| Finished at | `pending` |
-| Time spent minutes | `pending` |
+| Finished at | `2026-07-07T03:51:25+02:00` |
+| Time spent minutes | `16` |
 | Tracking status | `tracked` |
-| Time log row | `pending` |
+| Time log row | `project-tracking/time-log.md` |
 
 ## Acceptance Criteria
 
-- [ ] Current Companion Server API behavior is researched and documented.
-- [ ] Post-Allow auth no longer drops immediately back to `Authorization needed` because of a transient token validation race.
-- [ ] A fresh token is not cleared on the first post-auth `401/403` before retrying.
-- [ ] The UI preserves actionable diagnostics instead of silently looking like nothing happened.
-- [ ] Regression tests cover the post-auth retry behavior.
-- [ ] Tracking files are completed.
-- [ ] Any checks that cannot be run here are explicitly documented.
+- [x] Current Companion Server API behavior is researched and documented.
+- [x] Post-Allow auth no longer drops immediately back to `Authorization needed` because of a transient token validation race.
+- [x] A fresh token is not cleared on the first post-auth `401/403` before retrying.
+- [x] The UI preserves actionable diagnostics instead of silently looking like nothing happened.
+- [x] Regression tests cover the post-auth retry behavior.
+- [x] Tracking files are completed.
+- [x] Any checks that cannot be run here are explicitly documented.
 
 ## Verification Plan
 
-- [ ] Static review of affected files.
-- [ ] Regression test reasoning for controller post-auth retry.
-- [ ] Compare final GitHub App diff against task start.
-- [ ] Document local commands required: `npm run verify`, `cargo check -j1`, `npm run build:portable`, and live YTMDesktop Allow test.
+- [x] Static review of affected files.
+- [x] Regression test reasoning for controller post-auth retry.
+- [x] Compare final GitHub App diff against task start.
+- [x] Document local commands required: `npm run verify`, `cargo check -j1`, `npm run build:portable`, and live YTMDesktop Allow test.
 
 ## Research Notes
 
@@ -75,6 +75,15 @@ Out of scope:
 - Tokens are bound to `appId`; requesting another token with the same `appId` overwrites the prior token.
 - REST authenticated requests pass the valid token as the `Authorization` header value.
 - Socket.IO realtime connects to `/api/v1/realtime`, websocket transport only, with `auth.token`.
+
+## Fix Summary
+
+| Finding | Impact | Fix |
+| --- | --- | --- |
+| Fresh post-Allow token could be cleared on the first `401/403` from immediate `/state` validation. | Widget returned to `Authorization needed` right after Allow, matching the user's screenshots. | Added post-auth `preserveAuthOnFailure` wiring and short controller retries before giving up. |
+| `/auth/request` long-poll held the shared CompanionManager mutex. | Other Companion operations could be blocked for up to 30 seconds during Allow/Deny. | Added standalone auth helpers so auth code/token requests no longer lock the socket manager. |
+| REST auth validation assumed exactly one `Authorization` format. | Current/future client differences could cause avoidable auth failure. | Plain token is still tried first per docs; `Bearer token` is tried as a defensive fallback. |
+| Regression coverage did not model post-Allow transient auth failure. | The live failure mode could regress. | Added controller test covering first `auth_required` then successful retry. |
 
 ## Risks
 
@@ -86,6 +95,7 @@ Out of scope:
 ## Links
 
 - Roadmap: `project-tracking/roadmap/0000-roadmap.md`
-- Report: pending
+- Report: `project-tracking/reports/0022-fix-live-companion-auth-still-stuck-after-allow.md`
 - Time log: `project-tracking/time-log.md`
 - Related tasks: `0020-fix-live-companion-auth-post-approval-stall.md`, `0021-full-code-audit-after-auth-fixes.md`
+- PR/commit: GitHub App contents commits; final HEAD reported in handoff
