@@ -106,8 +106,12 @@ export const createRealGateway = (): CompanionGateway => ({
         initialState: result.initialState,
         connection: {
           send: (command) => invokeBridge(() => tauriBridge.companionSendCommand(command)),
-          disconnect: async () => {
+          disconnect: async (options) => {
             stopListening();
+            if (options?.closeBackend === false) {
+              return;
+            }
+
             await invokeBridge(() => tauriBridge.companionDisconnect());
           },
         },
