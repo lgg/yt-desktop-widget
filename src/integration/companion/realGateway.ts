@@ -11,6 +11,7 @@ import { isTauriRuntime } from '@/utils/runtime';
 
 const RUNTIME_ONLY_MESSAGE =
   'The real Companion bridge is only available inside the Tauri runtime.';
+const SOCKET_ERROR_MESSAGE = 'The realtime connection was interrupted.';
 
 const normalizeBridgeError = (error: unknown): GatewayError => {
   if (typeof error === 'object' && error !== null) {
@@ -86,8 +87,7 @@ export const createRealGateway = (): CompanionGateway => ({
       }
 
       if (payload.status === 'socket_error') {
-        handlers.onDisconnected('socket_error', payload.detail);
-        handlers.onError(payload.detail ?? 'The realtime connection was interrupted.');
+        handlers.onDisconnected('socket_error', payload.detail ?? SOCKET_ERROR_MESSAGE);
       }
     });
 
