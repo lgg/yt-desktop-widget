@@ -2,11 +2,11 @@
 
 ## Status
 
-In Progress
+Completed
 
 ## Context
 
-A local Windows `npm run build:portable` run failed during `tsc -b` with `TS2349` in `tests/domain/playback/controller.test.ts`. The issue is in the newly added auth regression test: TypeScript narrows a nullable local resolver variable to `never` because the assignment happens inside a Promise executor.
+A local Windows `npm run build:portable` run failed during `tsc -b` with `TS2349` in `tests/domain/playback/controller.test.ts`. The issue was in the newly added auth regression test: TypeScript narrowed a nullable local resolver variable to `never` because the assignment happened inside a Promise executor.
 
 ## Goal
 
@@ -31,21 +31,25 @@ Out of scope:
 | --- | --- |
 | Iteration ID | `2026-07-07-0019-a` |
 | Started at | `2026-07-07T02:48:24+02:00` |
-| Finished at | `pending` |
-| Time spent minutes | `pending` |
+| Finished at | `2026-07-07T02:49:31+02:00` |
+| Time spent minutes | `2` |
 | Tracking status | `tracked` |
-| Time log row | `pending` |
+| Time log row | `project-tracking/time-log.md` |
 
 ## Acceptance Criteria
 
-- [ ] `TS2349` in `tests/domain/playback/controller.test.ts` is fixed.
-- [ ] Auth regression test still asserts duplicate `completeAuth` calls are deduplicated.
-- [ ] Task, report, roadmap, and time-log are updated.
+- [x] `TS2349` in `tests/domain/playback/controller.test.ts` is fixed.
+- [x] Auth regression test still asserts duplicate `completeAuth` calls are deduplicated.
+- [x] Task, report, roadmap, and time-log are updated.
 
 ## Verification Plan
 
-- [ ] Static review of updated test.
+- [x] Static review of updated test.
 - [ ] User reruns `npm run build:portable` locally after pulling the fix.
+
+## Fix Summary
+
+The test now stores the deferred resolver on a typed object property instead of a nullable local variable. This avoids TypeScript's local control-flow narrowing to `never` while preserving the pending-auth-exchange assertion.
 
 ## Links
 
