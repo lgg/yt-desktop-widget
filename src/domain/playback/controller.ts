@@ -76,6 +76,11 @@ const getRetryDetail = (reason: GatewayDisconnectReason, detail?: string) => {
   }
 };
 
+const getConnectOptions = (options: BeginConnectOptions): GatewayConnectOptions | undefined =>
+  options.preserveAuthOnFailure === undefined
+    ? undefined
+    : { preserveAuthOnFailure: options.preserveAuthOnFailure };
+
 const areDiscoveriesEqual = (
   left?: DiscoveryInfo,
   right?: DiscoveryInfo,
@@ -326,9 +331,6 @@ export class PlaybackController {
       }
 
       const connectedHasStoredAuth = hasStoredAuth || this.gateway.kind === 'real';
-      const connectOptions: GatewayConnectOptions = {
-        preserveAuthOnFailure: options.preserveAuthOnFailure,
-      };
       const { connection, initialState } = await this.gateway.connect(
         {
           onConnected: () => {
@@ -351,7 +353,7 @@ export class PlaybackController {
             this.patchPlayback(rawState);
           },
         },
-        connectOptions,
+        getConnectOptions(options),
       );
 
       this.connection = connection;
