@@ -3,7 +3,7 @@ import type { ConnectionState, DiscoveryInfo } from '@/domain/playback/types';
 export type ConnectionEvent =
   | { type: 'discovering'; hasStoredAuth: boolean; reconnecting: boolean }
   | { type: 'availability'; discovery: DiscoveryInfo; hasStoredAuth: boolean }
-  | { type: 'connected' }
+  | { type: 'connected'; hasStoredAuth?: boolean | undefined }
   | {
       type: 'auth_required';
       detail?: string | undefined;
@@ -54,6 +54,7 @@ export const reduceConnectionState = (
         retryAttempt: 0,
         retryAt: null,
         authCode: null,
+        hasStoredAuth: event.hasStoredAuth ?? state.hasStoredAuth,
       };
     case 'auth_required':
       return {
