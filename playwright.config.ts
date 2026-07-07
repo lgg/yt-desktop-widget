@@ -9,7 +9,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run preview:e2e',
+    command: 'npm run build && npm run preview:e2e',
     url: 'http://127.0.0.1:34174',
     reuseExistingServer: false,
     env: {
