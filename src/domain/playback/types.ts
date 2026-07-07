@@ -149,6 +149,10 @@ export type GatewayDisconnectReason =
   | 'api_unavailable'
   | 'not_running';
 
+export interface GatewayDisconnectOptions {
+  closeBackend?: boolean;
+}
+
 export class GatewayError extends Error {
   readonly code:
     | 'auth_required'
@@ -175,7 +179,7 @@ export interface GatewayEventHandlers {
 
 export interface GatewayConnection {
   send: (command: PlaybackCommand) => Promise<void>;
-  disconnect: () => Promise<void>;
+  disconnect: (options?: GatewayDisconnectOptions) => Promise<void>;
 }
 
 export interface GatewayConnectResult {
