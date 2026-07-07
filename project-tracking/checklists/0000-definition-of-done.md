@@ -9,6 +9,7 @@ Use this checklist before closing any non-trivial task.
 - [ ] Scope and out-of-scope items are clear.
 - [ ] Open questions are recorded.
 - [ ] Blocking product, security, data, packaging, or irreversible migration questions are clarified before implementation.
+- [ ] Iteration start time is recorded in the task before implementation, or the report explains why tracking is approximate or missing.
 
 ## Implementation
 
@@ -26,8 +27,19 @@ Use this checklist before closing any non-trivial task.
 - [ ] Tests are updated when logic or UI behavior changes.
 - [ ] Documentation is updated.
 - [ ] Roadmap/task/report are updated.
+- [ ] `project-tracking/bootstrap-sync.md` is updated when bootstrap rules are synced.
+- [ ] `project-tracking/time-log.md` is updated for substantial AI iterations.
 - [ ] Build/release/config files are updated if launch, packaging, permissions, or runtime configuration changed.
 - [ ] `.env.example` is updated if environment variables are introduced later.
+
+## Time Tracking
+
+- [ ] `started_at` is recorded in the task file.
+- [ ] `finished_at` is recorded before final commit, push, or handoff.
+- [ ] `time_spent_minutes` is an integer number of minutes rounded up.
+- [ ] `tracking_status` is `tracked`, `approximate`, or `not_tracked`.
+- [ ] Task, report, and `project-tracking/time-log.md` use matching core values.
+- [ ] Approximate or missing tracking is explained in the report and time-log.
 
 ## Desktop, Runtime, and Release
 
@@ -61,4 +73,5 @@ Use this checklist before closing any non-trivial task.
 - [ ] The report lists changed files/areas.
 - [ ] The report records verification commands and results.
 - [ ] The report records what could not be verified.
+- [ ] The report includes Time Tracking.
 - [ ] Residual risks and next steps are recorded.
