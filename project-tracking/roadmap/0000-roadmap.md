@@ -23,12 +23,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Open P2: ytw-l48.4 - [`0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md`](../tasks/0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md)
 - In Progress P2: ytw-l48.5 - [`0014-restore-settings-window-dragging-on-empty-frame-areas.md`](../tasks/0014-restore-settings-window-dragging-on-empty-frame-areas.md)
 
+## Companion / Audit Work
+
+- Open P2: ytw-5v6.3 - [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../tasks/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md) - protocol audit/code-doc alignment completed on 2026-07-07; live YTMDesktop validation still open
+- Completed P2: full audit - [`0017-full-code-audit-latest-ytmdesktop.md`](../tasks/0017-full-code-audit-latest-ytmdesktop.md) - checked latest YTMDesktop v2.0.11 docs/release state, fixed endpoint parsing, realtime reconnect state, artwork CSS URL escaping, and scrubber edge case
+
 ## Deferred Post-v1 Roadmap
 
 - Open P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md)
 - Deferred P3: ytw-5v6.1 - [`0006-add-future-widget-size-presets-and-manual-resize-support.md`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md)
 - Deferred P4: ytw-5v6.2 - [`0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md)
-- Open P2: ytw-5v6.3 - [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../tasks/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md) - protocol audit/code-doc alignment completed on 2026-07-07; live YTMDesktop validation still open
 - Deferred P3: ytw-5v6.4 - [`0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md`](../tasks/0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md)
 - Deferred P4: ytw-5v6.5 - [`0010-expand-localization-beyond-the-english-only-v1-bundle.md`](../tasks/0010-expand-localization-beyond-the-english-only-v1-bundle.md)
 - Deferred P3: ytw-5v6.6 - [`0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md`](../tasks/0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md)
