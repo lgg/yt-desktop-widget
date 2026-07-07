@@ -33,6 +33,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Full code audit after auth fixes - [`0021-full-code-audit-after-auth-fixes.md`](../tasks/0021-full-code-audit-after-auth-fixes.md) - fixed multi-window Companion socket lifecycle conflict and made Playwright smoke test build before preview
 - Completed P1: Live Companion auth still stuck after Allow - [`0022-fix-live-companion-auth-still-stuck-after-allow.md`](../tasks/0022-fix-live-companion-auth-still-stuck-after-allow.md) - fresh tokens are preserved through transient post-Allow validation failures, post-auth connect retries were added, and auth polling no longer locks the shared socket manager
 - Completed P1: Live Companion auth cross-window sync - [`0023-audit-and-fix-live-companion-auth-after-latest-pull.md`](../tasks/0023-audit-and-fix-live-companion-auth-after-latest-pull.md) - after Settings completes or clears Companion auth, the main widget now receives an auth-change event and reconnects instead of staying in the old authorization state
+- Completed P1: Live Companion auth external reconnect fix - [`0025-fix-live-companion-auth-reconnects-back-to-auth-required.md`](../tasks/0025-fix-live-companion-auth-reconnects-back-to-auth-required.md) - main-window auth-change reconnect now uses the safe post-approval path so a transient `401/403` cannot clear a freshly approved token
 
 ## Deferred Post-v1 Roadmap
 

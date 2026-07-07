@@ -121,6 +121,64 @@ describe('PlaybackController auth flow', () => {
     );
   });
 
+  it('uses the post-approval safe reconnect path for external auth changes', async () => {
+    const gateway = createGateway();
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
+    vi.mocked(gateway.connect)
+      .mockRejectedValueOnce(
+        new GatewayError(
+          'auth_required',
+          'Companion authorization is required before the widget can connect.',
+        ),
+      )
+      .mockResolvedValueOnce({
+        initialState: null,
+        connection: createConnection(),
+      });
+    const controller = new PlaybackController(gateway);
+
+    await controller.handleExternalAuthChanged(true);
+
+    await waitFor(() => {
+      expect(gateway.connect).toHaveBeenCalledTimes(1);
+      expect(gateway.connect).toHaveBeenLastCalledWith(
+        expect.any(Object),
+        { preserveAuthOnFailure: true },
+      );
+      expect(controller.getSnapshot().connection.status).toBe('reconnecting');
+    });
+
+    await waitFor(
+      () => {
+        expect(gateway.connect).toHaveBeenCalledTimes(2);
+        expect(controller.getSnapshot().connection.status).toBe('connected');
+      },
+      { timeout: 1500 },
+    );
+  });
+
+  it('clears local connection state for external auth clear events without clearing storage again', async () => {
+    const disconnect = vi.fn(() => Promise.resolve());
+    const gateway = createGateway();
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(true);
+    vi.mocked(gateway.connect).mockResolvedValue({
+      initialState: null,
+      connection: {
+        send: vi.fn(() => Promise.resolve()),
+        disconnect,
+      },
+    });
+    const controller = new PlaybackController(gateway);
+
+    await controller.start();
+    await controller.handleExternalAuthChanged(false);
+
+    expect(disconnect).toHaveBeenCalled();
+    expect(gateway.clearAuth).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().connection.status).toBe('auth_required');
+    expect(controller.getSnapshot().connection.hasStoredAuth).toBe(false);
+  });
+
   it('returns to an actionable auth state when Companion approval fails', async () => {
     const gateway = createGateway(
       vi.fn(() => Promise.reject(new Error('Pairing was denied or timed out.'))),

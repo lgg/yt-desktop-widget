@@ -153,6 +153,20 @@ export class PlaybackController {
     await this.beginConnect(true);
   }
 
+  async handleExternalAuthChanged(authorized: boolean) {
+    if (authorized) {
+      await this.reconnectAfterAuth();
+      return;
+    }
+
+    this.clearReconnectTimer();
+    await this.disconnectInternal();
+    this.authCode = null;
+    this.authCompletionCode = null;
+    this.authCompletionPromise = null;
+    this.patchConnection((state) => reduceConnectionState(state, { type: 'clear_auth' }));
+  }
+
   async requestAuthCode() {
     const { code } = await this.gateway.requestAuthCode();
     this.authCode = code;
