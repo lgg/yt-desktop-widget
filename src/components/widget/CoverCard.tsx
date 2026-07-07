@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from 'react';
 
 import { useArtworkTransition } from '@/utils/artwork';
+import { toCssUrl } from '@/utils/css';
 
 interface CoverCardProps {
   artworkUrl: string | null;
@@ -20,13 +21,13 @@ export const CoverCard = memo(function CoverCard({
       {previousUrl ? (
         <div
           className="cover-card__image cover-card__image--previous"
-          style={{ backgroundImage: `url(${previousUrl})` }}
+          style={{ backgroundImage: toCssUrl(previousUrl) }}
         />
       ) : null}
       {currentUrl ? (
         <div
           className="cover-card__image cover-card__image--current"
-          style={{ backgroundImage: `url(${currentUrl})` }}
+          style={{ backgroundImage: toCssUrl(currentUrl) }}
         />
       ) : (
         <div className="cover-card__placeholder" />
