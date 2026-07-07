@@ -143,6 +143,7 @@ async fn companion_discover(
 async fn companion_connect(
   app: AppHandle,
   state: tauri::State<'_, AppState>,
+  preserve_auth_on_failure: Option<bool>,
 ) -> Result<CompanionConnectResponse, CommandError> {
   let settings = state.settings.load();
   let token = companion::load_token(&settings.api)?.ok_or_else(CommandError::auth_required)?;
@@ -154,7 +155,9 @@ async fn companion_connect(
     Ok(initial_state) => initial_state,
     Err(companion::CompanionError::AuthRequired) => {
       drop(manager);
-      companion::clear_token(&settings.api)?;
+      if !preserve_auth_on_failure.unwrap_or(false) {
+        companion::clear_token(&settings.api)?;
+      }
       return Err(CommandError::auth_required());
     }
     Err(error) => return Err(error.into()),
