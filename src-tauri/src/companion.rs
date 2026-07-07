@@ -51,6 +51,7 @@ pub struct CompanionManager {
   client: reqwest::Client,
   latest_state: Arc<Mutex<Option<Value>>>,
   socket: Option<Client>,
+  active_connection_key: Option<String>,
 }
 
 impl CompanionManager {
@@ -113,6 +114,21 @@ impl CompanionManager {
     token: &str,
     event_name: &str,
   ) -> Result<Option<Value>, CompanionError> {
+    let connection_key = connection_key(settings, token);
+    if self.socket.is_some() && self.active_connection_key.as_deref() == Some(&connection_key) {
+      if let Some(state) = self.latest_state.lock().expect("companion state poisoned").clone() {
+        emit_event(
+          app,
+          event_name,
+          CompanionEvent::Status {
+            status: "socket_open".to_string(),
+            detail: None,
+          },
+        );
+        return Ok(Some(state));
+      }
+    }
+
     self.disconnect().await?;
 
     let initial_state = self.fetch_state(settings, token).await?;
@@ -189,6 +205,7 @@ impl CompanionManager {
       .map_err(|error| CompanionError::Network(error.to_string()))?;
 
     self.socket = Some(socket);
+    self.active_connection_key = Some(connection_key);
     Ok(Some(initial_state))
   }
 
@@ -199,6 +216,8 @@ impl CompanionManager {
         .await
         .map_err(|error| CompanionError::Unknown(error.to_string()))?;
     }
+    self.active_connection_key = None;
+    *self.latest_state.lock().expect("companion state poisoned") = None;
 
     Ok(())
   }
@@ -324,6 +343,10 @@ fn emit_event(app: &AppHandle, event_name: &str, payload: CompanionEvent) {
 
 fn base_url(settings: &ConnectionSettings) -> String {
   format!("http://{}:{}", settings.host, settings.port)
+}
+
+fn connection_key(settings: &ConnectionSettings, token: &str) -> String {
+  format!("{}|{}", base_url(settings), token)
 }
 
 fn command_request_body(command: &PlaybackCommand) -> Value {
@@ -527,6 +550,20 @@ mod tests {
     assert_eq!(
       command_request_body(&PlaybackCommand::SeekTo { seconds: f64::NAN }),
       json!({ "command": "seekTo", "data": 0 })
+    );
+  }
+
+  #[test]
+  fn creates_connection_keys_from_endpoint_and_token() {
+    let settings = ConnectionSettings {
+      host: "127.0.0.1".to_string(),
+      port: 9863,
+      source_mode: "auto".to_string(),
+    };
+
+    assert_eq!(
+      connection_key(&settings, "token"),
+      "http://127.0.0.1:9863|token"
     );
   }
 
