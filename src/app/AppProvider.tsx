@@ -112,6 +112,11 @@ const resolveSourceMode = (preferredMode: DataSourceMode): Exclude<DataSourceMod
 const shouldStartController = (windowLabel: AppWindowLabel, windowVisible: boolean) =>
   windowLabel === 'main' || windowVisible;
 
+const shouldDisconnectGatewayOnDispose = (
+  windowLabel: AppWindowLabel,
+  sourceMode: Exclude<DataSourceMode, 'auto'>,
+) => windowLabel === 'main' || sourceMode !== 'real';
+
 export const AppProvider = ({
   children,
   windowLabel,
@@ -292,7 +297,9 @@ export const AppProvider = ({
 
     return () => {
       unsubscribe();
-      void controller.dispose();
+      void controller.dispose({
+        disconnectGateway: shouldDisconnectGatewayOnDispose(windowLabel, resolvedSourceMode),
+      });
       controllerRef.current = null;
     };
   }, [ready, resolvedSourceMode, settings.api.host, settings.api.port, windowLabel, windowVisible]);
