@@ -1,35 +1,13 @@
 import { type KeyboardEvent, useEffect, useState } from 'react';
 
 import { APP_VERSION } from '@/app/defaults';
+import { formatCompanionEndpoint, parseCompanionEndpoint } from '@/app/endpoint';
 import { useAppModel } from '@/app/AppProvider';
 import { hideCurrentAppWindow } from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import { CloseIcon, GitHubIcon, RefreshIcon, SparkIcon } from '@/components/icons';
 import { SettingsSection, SettingsRow, Toggle } from '@/components/settings/SettingsSection';
-
-const formatEndpoint = (host: string, port: number) => `${host}:${port}`;
-
-const parseEndpoint = (value: string): { host: string; port: number } | null => {
-  const trimmed = value.trim();
-  const separatorIndex = trimmed.lastIndexOf(':');
-
-  if (separatorIndex <= 0 || separatorIndex === trimmed.length - 1) {
-    return null;
-  }
-
-  const host = trimmed.slice(0, separatorIndex).trim();
-  const portValue = Number.parseInt(trimmed.slice(separatorIndex + 1).trim(), 10);
-
-  if (!host || !Number.isInteger(portValue) || portValue < 1 || portValue > 65535) {
-    return null;
-  }
-
-  return {
-    host,
-    port: portValue,
-  };
-};
 
 export const SettingsWindow = () => {
   const {
@@ -45,17 +23,17 @@ export const SettingsWindow = () => {
     toggleDebugMockMode,
   } = useAppModel();
   const { t } = useI18n();
-  const [endpointDraft, setEndpointDraft] = useState(formatEndpoint(settings.api.host, settings.api.port));
+  const [endpointDraft, setEndpointDraft] = useState(formatCompanionEndpoint(settings.api.host, settings.api.port));
   const [endpointError, setEndpointError] = useState<string | null>(null);
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
 
   useEffect(() => {
-    setEndpointDraft(formatEndpoint(settings.api.host, settings.api.port));
+    setEndpointDraft(formatCompanionEndpoint(settings.api.host, settings.api.port));
     setEndpointError(null);
   }, [settings.api.host, settings.api.port]);
 
   const commitEndpoint = async () => {
-    const parsed = parseEndpoint(endpointDraft);
+    const parsed = parseCompanionEndpoint(endpointDraft);
     if (!parsed) {
       setEndpointError(t('settingsWindow.sections.api.endpointInvalid'));
       return;
