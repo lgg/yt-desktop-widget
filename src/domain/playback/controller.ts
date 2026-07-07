@@ -76,10 +76,10 @@ const getRetryDetail = (reason: GatewayDisconnectReason, detail?: string) => {
   }
 };
 
-const getConnectOptions = (options: BeginConnectOptions): GatewayConnectOptions | undefined =>
-  options.preserveAuthOnFailure === undefined
-    ? undefined
-    : { preserveAuthOnFailure: options.preserveAuthOnFailure };
+const getConnectOptions = (options: BeginConnectOptions): GatewayConnectOptions | undefined => {
+  const { preserveAuthOnFailure } = options;
+  return preserveAuthOnFailure === undefined ? undefined : { preserveAuthOnFailure };
+};
 
 const areDiscoveriesEqual = (
   left?: DiscoveryInfo,
