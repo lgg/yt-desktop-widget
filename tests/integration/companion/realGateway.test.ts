@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { GatewayError } from '@/domain/playback/types';
 import type { CompanionEventPayload } from '@/integration/companion/tauriBridge';
 import { createRealGateway } from '@/integration/companion/realGateway';
 import { tauriBridge } from '@/integration/companion/tauriBridge';
@@ -59,5 +60,24 @@ describe('createRealGateway', () => {
 
     expect(onDisconnected).toHaveBeenCalledWith('socket_error', 'socket dropped');
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('preserves backend authorization-disabled errors', async () => {
+    vi.mocked(tauriBridge.companionRequestAuthCode).mockRejectedValueOnce({
+      code: 'authorization_disabled',
+      message:
+        'YTMDesktop says Companion authorization requests are disabled. Enable authorization requests in YTMDesktop Companion settings, then retry.',
+    });
+    const gateway = createRealGateway();
+
+    let caughtError: GatewayError | null = null;
+    try {
+      await gateway.requestAuthCode();
+    } catch (error) {
+      caughtError = error as GatewayError;
+    }
+
+    expect(caughtError?.code).toBe('authorization_disabled');
+    expect(caughtError?.message).toContain('authorization requests are disabled');
   });
 });

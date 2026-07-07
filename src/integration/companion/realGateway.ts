@@ -20,6 +20,7 @@ const normalizeBridgeError = (error: unknown): GatewayError => {
     if (candidate.code && candidate.message) {
       if (
         candidate.code === 'auth_required' ||
+        candidate.code === 'authorization_disabled' ||
         candidate.code === 'not_running' ||
         candidate.code === 'api_unavailable' ||
         candidate.code === 'network' ||

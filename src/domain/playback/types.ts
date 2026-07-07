@@ -160,6 +160,7 @@ export interface GatewayDisconnectOptions {
 export class GatewayError extends Error {
   readonly code:
     | 'auth_required'
+    | 'authorization_disabled'
     | 'not_running'
     | 'api_unavailable'
     | 'network'

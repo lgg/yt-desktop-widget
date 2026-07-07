@@ -18,7 +18,7 @@ import type {
 
 const SOCKET_RECONNECT_DELAYS = [1250, 2500, 5000, 10000, 15000] as const;
 const DISCOVERY_RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000] as const;
-const POST_AUTH_CONNECT_RETRY_DELAYS = [400, 1000, 2000] as const;
+const POST_AUTH_CONNECT_RETRY_DELAYS = [400, 1000, 2000, 4000, 8000, 15000] as const;
 const AUTH_CODE_READY_DETAIL =
   'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
 const AUTH_FAILED_DETAIL =
@@ -48,6 +48,12 @@ const getAuthFailureDetail = (error: unknown): string => {
   const message = toErrorMessage(error);
   return message === 'Unexpected error' ? AUTH_FAILED_DETAIL : message;
 };
+
+const isGatewayErrorCode = (error: unknown, code: GatewayError['code']): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  (error as Partial<GatewayError>).code === code;
 
 const getDelayForAttempt = (reason: GatewayDisconnectReason, attempt: number) => {
   const delays =
@@ -168,18 +174,30 @@ export class PlaybackController {
   }
 
   async requestAuthCode() {
-    const { code } = await this.gateway.requestAuthCode();
-    this.authCode = code;
-    this.patchConnection((state) =>
-      reduceConnectionState(state, {
-        type: 'auth_required',
-        authCode: code,
-        detail: AUTH_CODE_READY_DETAIL,
-        hasStoredAuth: false,
-      }),
-    );
+    try {
+      const { code } = await this.gateway.requestAuthCode();
+      this.authCode = code;
+      this.patchConnection((state) =>
+        reduceConnectionState(state, {
+          type: 'auth_required',
+          authCode: code,
+          detail: AUTH_CODE_READY_DETAIL,
+          hasStoredAuth: false,
+        }),
+      );
 
-    void this.completeAuthentication().catch(() => undefined);
+      void this.completeAuthentication().catch(() => undefined);
+    } catch (error) {
+      this.authCode = null;
+      this.authCompletionCode = null;
+      this.authCompletionPromise = null;
+      this.patchConnection((state) =>
+        reduceConnectionState(state, {
+          type: 'error',
+          message: getAuthFailureDetail(error),
+        }),
+      );
+    }
   }
 
   async completeAuthentication() {
@@ -249,14 +267,24 @@ export class PlaybackController {
       await this.reconnectAfterAuth();
     } catch (error) {
       if (!this.disposed && this.authCode === code) {
-        this.patchConnection((state) =>
-          reduceConnectionState(state, {
-            type: 'auth_required',
-            authCode: code,
-            detail: getAuthFailureDetail(error),
-            hasStoredAuth: false,
-          }),
-        );
+        if (isGatewayErrorCode(error, 'authorization_disabled')) {
+          this.authCode = null;
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'error',
+              message: getAuthFailureDetail(error),
+            }),
+          );
+        } else {
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'auth_required',
+              authCode: code,
+              detail: getAuthFailureDetail(error),
+              hasStoredAuth: false,
+            }),
+          );
+        }
       }
 
       throw error;
@@ -389,6 +417,16 @@ export class PlaybackController {
       }
     } catch (error) {
       const gatewayError = error as GatewayError;
+      if (gatewayError?.code === 'authorization_disabled') {
+        this.patchConnection((state) =>
+          reduceConnectionState(state, {
+            type: 'error',
+            message: gatewayError.message,
+          }),
+        );
+        return;
+      }
+
       if (gatewayError?.code === 'auth_required') {
         if (this.schedulePostAuthConnectRetry(options)) {
           return;

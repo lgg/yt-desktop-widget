@@ -19,6 +19,10 @@ const KEYRING_SERVICE: &str = "io.github.lgg.ytm-desktop-widget";
 pub enum CompanionError {
   #[error("Companion authorization is required.")]
   AuthRequired,
+  #[error(
+    "YTMDesktop says Companion authorization requests are disabled. Enable authorization requests in YTMDesktop Companion settings, then retry."
+  )]
+  AuthorizationDisabled,
   #[error("YTMDesktop Companion Server is not running.")]
   NotRunning,
   #[error("Companion API is temporarily unavailable.")]
@@ -33,6 +37,9 @@ impl From<CompanionError> for CommandError {
   fn from(error: CompanionError) -> Self {
     match error {
       CompanionError::AuthRequired => CommandError::auth_required(),
+      CompanionError::AuthorizationDisabled => {
+        CommandError::new("authorization_disabled", error.to_string())
+      }
       CompanionError::NotRunning => CommandError::new("not_running", error.to_string()),
       CompanionError::ApiUnavailable => CommandError::new("api_unavailable", error.to_string()),
       CompanionError::Network(message) => CommandError::new("network", message),
@@ -240,7 +247,13 @@ impl CompanionManager {
         .await
         .map_err(|error| CompanionError::Network(error.to_string()))?;
 
-      match validate_status(response.status()) {
+      let status = response.status();
+      let body = response
+        .text()
+        .await
+        .map_err(|error| CompanionError::Network(error.to_string()))?;
+
+      match validate_status_with_body(status, &body) {
         Ok(()) => return Ok(()),
         Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
         Err(error) => return Err(error),
@@ -266,11 +279,15 @@ impl CompanionManager {
         .await
         .map_err(|_| CompanionError::NotRunning)?;
 
-      match validate_status(response.status()) {
+      let status = response.status();
+      let body = response
+        .text()
+        .await
+        .map_err(|error| CompanionError::Network(error.to_string()))?;
+
+      match validate_status_with_body(status, &body) {
         Ok(()) => {
-          return response
-            .json::<Value>()
-            .await
+          return serde_json::from_str::<Value>(&body)
             .map_err(|error| CompanionError::Unknown(error.to_string()));
         }
         Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
@@ -441,16 +458,11 @@ async fn parse_json_response(
   })
 }
 
-fn validate_status(status: StatusCode) -> Result<(), CompanionError> {
-  match status {
-    StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(CompanionError::AuthRequired),
-    status if status.is_success() => Ok(()),
-    StatusCode::SERVICE_UNAVAILABLE => Err(CompanionError::ApiUnavailable),
-    status => Err(CompanionError::Unknown(format!("Companion API returned HTTP {}.", status))),
-  }
-}
-
 fn validate_status_with_body(status: StatusCode, body: &str) -> Result<(), CompanionError> {
+  if status == StatusCode::FORBIDDEN && is_authorization_disabled_body(body) {
+    return Err(CompanionError::AuthorizationDisabled);
+  }
+
   match status {
     StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(CompanionError::AuthRequired),
     status if status.is_success() => Ok(()),
@@ -673,4 +685,31 @@ mod tests {
 
     assert_eq!(extract_token_like_value(&body, &["token"]), None);
   }
+
+  #[test]
+  fn classifies_disabled_authorization_requests_from_error_body() {
+    let body = json!({
+      "statusCode": 403,
+      "code": "AUTHORIZATION_DISABLED",
+      "error": "Forbidden",
+      "message": "Authorization requests are disabled",
+    })
+    .to_string();
+
+    let error = validate_status_with_body(StatusCode::FORBIDDEN, &body)
+      .expect_err("authorization-disabled body should not be treated as generic auth_required");
+
+    assert!(matches!(error, CompanionError::AuthorizationDisabled));
+  }
+}
+
+fn is_authorization_disabled_body(body: &str) -> bool {
+  let Ok(value) = serde_json::from_str::<Value>(body) else {
+    return false;
+  };
+
+  value
+    .get("code")
+    .and_then(Value::as_str)
+    .is_some_and(|code| code == "AUTHORIZATION_DISABLED")
 }

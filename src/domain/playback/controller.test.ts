@@ -121,4 +121,73 @@ describe('PlaybackController', () => {
 
     vi.useRealTimers();
   });
+
+  it('keeps polling a fresh post-auth token beyond the first short retry burst', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn(() =>
+        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
+          code: 'auth_required',
+        })),
+      ),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.requestAuthCode();
+
+    await vi.advanceTimersByTimeAsync(400);
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(2000);
+
+    const snapshot = controller.getSnapshot();
+    expect(gateway.connect).toHaveBeenCalledTimes(4);
+    expect(snapshot.connection.status).toBe('reconnecting');
+    expect(snapshot.connection.hasStoredAuth).toBe(true);
+
+    vi.useRealTimers();
+  });
+
+  it('shows an actionable error when pairing-code generation is disabled by YTMDesktop', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn(() =>
+        Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState: null,
+        }),
+      ),
+      requestAuthCode: vi.fn(() =>
+        Promise.reject(
+          Object.assign(
+            new Error(
+              'YTMDesktop says Companion authorization requests are disabled. Enable authorization requests in YTMDesktop Companion settings, then retry.',
+            ),
+            { code: 'authorization_disabled' },
+          ),
+        ),
+      ),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.requestAuthCode();
+
+    const snapshot = controller.getSnapshot();
+    expect(snapshot.connection.status).toBe('error');
+    expect(snapshot.connection.detail).toContain('authorization requests are disabled');
+    expect(snapshot.connection.authCode).toBeNull();
+
+    vi.useRealTimers();
+  });
 });
