@@ -90,4 +90,35 @@ describe('PlaybackController', () => {
     expect(gateway.discover).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
+
+  it('keeps fresh post-auth reconnects marked authorized during protected retry', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn(() =>
+        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
+          code: 'auth_required',
+        })),
+      ),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.requestAuthCode();
+    await controller.completeAuthentication();
+
+    const snapshot = controller.getSnapshot();
+    expect(snapshot.connection.status).toBe('reconnecting');
+    expect(snapshot.connection.hasStoredAuth).toBe(true);
+    expect(snapshot.connection.authCode).toBeNull();
+    expect(gateway.connect).toHaveBeenCalledWith(
+      expect.any(Object),
+      { preserveAuthOnFailure: true },
+    );
+
+    vi.useRealTimers();
+  });
 });

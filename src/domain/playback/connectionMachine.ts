@@ -1,7 +1,12 @@
 import type { ConnectionState, DiscoveryInfo } from '@/domain/playback/types';
 
 export type ConnectionEvent =
-  | { type: 'discovering'; hasStoredAuth: boolean; reconnecting: boolean }
+  | {
+      type: 'discovering';
+      hasStoredAuth: boolean;
+      reconnecting: boolean;
+      authCode?: string | null | undefined;
+    }
   | { type: 'availability'; discovery: DiscoveryInfo; hasStoredAuth: boolean }
   | { type: 'connected'; hasStoredAuth?: boolean | undefined }
   | {
@@ -36,7 +41,7 @@ export const reduceConnectionState = (
         detail: undefined,
         lastError: undefined,
         retryAt: null,
-        authCode: state.authCode,
+        authCode: event.authCode === undefined ? state.authCode : event.authCode,
       };
     case 'availability':
       return {

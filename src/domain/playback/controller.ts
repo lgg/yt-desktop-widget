@@ -311,11 +311,17 @@ export class PlaybackController {
 
     this.clearReconnectTimer();
     const hasStoredAuth = await this.gateway.hasStoredAuth();
+    const hasFreshPostAuthToken =
+      options.skipStoredAuthGate === true &&
+      options.preserveAuthOnFailure === true &&
+      this.gateway.kind === 'real';
+    const effectiveHasStoredAuth = hasStoredAuth || hasFreshPostAuthToken;
     this.patchConnection((state) =>
       reduceConnectionState(state, {
         type: 'discovering',
-        hasStoredAuth,
+        hasStoredAuth: effectiveHasStoredAuth,
         reconnecting,
+        authCode: hasFreshPostAuthToken ? null : undefined,
       }),
     );
 
@@ -325,7 +331,7 @@ export class PlaybackController {
         reduceConnectionState(state, {
           type: 'availability',
           discovery,
-          hasStoredAuth,
+          hasStoredAuth: effectiveHasStoredAuth,
         }),
       );
 
@@ -334,7 +340,7 @@ export class PlaybackController {
         return;
       }
 
-      if (!options.skipStoredAuthGate && !hasStoredAuth && this.gateway.kind === 'real') {
+      if (!options.skipStoredAuthGate && !effectiveHasStoredAuth && this.gateway.kind === 'real') {
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
@@ -344,7 +350,7 @@ export class PlaybackController {
         return;
       }
 
-      const connectedHasStoredAuth = hasStoredAuth || this.gateway.kind === 'real';
+      const connectedHasStoredAuth = effectiveHasStoredAuth || this.gateway.kind === 'real';
       const { connection, initialState } = await this.gateway.connect(
         {
           onConnected: () => {
