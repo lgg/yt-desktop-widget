@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Completed
 
 ## Context
 
@@ -30,10 +30,10 @@ Out of scope:
 
 ## Affected Areas
 
-- Domain controller: In progress.
-- Settings/widget auth UI: In progress.
-- Tests: In progress.
-- Project tracking: In progress.
+- Domain controller: Updated.
+- Settings auth UI: Updated.
+- Tests: Added focused controller auth coverage.
+- Project tracking: Updated.
 
 ## Time Tracking
 
@@ -41,26 +41,36 @@ Out of scope:
 | --- | --- |
 | Iteration ID | `2026-07-07-0018-a` |
 | Started at | `2026-07-07T02:36:36+02:00` |
-| Finished at | `pending` |
-| Time spent minutes | `pending` |
+| Finished at | `2026-07-07T02:42:35+02:00` |
+| Time spent minutes | `6` |
 | Tracking status | `tracked` |
-| Time log row | `pending` |
+| Time log row | `project-tracking/time-log.md` |
 
 ## Acceptance Criteria
 
-- [ ] Pairing code generation starts the documented `/auth/request` token exchange automatically.
-- [ ] Pressing Allow in YTMDesktop can complete auth without requiring an additional unclear widget action.
-- [ ] Manual confirm remains safe as a retry path.
-- [ ] Auth failure returns to an actionable state with detail.
-- [ ] Regression tests are added.
-- [ ] Task, report, roadmap, and time-log are updated.
+- [x] Pairing code generation starts the documented `/auth/request` token exchange automatically.
+- [x] Pressing Allow in YTMDesktop can complete auth without requiring an additional unclear widget action.
+- [x] Manual confirm remains safe as a retry path.
+- [x] Auth failure returns to an actionable state with detail.
+- [x] Regression tests are added.
+- [x] Task, report, roadmap, and time-log are updated.
 
 ## Verification Plan
 
 - [x] Re-check official Companion auth docs.
-- [ ] Static code review.
-- [ ] Add/update tests.
-- [ ] Run local checks if available; otherwise record not-run status.
+- [x] Static code review.
+- [x] Add/update tests.
+- [ ] Run local checks if available; not run in this connector-only GitHub App workflow.
+
+## Fix Summary
+
+| Area | Change |
+| --- | --- |
+| `PlaybackController.requestAuthCode` | Now starts the token exchange immediately after showing the code. |
+| `PlaybackController.completeAuthentication` | Reuses an active token exchange for the same code instead of creating duplicate `/auth/request` calls. |
+| Auth failure state | Returns to `auth_required` with the current code and failure detail if YTMDesktop denies or times out. |
+| Settings UI | Disables duplicate auth actions while `authenticating` and shows auth detail text. |
+| Tests | Added controller regression coverage for auto-complete, failure recovery, and duplicate confirm protection. |
 
 ## Links
 
