@@ -16,6 +16,10 @@ export type CompanionEventPayload =
       detail?: string;
     };
 
+export interface CompanionAuthEventPayload {
+  authorized: boolean;
+}
+
 export interface CompanionConnectResponse {
   initialState: CompanionRawState | null;
 }
@@ -59,6 +63,10 @@ export const tauriBridge = {
     invoke<void>('companion_send_command', { command }),
   listenToCompanionEvents: (handler: (payload: CompanionEventPayload) => void) =>
     listen<CompanionEventPayload>('companion://event', (event) => {
+      handler(event.payload);
+    }),
+  listenToCompanionAuthChanges: (handler: (payload: CompanionAuthEventPayload) => void) =>
+    listen<CompanionAuthEventPayload>('companion://auth-changed', (event) => {
       handler(event.payload);
     }),
 };

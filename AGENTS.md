@@ -27,10 +27,14 @@ Rules:
 
 1. If the user asks to work through GitHub App, do not use console `git push`.
 2. Prefer GitHub App / connector tools for remote repository writes when requested.
-3. Do not commit, amend, or push unless the user explicitly asks or the current connector workflow requires a GitHub contents commit.
-4. Do not overwrite or delete user changes without direct permission.
-5. Keep commits small enough for review and use messages that explain what changed.
-6. The last process/documentation commit before handoff should include current task, report, bootstrap-sync, and time-log updates when applicable.
+3. Default repository workflow is one AI work pass equals one dedicated branch. Create or switch to a pass-specific branch before edits whenever possible.
+4. By default, every pass must end with committed and pushed changes. Do not leave completed work only in the working tree.
+5. After implementation, run the relevant audit/review and validation checks. If there are no blocking problems, merge the pass branch into `master` and push `master` in the same pass.
+6. If validation fails or a blocker remains, commit and push the branch only when it is useful for handoff, and clearly mark the task/report as blocked or partially verified.
+7. The only exceptions to the commit/push/merge flow are an explicit user instruction not to commit or push, a safety concern, unavailable credentials/remote access, or a failed required check that should prevent merge.
+8. Do not overwrite or delete user changes without direct permission.
+9. Keep commits small enough for review and use messages that explain what changed.
+10. The last process/documentation commit before handoff should include current task, report, bootstrap-sync, and time-log updates when applicable.
 
 ## 3. Project Tracking
 

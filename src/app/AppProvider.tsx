@@ -214,6 +214,43 @@ export const AppProvider = ({
   }, []);
 
   useEffect(() => {
+    if (
+      !ready ||
+      windowLabel !== 'main' ||
+      resolvedSourceMode !== 'real' ||
+      !isTauriRuntime()
+    ) {
+      return undefined;
+    }
+
+    let active = true;
+    let unlisten: (() => void) | null = null;
+
+    void tauriBridge
+      .listenToCompanionAuthChanges(() => {
+        if (!active) {
+          return;
+        }
+
+        void controllerRef.current?.reconnectNow();
+      })
+      .then((nextUnlisten) => {
+        if (!active) {
+          nextUnlisten();
+          return;
+        }
+
+        unlisten = nextUnlisten;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      unlisten?.();
+    };
+  }, [ready, resolvedSourceMode, windowLabel]);
+
+  useEffect(() => {
     if (windowLabel !== 'settings' || !isTauriRuntime()) {
       setWindowVisible(true);
       return undefined;

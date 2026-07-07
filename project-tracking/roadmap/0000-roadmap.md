@@ -32,6 +32,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Live Companion auth post-approval fix - [`0020-fix-live-companion-auth-post-approval-stall.md`](../tasks/0020-fix-live-companion-auth-post-approval-stall.md) - after successful Allow, the controller now attempts `companion_connect` directly and records successful real connects as authorized
 - Completed P1: Full code audit after auth fixes - [`0021-full-code-audit-after-auth-fixes.md`](../tasks/0021-full-code-audit-after-auth-fixes.md) - fixed multi-window Companion socket lifecycle conflict and made Playwright smoke test build before preview
 - Completed P1: Live Companion auth still stuck after Allow - [`0022-fix-live-companion-auth-still-stuck-after-allow.md`](../tasks/0022-fix-live-companion-auth-still-stuck-after-allow.md) - fresh tokens are preserved through transient post-Allow validation failures, post-auth connect retries were added, and auth polling no longer locks the shared socket manager
+- Completed P1: Live Companion auth cross-window sync - [`0023-audit-and-fix-live-companion-auth-after-latest-pull.md`](../tasks/0023-audit-and-fix-live-companion-auth-after-latest-pull.md) - after Settings completes or clears Companion auth, the main widget now receives an auth-change event and reconnects instead of staying in the old authorization state
 
 ## Deferred Post-v1 Roadmap
 
@@ -47,6 +48,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Completed P2: ytw-yk4 - [`0015-migrate-task-tracking-from-beads-to-markdown-project-tracking.md`](../tasks/0015-migrate-task-tracking-from-beads-to-markdown-project-tracking.md)
 - Completed P2: bootstrap sync - [`0016-sync-bootstrap-rules-to-0002.md`](../tasks/0016-sync-bootstrap-rules-to-0002.md) - adapted bootstrap `0001`/`0002`, added `bootstrap-sync.md`, `time-log.md`, and time-tracking workflow
+- Completed P1: branch-per-pass git workflow - [`0024-adopt-branch-per-pass-commit-merge-push-workflow.md`](../tasks/0024-adopt-branch-per-pass-commit-merge-push-workflow.md) - default AI workflow is now branch per pass, audit/validate, commit, merge to `master`, and push in the same pass
 
 ## Delivery Policy
 

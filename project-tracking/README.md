@@ -65,6 +65,17 @@ Workflow:
 6. Update `bootstrap-sync.md` when importing new bootstrap rules.
 7. Update `time-log.md` for substantial AI work iterations.
 
+## Git Workflow
+
+Default AI work follows a branch-per-pass flow:
+
+1. Create or switch to a dedicated branch for the current pass before edits whenever possible.
+2. Implement the scoped change and update task/report/roadmap/time-log as needed.
+3. Run the relevant audit/review and validation checks.
+4. If there are no blocking problems, commit the branch, merge it into `master`, and push `master` in the same pass.
+5. If checks fail or a blocker remains, do not merge to `master`; record the blocker in the task/report and push the branch only when useful for handoff.
+6. Skip commit, push, or merge only when the user explicitly asks, credentials/remote access are unavailable, a safety concern applies, or required validation should block merge.
+
 ## Numbering
 
 Use four-digit prefixes:
@@ -94,6 +105,7 @@ Work is not closed until:
 - a report records what changed, what was verified, what was not verified, residual risks, and next steps;
 - related areas are updated together: frontend, native backend, domain/API contracts, tests, documentation, release/config, roadmap, tasks, reports, bootstrap-sync, and time-log when relevant;
 - time tracking is filled in the task, report, and `time-log.md`, or the report explicitly explains why it is approximate or not tracked;
+- completed work is committed, merged to `master`, and pushed under the branch-per-pass workflow unless a documented exception applies;
 - for this desktop app, Tauri permissions, portable-build policy, Companion API assumptions, and Windows runtime behavior are reviewed when affected.
 
 ## Bootstrap Adaptation Notes

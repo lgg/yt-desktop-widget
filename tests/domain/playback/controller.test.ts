@@ -163,6 +163,7 @@ describe('PlaybackController auth flow', () => {
   it('can dispose a frontend listener without closing the shared backend connection', async () => {
     const disconnect = vi.fn(() => Promise.resolve());
     const gateway = createGateway();
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(true);
     vi.mocked(gateway.connect).mockResolvedValue({
       initialState: null,
       connection: {
