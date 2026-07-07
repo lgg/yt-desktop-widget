@@ -89,7 +89,7 @@
         "description": "Manage Companion API availability, pairing state, and recovery actions.",
         "endpoint": "Companion endpoint",
         "endpointPlaceholder": "127.0.0.1:9863",
-        "endpointInvalid": "Use the format host:port, for example 127.0.0.1:9863.",
+        "endpointInvalid": "Use host:port or a local http URL, for example 127.0.0.1:9863.",
         "mode": "Data source",
         "connected": "Connection state",
         "paired": "Authorization",
