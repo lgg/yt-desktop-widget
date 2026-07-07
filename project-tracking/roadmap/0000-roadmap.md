@@ -29,6 +29,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P2: full audit - [`0017-full-code-audit-latest-ytmdesktop.md`](../tasks/0017-full-code-audit-latest-ytmdesktop.md) - checked latest YTMDesktop v2.0.11 docs/release state, fixed endpoint parsing, realtime reconnect state, artwork CSS URL escaping, and scrubber edge case
 - Completed P1: Companion auth UX - [`0018-fix-companion-auth-completion-flow.md`](../tasks/0018-fix-companion-auth-completion-flow.md) - code generation now starts `/auth/request` token exchange automatically and duplicate confirm clicks are deduplicated
 - Completed P1: TypeScript build fix - [`0019-fix-controller-auth-test-typescript-build.md`](../tasks/0019-fix-controller-auth-test-typescript-build.md) - fixed `TS2349` in the controller auth regression test after local build feedback
+- Completed P1: Live Companion auth post-approval fix - [`0020-fix-live-companion-auth-post-approval-stall.md`](../tasks/0020-fix-live-companion-auth-post-approval-stall.md) - after successful Allow, the controller now attempts `companion_connect` directly and records successful real connects as authorized
 
 ## Deferred Post-v1 Roadmap
 
