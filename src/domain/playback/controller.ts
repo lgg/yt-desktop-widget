@@ -21,6 +21,10 @@ const AUTH_CODE_READY_DETAIL =
 const AUTH_FAILED_DETAIL =
   'Pairing was not completed. Generate a new code or retry, then press Allow in YTMDesktop.';
 
+interface BeginConnectOptions {
+  skipStoredAuthGate?: boolean;
+}
+
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
@@ -212,7 +216,7 @@ export class PlaybackController {
       }
 
       this.authCode = null;
-      await this.reconnectNow();
+      await this.reconnectAfterAuth();
     } catch (error) {
       if (!this.disposed && this.authCode === code) {
         this.patchConnection((state) =>
@@ -227,6 +231,12 @@ export class PlaybackController {
 
       throw error;
     }
+  }
+
+  private async reconnectAfterAuth() {
+    this.clearReconnectTimer();
+    await this.disconnectInternal();
+    await this.beginConnect(true, { skipStoredAuthGate: true });
   }
 
   private emit() {
@@ -260,7 +270,7 @@ export class PlaybackController {
     this.emit();
   }
 
-  private async beginConnect(reconnecting: boolean) {
+  private async beginConnect(reconnecting: boolean, options: BeginConnectOptions = {}) {
     if (this.disposed) {
       return;
     }
@@ -290,7 +300,7 @@ export class PlaybackController {
         return;
       }
 
-      if (!hasStoredAuth && this.gateway.kind === 'real') {
+      if (!options.skipStoredAuthGate && !hasStoredAuth && this.gateway.kind === 'real') {
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
@@ -300,9 +310,15 @@ export class PlaybackController {
         return;
       }
 
+      const connectedHasStoredAuth = hasStoredAuth || this.gateway.kind === 'real';
       const { connection, initialState } = await this.gateway.connect({
         onConnected: () => {
-          this.patchConnection((state) => reduceConnectionState(state, { type: 'connected' }));
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'connected',
+              hasStoredAuth: connectedHasStoredAuth,
+            }),
+          );
         },
         onError: (detail) => {
           this.patchConnection((state) =>
@@ -318,7 +334,12 @@ export class PlaybackController {
       });
 
       this.connection = connection;
-      this.patchConnection((state) => reduceConnectionState(state, { type: 'connected' }));
+      this.patchConnection((state) =>
+        reduceConnectionState(state, {
+          type: 'connected',
+          hasStoredAuth: connectedHasStoredAuth,
+        }),
+      );
 
       if (initialState) {
         this.patchPlayback(initialState);
@@ -389,4 +410,3 @@ export class PlaybackController {
     await activeConnection.disconnect();
   }
 }
-
