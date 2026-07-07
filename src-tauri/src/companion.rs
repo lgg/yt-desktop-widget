@@ -219,13 +219,12 @@ impl CompanionManager {
       .await
       .map_err(|_| CompanionError::NotRunning)?;
 
-    validate_status(response.status())?;
-    let body = response
-      .json::<Value>()
-      .await
-      .map_err(|error| CompanionError::Unknown(error.to_string()))?;
+    let body = parse_json_response(response, "auth code request").await?;
     let code = extract_token_like_value(&body, &["code"]).ok_or_else(|| {
-      CompanionError::Unknown("Companion Server did not return an auth code.".to_string())
+      CompanionError::Unknown(format!(
+        "Companion Server did not return an auth code. Response: {}",
+        summarize_json(&body)
+      ))
     })?;
 
     Ok(AuthCodeResponse { code })
@@ -247,14 +246,13 @@ impl CompanionManager {
       .await
       .map_err(|_| CompanionError::NotRunning)?;
 
-    validate_status(response.status())?;
-    let body = response
-      .json::<Value>()
-      .await
-      .map_err(|error| CompanionError::Unknown(error.to_string()))?;
+    let body = parse_json_response(response, "auth token request").await?;
 
     extract_token_like_value(&body, &["token", "authorization", "accessToken"]).ok_or_else(|| {
-      CompanionError::Unknown("Companion Server did not return an auth token.".to_string())
+      CompanionError::Unknown(format!(
+        "Companion Server did not return an auth token. Response: {}",
+        summarize_json(&body)
+      ))
     })
   }
 
@@ -350,6 +348,27 @@ fn sanitize_seek_seconds(seconds: f64) -> i64 {
   seconds.max(0.0).round() as i64
 }
 
+async fn parse_json_response(
+  response: reqwest::Response,
+  context: &str,
+) -> Result<Value, CompanionError> {
+  let status = response.status();
+  let body = response
+    .text()
+    .await
+    .map_err(|error| CompanionError::Network(error.to_string()))?;
+
+  validate_status_with_body(status, &body)?;
+  serde_json::from_str::<Value>(&body).map_err(|error| {
+    CompanionError::Unknown(format!(
+      "Companion {} returned invalid JSON: {}. Response: {}",
+      context,
+      error,
+      summarize_response_body(&body)
+    ))
+  })
+}
+
 fn validate_status(status: StatusCode) -> Result<(), CompanionError> {
   match status {
     StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(CompanionError::AuthRequired),
@@ -359,17 +378,75 @@ fn validate_status(status: StatusCode) -> Result<(), CompanionError> {
   }
 }
 
+fn validate_status_with_body(status: StatusCode, body: &str) -> Result<(), CompanionError> {
+  match status {
+    StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(CompanionError::AuthRequired),
+    status if status.is_success() => Ok(()),
+    StatusCode::SERVICE_UNAVAILABLE => Err(CompanionError::ApiUnavailable),
+    status => Err(CompanionError::Unknown(format!(
+      "Companion API returned HTTP {}. Response: {}",
+      status,
+      summarize_response_body(body)
+    ))),
+  }
+}
+
+fn summarize_response_body(body: &str) -> String {
+  let trimmed = body.trim();
+  if trimmed.is_empty() {
+    return "<empty>".to_string();
+  }
+
+  let summary: String = trimmed.chars().take(240).collect();
+  if trimmed.chars().count() > 240 {
+    format!("{}...", summary)
+  } else {
+    summary
+  }
+}
+
+fn summarize_json(value: &Value) -> String {
+  summarize_response_body(&value.to_string())
+}
+
 fn keyring_account(settings: &ConnectionSettings) -> String {
   format!("companion-token-{}-{}", settings.host, settings.port)
 }
 
 fn extract_token_like_value(value: &Value, keys: &[&str]) -> Option<String> {
   match value {
-    Value::String(content) => Some(content.to_string()),
+    Value::String(content) => normalize_extracted_value(content),
+    Value::Number(number) => Some(number.to_string()),
     Value::Object(map) => keys
       .iter()
-      .find_map(|key| map.get(*key).and_then(Value::as_str).map(ToOwned::to_owned)),
+      .find_map(|key| map.get(*key).and_then(extract_scalar_value))
+      .or_else(|| {
+        map.values().find_map(|nested| match nested {
+          Value::Object(_) | Value::Array(_) => extract_token_like_value(nested, keys),
+          _ => None,
+        })
+      }),
+    Value::Array(values) => values
+      .iter()
+      .find_map(|nested| extract_token_like_value(nested, keys)),
     _ => None,
+  }
+}
+
+fn extract_scalar_value(value: &Value) -> Option<String> {
+  match value {
+    Value::String(content) => normalize_extracted_value(content),
+    Value::Number(number) => Some(number.to_string()),
+    _ => None,
+  }
+}
+
+fn normalize_extracted_value(content: &str) -> Option<String> {
+  let trimmed = content.trim();
+  if trimmed.is_empty() {
+    None
+  } else {
+    Some(trimmed.to_string())
   }
 }
 
@@ -451,5 +528,32 @@ mod tests {
       command_request_body(&PlaybackCommand::SeekTo { seconds: f64::NAN }),
       json!({ "command": "seekTo", "data": 0 })
     );
+  }
+
+  #[test]
+  fn extracts_nested_companion_auth_values() {
+    let body = json!({ "data": { "attributes": { "token": "  secret-token  " } } });
+
+    assert_eq!(
+      extract_token_like_value(&body, &["token"]),
+      Some("secret-token".to_string())
+    );
+  }
+
+  #[test]
+  fn extracts_numeric_auth_codes_when_needed() {
+    let body = json!({ "code": 2413 });
+
+    assert_eq!(
+      extract_token_like_value(&body, &["code"]),
+      Some("2413".to_string())
+    );
+  }
+
+  #[test]
+  fn does_not_extract_unrelated_nested_strings() {
+    let body = json!({ "error": { "message": "UNAUTHORIZED" } });
+
+    assert_eq!(extract_token_like_value(&body, &["token"]), None);
   }
 }
