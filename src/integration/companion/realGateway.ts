@@ -67,7 +67,7 @@ export const createRealGateway = (): CompanionGateway => ({
       return false;
     }
   },
-  async connect(handlers) {
+  async connect(handlers, options) {
     requireTauriRuntime();
 
     let active = true;
@@ -101,7 +101,11 @@ export const createRealGateway = (): CompanionGateway => ({
     };
 
     try {
-      const result = await invokeBridge(() => tauriBridge.companionConnect());
+      const result = await invokeBridge(() =>
+        tauriBridge.companionConnect({
+          preserveAuthOnFailure: options?.preserveAuthOnFailure,
+        }),
+      );
       return {
         initialState: result.initialState,
         connection: {
