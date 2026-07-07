@@ -16,6 +16,10 @@ import type {
 
 const SOCKET_RECONNECT_DELAYS = [1250, 2500, 5000, 10000, 15000] as const;
 const DISCOVERY_RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000] as const;
+const AUTH_CODE_READY_DETAIL =
+  'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
+const AUTH_FAILED_DETAIL =
+  'Pairing was not completed. Generate a new code or retry, then press Allow in YTMDesktop.';
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -23,6 +27,11 @@ const toErrorMessage = (error: unknown): string => {
   }
 
   return 'Unexpected error';
+};
+
+const getAuthFailureDetail = (error: unknown): string => {
+  const message = toErrorMessage(error);
+  return message === 'Unexpected error' ? AUTH_FAILED_DETAIL : message;
 };
 
 const getDelayForAttempt = (reason: GatewayDisconnectReason, attempt: number) => {
@@ -97,6 +106,8 @@ export class PlaybackController {
   private reconnectTimer: number | null = null;
   private disposed = false;
   private authCode: string | null = null;
+  private authCompletionCode: string | null = null;
+  private authCompletionPromise: Promise<void> | null = null;
 
   constructor(private readonly gateway: CompanionGateway) {}
 
@@ -129,36 +140,29 @@ export class PlaybackController {
       reduceConnectionState(state, {
         type: 'auth_required',
         authCode: code,
+        detail: AUTH_CODE_READY_DETAIL,
         hasStoredAuth: false,
       }),
     );
+
+    void this.completeAuthentication().catch(() => undefined);
   }
 
   async completeAuthentication() {
     if (!this.authCode) {
       await this.requestAuthCode();
-    }
-
-    if (!this.authCode) {
       return;
     }
 
-    this.patchConnection((state) =>
-      reduceConnectionState(state, {
-        type: 'authenticating',
-        authCode: this.authCode ?? '',
-      }),
-    );
-
-    await this.gateway.completeAuth(this.authCode);
-    this.authCode = null;
-    await this.reconnectNow();
+    await this.completeAuthCode(this.authCode);
   }
 
   async clearAuth() {
     await this.gateway.clearAuth();
     await this.disconnectInternal();
     this.authCode = null;
+    this.authCompletionCode = null;
+    this.authCompletionPromise = null;
     this.patchConnection((state) => reduceConnectionState(state, { type: 'clear_auth' }));
   }
 
@@ -171,6 +175,58 @@ export class PlaybackController {
     this.clearReconnectTimer();
     await this.disconnectInternal();
     this.subscribers.clear();
+  }
+
+  private async completeAuthCode(code: string) {
+    if (this.authCompletionPromise && this.authCompletionCode === code) {
+      await this.authCompletionPromise;
+      return;
+    }
+
+    const completionPromise = this.runAuthCompletion(code);
+    this.authCompletionCode = code;
+    this.authCompletionPromise = completionPromise;
+
+    try {
+      await completionPromise;
+    } finally {
+      if (this.authCompletionPromise === completionPromise) {
+        this.authCompletionCode = null;
+        this.authCompletionPromise = null;
+      }
+    }
+  }
+
+  private async runAuthCompletion(code: string) {
+    this.patchConnection((state) =>
+      reduceConnectionState(state, {
+        type: 'authenticating',
+        authCode: code,
+      }),
+    );
+
+    try {
+      await this.gateway.completeAuth(code);
+      if (this.disposed || this.authCode !== code) {
+        return;
+      }
+
+      this.authCode = null;
+      await this.reconnectNow();
+    } catch (error) {
+      if (!this.disposed && this.authCode === code) {
+        this.patchConnection((state) =>
+          reduceConnectionState(state, {
+            type: 'auth_required',
+            authCode: code,
+            detail: getAuthFailureDetail(error),
+            hasStoredAuth: false,
+          }),
+        );
+      }
+
+      throw error;
+    }
   }
 
   private emit() {
@@ -238,7 +294,6 @@ export class PlaybackController {
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
-            detail: discovery.detail,
             hasStoredAuth: false,
           }),
         );
