@@ -27,6 +27,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Open P2: ytw-5v6.3 - [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../tasks/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md) - protocol audit/code-doc alignment completed on 2026-07-07; live YTMDesktop validation still open
 - Completed P2: full audit - [`0017-full-code-audit-latest-ytmdesktop.md`](../tasks/0017-full-code-audit-latest-ytmdesktop.md) - checked latest YTMDesktop v2.0.11 docs/release state, fixed endpoint parsing, realtime reconnect state, artwork CSS URL escaping, and scrubber edge case
+- Completed P1: Companion auth UX - [`0018-fix-companion-auth-completion-flow.md`](../tasks/0018-fix-companion-auth-completion-flow.md) - code generation now starts `/auth/request` token exchange automatically and duplicate confirm clicks are deduplicated
 
 ## Deferred Post-v1 Roadmap
 
