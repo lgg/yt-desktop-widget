@@ -157,7 +157,7 @@ impl CompanionManager {
     let event_error_name = event_name.to_string();
     let event_close_name = event_name.to_string();
 
-    let socket = ClientBuilder::new(realtime_url(settings))
+    let socket = ClientBuilder::new(socketio_url(settings))
       .namespace("/api/v1/realtime")
       .auth(json!({ "token": companion_token_value(token) }))
       .transport_type(TransportType::Websocket)
@@ -343,8 +343,8 @@ fn base_url(settings: &ConnectionSettings) -> String {
   format!("http://{}:{}", settings.host, settings.port)
 }
 
-fn realtime_url(settings: &ConnectionSettings) -> String {
-  format!("{}/api/v1/realtime", base_url(settings))
+fn socketio_url(settings: &ConnectionSettings) -> String {
+  base_url(settings)
 }
 
 fn connection_key(settings: &ConnectionSettings, token: &str) -> String {
@@ -652,14 +652,14 @@ mod tests {
   }
 
   #[test]
-  fn builds_realtime_url_from_endpoint() {
+  fn builds_socketio_url_from_endpoint() {
     let settings = ConnectionSettings {
       host: "127.0.0.1".to_string(),
       port: 9863,
       source_mode: "auto".to_string(),
     };
 
-    assert_eq!(realtime_url(&settings), "http://127.0.0.1:9863/api/v1/realtime");
+    assert_eq!(socketio_url(&settings), "http://127.0.0.1:9863");
   }
 
   #[test]
