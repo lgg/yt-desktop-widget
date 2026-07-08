@@ -54,7 +54,7 @@ Verified from upstream docs during the latest protocol audit:
 - Playback state endpoint: `GET /api/v1/state`
 - Playback command endpoint: `POST /api/v1/command`
   - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "seekTo", "data": 42 }`
-- Realtime socket namespace: `/api/v1/realtime`
+- Realtime socket endpoint and namespace: `/api/v1/realtime`
 - Realtime transport: websocket only
 - Realtime auth payload contains the token at `auth.token`
 - Realtime event: `state-update`

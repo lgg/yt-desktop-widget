@@ -157,9 +157,9 @@ impl CompanionManager {
     let event_error_name = event_name.to_string();
     let event_close_name = event_name.to_string();
 
-    let socket = ClientBuilder::new(base_url(settings))
+    let socket = ClientBuilder::new(realtime_url(settings))
       .namespace("/api/v1/realtime")
-      .auth(json!({ "token": token }))
+      .auth(json!({ "token": companion_token_value(token) }))
       .transport_type(TransportType::Websocket)
       .on("state-update", move |payload, _| {
         let latest_state = Arc::clone(&latest_state);
@@ -343,6 +343,10 @@ fn base_url(settings: &ConnectionSettings) -> String {
   format!("http://{}:{}", settings.host, settings.port)
 }
 
+fn realtime_url(settings: &ConnectionSettings) -> String {
+  format!("{}/api/v1/realtime", base_url(settings))
+}
+
 fn connection_key(settings: &ConnectionSettings, token: &str) -> String {
   format!("{}|{}", base_url(settings), token)
 }
@@ -430,11 +434,30 @@ fn sanitize_seek_seconds(seconds: f64) -> i64 {
 
 fn authorization_header_values(token: &str) -> Vec<String> {
   let trimmed = token.trim();
-  if trimmed.to_ascii_lowercase().starts_with("bearer ") {
-    return vec![trimmed.to_string()];
+  if let Some(raw_token) = strip_bearer_prefix(trimmed) {
+    return vec![trimmed.to_string(), raw_token.to_string()];
   }
 
   vec![trimmed.to_string(), format!("Bearer {}", trimmed)]
+}
+
+fn companion_token_value(token: &str) -> String {
+  let trimmed = token.trim();
+  strip_bearer_prefix(trimmed)
+    .unwrap_or(trimmed)
+    .trim()
+    .to_string()
+}
+
+fn strip_bearer_prefix(value: &str) -> Option<&str> {
+  if value.len() >= 7 && value[..7].eq_ignore_ascii_case("bearer ") {
+    let raw_token = value[7..].trim();
+    if !raw_token.is_empty() {
+      return Some(raw_token);
+    }
+  }
+
+  None
 }
 
 async fn parse_json_response(
@@ -629,6 +652,17 @@ mod tests {
   }
 
   #[test]
+  fn builds_realtime_url_from_endpoint() {
+    let settings = ConnectionSettings {
+      host: "127.0.0.1".to_string(),
+      port: 9863,
+      source_mode: "auto".to_string(),
+    };
+
+    assert_eq!(realtime_url(&settings), "http://127.0.0.1:9863/api/v1/realtime");
+  }
+
+  #[test]
   fn provides_plain_and_bearer_authorization_fallbacks() {
     assert_eq!(
       authorization_header_values(" token "),
@@ -636,8 +670,10 @@ mod tests {
     );
     assert_eq!(
       authorization_header_values("Bearer token"),
-      vec!["Bearer token".to_string()]
+      vec!["Bearer token".to_string(), "token".to_string()]
     );
+    assert_eq!(companion_token_value("Bearer token"), "token".to_string());
+    assert_eq!(companion_token_value(" token "), "token".to_string());
   }
 
   #[test]
