@@ -64,6 +64,7 @@ Out of scope:
 ## Progress History
 
 - 2026-03-11: Root cause also affected auto-height. The widget was not permitted to invoke set_main_window_height, so the reconnect/error card overflow fix could not apply at runtime. Added the missing permission in src-tauri/permissions/default.toml and rebuilt after verify/cargo check/build:desktop. Awaiting user runtime confirmation.
+- 2026-07-09: Task `0032` found the remaining shrink failure: auto-height measured a `height: 100%` viewport container, making the current expanded window height a permanent lower bound. Measurement now uses only intrinsic layout height, and focused plus browser tests cover shrink-back behavior. Awaiting confirmation in the new portable build.
 
 ## Dependencies
 

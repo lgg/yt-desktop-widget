@@ -213,11 +213,11 @@ Those environment variables were only a local validation workaround. They are no
 
 ## What still needs live Companion validation
 
-A live YTMDesktop Companion instance was not available during the latest protocol-audit session, so these paths remain open for real-world verification:
+The full auth approval round-trip, durable credential reload, reconnect, and live realtime state updates were confirmed by the user against YTMDesktop v2.0.11 on 2026-07-09.
 
-- the full auth approval round-trip inside a running YTMDesktop instance
-- realtime updates from a live Companion socket
-- command behavior against a live player
+These paths remain open for real-world verification against the latest portable build:
+
+- previous, play/pause, and next command behavior after the playback-stability changes
 - live seek success and failure behavior
 - edge cases like ads, livestreams, and transient Companion restarts
 

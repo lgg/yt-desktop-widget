@@ -56,7 +56,6 @@ export const WidgetWindow = () => {
   } = useAppModel();
   const { t } = useI18n();
   const [hovered, setHovered] = useState(false);
-  const contentRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const syncHeightRef = useRef<() => void>(() => undefined);
   const playback = session.playback ?? session.lastKnownPlayback;
@@ -136,10 +135,9 @@ export const WidgetWindow = () => {
     }
 
     const layout = layoutRef.current;
-    const content = contentRef.current;
     const ResizeObserverCtor = window.ResizeObserver;
     const MutationObserverCtor = window.MutationObserver;
-    if (!layout || !content || !ResizeObserverCtor || !MutationObserverCtor) {
+    if (!layout || !ResizeObserverCtor || !MutationObserverCtor) {
       return undefined;
     }
 
@@ -150,18 +148,11 @@ export const WidgetWindow = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => {
         const nextLayout = layoutRef.current;
-        const nextContent = contentRef.current;
-        if (!nextLayout || !nextContent) {
+        if (!nextLayout) {
           return;
         }
 
-        const nextHeight = Math.ceil(
-          Math.max(
-            nextContent.scrollHeight,
-            nextLayout.scrollHeight,
-            nextLayout.getBoundingClientRect().height,
-          ) + 2,
-        );
+        const nextHeight = Math.ceil(nextLayout.scrollHeight + 2);
         if (Math.abs(nextHeight - lastHeight) < 1) {
           return;
         }
@@ -177,7 +168,6 @@ export const WidgetWindow = () => {
     const observer = new ResizeObserverCtor(() => {
       syncHeight();
     });
-    observer.observe(content);
     observer.observe(layout);
 
     const mutationObserver = new MutationObserverCtor(() => {
@@ -187,7 +177,6 @@ export const WidgetWindow = () => {
       childList: true,
       subtree: true,
       characterData: true,
-      attributes: true,
     });
 
     return () => {
@@ -303,16 +292,6 @@ export const WidgetWindow = () => {
           );
         }
 
-        if (session.playback.playbackState === 'paused') {
-          return (
-            <WidgetStateCard
-              eyebrow={t('widget.states.paused.eyebrow')}
-              title={t('widget.states.paused.title')}
-              body={t('widget.states.paused.body')}
-            />
-          );
-        }
-
         return null;
       default:
         return null;
@@ -325,7 +304,7 @@ export const WidgetWindow = () => {
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      <div ref={contentRef} className="widget-window__content">
+      <div className="widget-window__content">
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
         <div ref={layoutRef} className="widget-window__layout">
           <header className="widget-window__header">

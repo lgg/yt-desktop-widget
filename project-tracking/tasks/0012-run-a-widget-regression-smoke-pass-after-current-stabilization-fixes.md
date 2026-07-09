@@ -64,6 +64,7 @@ Out of scope:
 ## Progress History
 
 - No progress notes were recorded in Beads.
+- 2026-07-09: Task `0032` expanded and passed the browser smoke flow for compact playing/paused layouts and previous/play-pause/next simulator commands. Settings and tray interaction in the portable runtime remain open.
 
 ## Dependencies
 

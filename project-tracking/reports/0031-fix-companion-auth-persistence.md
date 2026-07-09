@@ -84,7 +84,8 @@ The Windows Credential Manager backend is now enabled, writes are verified throu
 
 ## Not Verified
 
-- The final user-driven Allow click against the rebuilt executable remains a manual action.
+- At report creation time, the final user-driven Allow click was pending.
+- Follow-up on 2026-07-09: the user confirmed that Allow completed successfully, authorization persisted, realtime playback state loaded, and reconnect no longer returned to the pairing loop.
 
 ## Questions Resolved
 
@@ -99,7 +100,7 @@ The Windows Credential Manager backend is now enabled, writes are verified throu
 
 | Question | Owner | Next Step |
 | --- | --- | --- |
-| Does the rebuilt exe complete the final live Allow round-trip? | User | Run the new primary executable and approve once. |
+| None. | - | Live Allow and durable reconnect were confirmed on 2026-07-09. |
 
 ## Residual Risks
 
@@ -109,4 +110,4 @@ The Windows Credential Manager backend is now enabled, writes are verified throu
 
 ## Next Steps
 
-- Run the rebuilt primary executable and perform one live approval.
+- Continue live command and seek validation under task `0008`.

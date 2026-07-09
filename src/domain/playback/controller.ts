@@ -12,11 +12,13 @@ import type {
   GatewayDisconnectReason,
   GatewayError,
   PlaybackCommand,
+  PlaybackSnapshot,
   PlaybackSessionState,
 } from '@/domain/playback/types';
 
 const SOCKET_RECONNECT_DELAYS = [1250, 2500, 5000, 10000, 15000] as const;
 const DISCOVERY_RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000] as const;
+const PLAYBACK_CLOCK_DRIFT_TOLERANCE_SECONDS = 0.75;
 const AUTH_CODE_READY_DETAIL =
   'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
 const AUTH_FAILED_DETAIL =
@@ -106,6 +108,56 @@ const areConnectionStatesEqual = (left: ConnectionState, right: ConnectionState)
   left.retryAt === right.retryAt &&
   left.lastError === right.lastError &&
   areDiscoveriesEqual(left.discovery, right.discovery);
+
+const areStringArraysEqual = (left: string[], right: string[]): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
+
+const hasPlaybackPresentationChanged = (
+  previous: PlaybackSnapshot,
+  next: PlaybackSnapshot,
+): boolean =>
+  previous.id !== next.id ||
+  previous.title !== next.title ||
+  !areStringArraysEqual(previous.artists, next.artists) ||
+  previous.album !== next.album ||
+  previous.coverUrl !== next.coverUrl ||
+  previous.durationSeconds !== next.durationSeconds ||
+  previous.playbackState !== next.playbackState ||
+  previous.isAdPlaying !== next.isAdPlaying ||
+  previous.isLive !== next.isLive ||
+  previous.canSeek !== next.canSeek ||
+  previous.metadataFilled !== next.metadataFilled;
+
+const shouldPublishPlayback = (
+  previous: PlaybackSnapshot | null,
+  next: PlaybackSnapshot | null,
+): boolean => {
+  if (!previous || !next) {
+    return previous !== next;
+  }
+
+  if (hasPlaybackPresentationChanged(previous, next)) {
+    return true;
+  }
+
+  if (next.playbackState !== 'playing') {
+    return previous.elapsedSeconds !== next.elapsedSeconds;
+  }
+
+  const elapsedSincePreviousSync = Math.max(
+    0,
+    (next.lastSyncedAt - previous.lastSyncedAt) / 1000,
+  );
+  const expectedElapsed = Math.min(
+    previous.durationSeconds,
+    previous.elapsedSeconds + elapsedSincePreviousSync,
+  );
+
+  return (
+    Math.abs(next.elapsedSeconds - expectedElapsed) >=
+    PLAYBACK_CLOCK_DRIFT_TOLERANCE_SECONDS
+  );
+};
 
 export class PlaybackController {
   private state: PlaybackSessionState = {
@@ -299,6 +351,10 @@ export class PlaybackController {
 
   private patchPlayback(rawState: Parameters<typeof mapCompanionState>[0]) {
     const playback = mapCompanionState(rawState, this.state.lastKnownPlayback);
+    if (!shouldPublishPlayback(this.state.playback, playback)) {
+      return;
+    }
+
     this.state = {
       ...this.state,
       playback,

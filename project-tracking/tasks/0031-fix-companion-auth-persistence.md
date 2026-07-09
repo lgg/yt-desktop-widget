@@ -99,4 +99,4 @@ Out of scope:
 - Previous report: [`0030-restore-companion-auth-baseline.md`](../reports/0030-restore-companion-auth-baseline.md)
 - Time log: [`time-log.md`](../time-log.md)
 - Report: [`0031-fix-companion-auth-persistence.md`](../reports/0031-fix-companion-auth-persistence.md)
-- PR/commit: branch `codex/0031-fix-companion-auth-persistence`; commit pending
+- PR/commit: commit `dd9a68c`, merged to `master`

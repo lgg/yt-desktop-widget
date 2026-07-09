@@ -69,7 +69,10 @@ Out of scope:
 - [x] Progress smoothing uses the same timestamp source as Companion snapshots.
 - [x] Settings saved in one Tauri webview are propagated to the other app webview.
 - [x] Relevant implementation, documentation, and verification notes are captured or linked.
-- [ ] Live YTMDesktop Companion auth, realtime, commands, and seek are verified on a real local instance.
+- [x] Live YTMDesktop Companion auth approval and durable reconnect are verified on YTMDesktop v2.0.11.
+- [x] Live realtime state updates are verified on a real local instance.
+- [ ] Previous, play/pause, and next commands are verified with the task `0032` portable build.
+- [ ] Live seek is verified on a real local instance.
 - [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
 - [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs after live validation.
 
@@ -87,6 +90,7 @@ Out of scope:
 - 2026-07-07: Audited the implementation against the official v2 Companion Server API v1 wiki. Found outdated assumptions in README and Rust bridge: old metadata path, old command endpoints, missing auth-code request body, invalid dotted/hyphenated `appId`, and Bearer-style REST auth. Updated `src-tauri/src/companion.rs`, README, architecture notes, and decision notes to the v2 contract. Live YTMDesktop validation remains open.
 - 2026-07-07: Follow-up audit found and fixed stale keyring token handling after auth-required failures and invalid seek payload edge cases. Updated `src-tauri/src/lib.rs`, `src-tauri/src/companion.rs`, and this tracking set.
 - 2026-07-07: Deep full-code audit found and fixed progress smoothing clock drift and cross-window settings propagation. Updated `src/domain/playback/progress.ts`, `tests/domain/playback/progress.test.tsx`, `src/integration/companion/tauriBridge.ts`, `src/app/AppProvider.tsx`, `src-tauri/src/lib.rs`, and this tracking set.
+- 2026-07-09: User confirmed successful Allow, durable authorization after reconnect, and live realtime playback state against YTMDesktop v2.0.11 after task `0031`. Task `0032` then fixed compact window sizing and realtime render churn; live command and seek confirmation remain open.
 
 ## Dependencies
 
@@ -103,7 +107,7 @@ Out of scope:
 | Question | Status | Answer / Decision |
 | --- | --- | --- |
 | Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
-| Is live Companion validation complete? | Open | No. The code now matches the official v2 docs, but a real local YTMDesktop Companion instance is still required for auth, realtime, commands, and seek verification. |
+| Is live Companion validation complete? | Open | Partially. Auth, durable reconnect, and realtime state are confirmed on v2.0.11; commands after task `0032` and seek remain to be confirmed. |
 | Does the auth `appId` change affect existing users? | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. If a stored token becomes invalid, the native bridge now clears it when Companion returns auth-required. |
 | Can malformed seek seconds reach Companion? | Resolved | The UI already constrains normal seek input; the native command payload builder now also clamps negative or non-finite seconds to `0`. |
 | Why did progress fail to move smoothly between socket updates? | Resolved | `useSmoothedProgress` compared `performance.now()` to `Date.now()` snapshot timestamps. It now uses `Date.now()` consistently. |

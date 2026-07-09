@@ -3,6 +3,7 @@
 import { PlaybackController } from '@/domain/playback/controller';
 import type {
   CompanionGateway,
+  CompanionRawState,
   DiscoveryInfo,
   GatewayConnection,
   GatewayEventHandlers,
@@ -15,6 +16,23 @@ const makeDiscovery = (): DiscoveryInfo => ({
   supportsSeek: true,
   usingBrowserBridge: false,
   detail: 'Ready',
+});
+
+const makeRawState = (
+  videoProgress: number,
+  trackState = 1,
+): CompanionRawState => ({
+  player: {
+    trackState,
+    videoProgress,
+  },
+  video: {
+    id: 'track-1',
+    title: 'Night Train Window',
+    author: 'Moseca Harbor',
+    durationSeconds: 200,
+    metadataFilled: true,
+  },
 });
 
 describe('PlaybackController', () => {
@@ -53,6 +71,103 @@ describe('PlaybackController', () => {
     await controller.start();
 
     expect(statuses.filter((status) => status === 'connected')).toHaveLength(1);
+    vi.useRealTimers();
+  });
+
+  it('suppresses progress-only realtime snapshots that match the local playback clock', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const gateway: CompanionGateway = {
+      kind: 'simulator',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState: makeRawState(25),
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'DEV-OK' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    const controller = new PlaybackController(gateway);
+    const snapshots: unknown[] = [];
+    controller.subscribe((state) => snapshots.push(state));
+    await controller.start();
+    const countAfterInitialState = snapshots.length;
+
+    vi.advanceTimersByTime(100);
+    onState(makeRawState(25.05));
+
+    expect(snapshots).toHaveLength(countAfterInitialState);
+    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(50);
+    vi.useRealTimers();
+  });
+
+  it('publishes playback-state changes immediately even when progress is unchanged', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const gateway: CompanionGateway = {
+      kind: 'simulator',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState: makeRawState(25),
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'DEV-OK' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    onState(makeRawState(25, 0));
+
+    expect(controller.getSnapshot().playback?.playbackState).toBe('paused');
+    vi.useRealTimers();
+  });
+
+  it('publishes significant progress corrections such as seeks', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const gateway: CompanionGateway = {
+      kind: 'simulator',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState: makeRawState(25),
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'DEV-OK' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+
+    vi.advanceTimersByTime(100);
+    onState(makeRawState(60));
+
+    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(120);
     vi.useRealTimers();
   });
 
