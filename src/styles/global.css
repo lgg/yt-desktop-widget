@@ -185,7 +185,7 @@ a,
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 12px 12px 14px;
+  padding: 12px 12px 20px;
 }
 
 .settings-window__content {
@@ -259,10 +259,10 @@ a,
 }
 
 .widget-window__footer {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .cover-card {
@@ -482,9 +482,10 @@ a,
 
 .progress-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 14px;
   opacity: 0.9;
   transition: opacity 180ms ease, transform 180ms ease;
 }
@@ -494,9 +495,12 @@ a,
 }
 
 .progress-row__time {
-  min-width: 34px;
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.progress-row__time:last-child {
+  text-align: right;
 }
 
 .progress-row__track {

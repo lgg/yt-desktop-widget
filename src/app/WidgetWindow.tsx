@@ -59,8 +59,9 @@ export const WidgetWindow = () => {
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const syncHeightRef = useRef<() => void>(() => undefined);
   const playback = session.playback ?? session.lastKnownPlayback;
-  const controlsVisible = hovered && !settings.ui.hidePlaybackControls && !!playback;
-  const progressVisible = !settings.ui.hideProgressBar && !!playback;
+  const controlsRendered = !settings.ui.hidePlaybackControls && !!playback;
+  const progressRendered = !settings.ui.hideProgressBar && !!playback;
+  const controlsVisible = hovered && controlsRendered;
   const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
   const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
   const canSendCommands = session.connection.status === 'connected' && !!session.playback;
@@ -193,6 +194,8 @@ export const WidgetWindow = () => {
     session.connection.authCode,
     playback?.id,
     playback?.playbackState,
+    settings.ui.hidePlaybackControls,
+    settings.ui.hideProgressBar,
     ready,
   ]);
   const renderStateCard = () => {
@@ -376,22 +379,26 @@ export const WidgetWindow = () => {
 
           {renderStateCard()}
 
-          {playback ? (
+          {playback && (controlsRendered || progressRendered) ? (
             <footer className="widget-window__footer">
-              <TransportControls
-                playbackState={playback.playbackState}
-                disabled={!canSendCommands}
-                visible={controlsVisible}
-                onPrevious={() => void sendCommand({ type: 'previous' })}
-                onPlayPause={() => void sendCommand({ type: 'playPause' })}
-                onNext={() => void sendCommand({ type: 'next' })}
-              />
-              <ProgressScrubber
-                playback={playback}
-                disabled={!canSendCommands || !playback.canSeek}
-                visible={progressVisible}
-                onSeek={(seconds) => sendCommand({ type: 'seekTo', seconds })}
-              />
+              {controlsRendered ? (
+                <TransportControls
+                  playbackState={playback.playbackState}
+                  disabled={!canSendCommands}
+                  visible={controlsVisible}
+                  onPrevious={() => void sendCommand({ type: 'previous' })}
+                  onPlayPause={() => void sendCommand({ type: 'playPause' })}
+                  onNext={() => void sendCommand({ type: 'next' })}
+                />
+              ) : null}
+              {progressRendered ? (
+                <ProgressScrubber
+                  playback={playback}
+                  disabled={!canSendCommands || !playback.canSeek}
+                  visible
+                  onSeek={(seconds) => sendCommand({ type: 'seekTo', seconds })}
+                />
+              ) : null}
             </footer>
           ) : null}
         </div>

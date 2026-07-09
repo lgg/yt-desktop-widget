@@ -23,15 +23,21 @@ vi.mock('@/app/windowController', async (importOriginal) => ({
   setMainAppWindowHeight: setMainAppWindowHeightMock,
 }));
 
-const createConnectedModel = (
-  playbackState: 'playing' | 'paused' = 'playing',
-): AppModel => ({
+const createConnectedModel = ({
+  playbackState = 'playing',
+  hidePlaybackControls = false,
+  hideProgressBar = false,
+}: {
+  playbackState?: 'playing' | 'paused';
+  hidePlaybackControls?: boolean;
+  hideProgressBar?: boolean;
+} = {}): AppModel => ({
   ready: true,
   settings: {
     api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
     ui: {
-      hidePlaybackControls: false,
-      hideProgressBar: false,
+      hidePlaybackControls,
+      hideProgressBar,
       hideSettingsButton: true,
       hideCloseButton: true,
       themeMode: 'dark',
@@ -100,7 +106,7 @@ describe('WidgetWindow', () => {
   });
 
   it('keeps paused playback compact without a redundant state card', () => {
-    mockUseAppModel.mockReturnValue(createConnectedModel('paused'));
+    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
 
     render(
       <I18nProvider>
@@ -133,9 +139,37 @@ describe('WidgetWindow', () => {
     expect(model.sendCommand).toHaveBeenCalledTimes(3);
   });
 
+  it('removes playback controls from layout when the display preference hides them', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel({ hidePlaybackControls: true }));
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+
+    expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+  });
+
+  it('removes the progress scrubber from layout when the display preference hides it', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel({ hideProgressBar: true }));
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(screen.queryByRole('slider', { name: 'Seek position' })).not.toBeInTheDocument();
+  });
+
   it('measures intrinsic layout height instead of the current expanded viewport', async () => {
     runtimeMock.isTauri = true;
-    mockUseAppModel.mockReturnValue(createConnectedModel('paused'));
+    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
     const observeMutations = vi.fn();
 
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
@@ -201,6 +235,72 @@ describe('WidgetWindow', () => {
         characterData: true,
       },
     );
+  });
+
+  it('resyncs intrinsic height when display preferences remove footer sections', async () => {
+    runtimeMock.isTauri = true;
+    let layoutHeight = 490;
+    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
+
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.classList.contains('widget-window__layout') ? layoutHeight : 700;
+    });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal(
+      'MutationObserver',
+      class {
+        constructor(callback: MutationCallback) {
+          void callback;
+        }
+        observe() {}
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+      },
+    );
+
+    const { rerender } = render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => {
+      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(492);
+    });
+
+    layoutHeight = 404;
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({
+        playbackState: 'paused',
+        hidePlaybackControls: true,
+        hideProgressBar: true,
+      }),
+    );
+    rerender(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    await waitFor(() => {
+      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(406);
+    });
   });
 
   it('renders authorization actions when auth is required', () => {
