@@ -4,7 +4,6 @@ import type { PlaybackState } from '@/domain/playback/types';
 interface TransportControlsProps {
   playbackState: PlaybackState;
   disabled: boolean;
-  visible: boolean;
   onPrevious: () => void;
   onPlayPause: () => void;
   onNext: () => void;
@@ -13,12 +12,11 @@ interface TransportControlsProps {
 export const TransportControls = ({
   playbackState,
   disabled,
-  visible,
   onNext,
   onPlayPause,
   onPrevious,
 }: TransportControlsProps) => (
-  <div className={`transport-controls ${visible ? 'transport-controls--visible' : ''}`}>
+  <div className="transport-controls">
     <button
       className="transport-controls__button"
       type="button"
