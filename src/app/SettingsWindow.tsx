@@ -187,6 +187,20 @@ export const SettingsWindow = () => {
               description={t('settingsWindow.sections.ui.hideControlsDescription')}
             />
             <Toggle
+              checked={settings.ui.showPlaybackControlsOnHover}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    showPlaybackControlsOnHover: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.showControlsOnHover')}
+              description={t('settingsWindow.sections.ui.showControlsOnHoverDescription')}
+            />
+            <Toggle
               checked={settings.ui.hideProgressBar}
               onChange={(nextValue) =>
                 void updateSettings((current) => ({

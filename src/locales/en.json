@@ -101,6 +101,8 @@
         "description": "Control how much UI stays visible when the widget is idle.",
         "hideControls": "Hide playback controls",
         "hideControlsDescription": "Remove transport buttons from the compact layout.",
+        "showControlsOnHover": "Show playback controls only on hover",
+        "showControlsOnHoverDescription": "When enabled, the widget shrinks after the pointer leaves the window.",
         "hideProgress": "Hide progress bar",
         "hideProgressDescription": "Remove elapsed time and the scrubber from the compact layout.",
         "hideSettingsButton": "Hide settings button",

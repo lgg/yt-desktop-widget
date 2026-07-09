@@ -388,12 +388,15 @@ a,
 }
 
 .icon-button,
-.transport-controls__button,
 .primary-button,
 .secondary-button,
 .ghost-button,
 .segmented-control__option {
   transition: transform 160ms ease, background-color 160ms ease, opacity 160ms ease, border-color 160ms ease;
+}
+
+.transport-controls__button {
+  transition: background-color 140ms ease, opacity 140ms ease, border-color 140ms ease;
 }
 
 .icon-button,
@@ -411,7 +414,6 @@ a,
 }
 
 .icon-button:hover,
-.transport-controls__button:hover,
 .primary-button:hover,
 .secondary-button:hover,
 .ghost-button:hover,
@@ -420,13 +422,21 @@ a,
   background: var(--button-bg-hover);
 }
 
+.transport-controls__button:hover {
+  background: var(--button-bg-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .icon-button:active,
-.transport-controls__button:active,
 .primary-button:active,
 .secondary-button:active,
 .ghost-button:active,
 .segmented-control__option:active {
   transform: translateY(0);
+  background: var(--button-bg-active);
+}
+
+.transport-controls__button:active {
   background: var(--button-bg-active);
 }
 
@@ -462,15 +472,6 @@ a,
   align-items: center;
   justify-content: center;
   gap: 12px;
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none;
-}
-
-.transport-controls--visible {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
 }
 
 .transport-controls__button--primary {

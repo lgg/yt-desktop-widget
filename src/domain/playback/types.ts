@@ -19,6 +19,7 @@ export interface ConnectionSettings {
 
 export interface UiSettings {
   hidePlaybackControls: boolean;
+  showPlaybackControlsOnHover: boolean;
   hideProgressBar: boolean;
   hideSettingsButton: boolean;
   hideCloseButton: boolean;

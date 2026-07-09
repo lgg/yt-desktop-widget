@@ -9,6 +9,7 @@ const defaultSettings: AppSettings = {
   api: { host: '127.0.0.1', port: 9863, sourceMode: 'real' },
   ui: {
     hidePlaybackControls: false,
+    showPlaybackControlsOnHover: true,
     hideProgressBar: false,
     hideSettingsButton: true,
     hideCloseButton: true,

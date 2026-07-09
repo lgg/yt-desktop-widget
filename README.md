@@ -12,6 +12,7 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Supports previous, play/pause, next, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Display preferences can remove playback controls or the progress row from the compact layout, allowing the widget height to shrink.
+- Playback controls can be kept always visible or shown only while hovering; hover-hidden controls do not reserve layout height.
 - Hides to tray instead of quitting by default.
 - Ships with a real Companion client and a separate simulator for local development and tests.
 - Uses i18n JSON messages from day one, with English wired as the default locale.

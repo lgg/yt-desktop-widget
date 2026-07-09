@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   ui: {
     hidePlaybackControls: false,
+    showPlaybackControlsOnHover: true,
     hideProgressBar: false,
     hideSettingsButton: true,
     hideCloseButton: true,
