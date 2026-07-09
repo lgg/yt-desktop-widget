@@ -149,10 +149,6 @@ export type GatewayDisconnectReason =
   | 'api_unavailable'
   | 'not_running';
 
-export interface GatewayConnectOptions {
-  preserveAuthOnFailure?: boolean;
-}
-
 export interface GatewayDisconnectOptions {
   closeBackend?: boolean;
 }
@@ -161,6 +157,7 @@ export class GatewayError extends Error {
   readonly code:
     | 'auth_required'
     | 'authorization_disabled'
+    | 'credential_storage'
     | 'not_running'
     | 'api_unavailable'
     | 'network'
@@ -196,10 +193,7 @@ export interface CompanionGateway {
   readonly kind: 'real' | 'simulator';
   discover: () => Promise<DiscoveryInfo>;
   hasStoredAuth: () => Promise<boolean>;
-  connect: (
-    handlers: GatewayEventHandlers,
-    options?: GatewayConnectOptions,
-  ) => Promise<GatewayConnectResult>;
+  connect: (handlers: GatewayEventHandlers) => Promise<GatewayConnectResult>;
   requestAuthCode: () => Promise<{ code: string }>;
   completeAuth: (code: string) => Promise<void>;
   clearAuth: () => Promise<void>;

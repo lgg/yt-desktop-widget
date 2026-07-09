@@ -80,4 +80,17 @@ describe('createRealGateway', () => {
     expect(caughtError?.code).toBe('authorization_disabled');
     expect(caughtError?.message).toContain('authorization requests are disabled');
   });
+
+  it('does not convert credential probe failures into not-authorized', async () => {
+    vi.mocked(tauriBridge.companionHasAuth).mockRejectedValueOnce({
+      code: 'credential_storage',
+      message: 'Windows Credential Manager could not read the Companion credential.',
+    });
+    const gateway = createRealGateway();
+
+    await expect(gateway.hasStoredAuth()).rejects.toMatchObject({
+      code: 'credential_storage',
+      message: 'Windows Credential Manager could not read the Companion credential.',
+    });
+  });
 });

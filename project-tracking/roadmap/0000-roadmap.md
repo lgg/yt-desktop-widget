@@ -39,6 +39,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Live Companion stored-token reconnect loop - [`0028-fix-stored-token-reconnect-loop.md`](../tasks/0028-fix-stored-token-reconnect-loop.md) - REST auth now falls back from `Bearer`-prefixed stored values to raw tokens, and realtime Socket.IO connects to the documented `/api/v1/realtime` endpoint with raw `auth.token`
 - Completed P1: Live Companion Socket.IO namespace fix - [`0029-fix-companion-post-approval-loop-after-realtime-url.md`](../tasks/0029-fix-companion-post-approval-loop-after-realtime-url.md) - corrected `rust_socketio` usage so the Engine.IO base URL remains `http://<host>:<port>` and `/api/v1/realtime` is used as the namespace
 - Completed P1: Restore Companion auth baseline - [`0030-restore-companion-auth-baseline.md`](../tasks/0030-restore-companion-auth-baseline.md) - compared the pre-week baseline with YTMDesktop v2.0.11 source, removed implicit token deletion, validated fresh tokens before keyring storage, and stopped reuse of consumed pairing codes
+- Completed P1: Fix Companion auth persistence - [`0031-fix-companion-auth-persistence.md`](../tasks/0031-fix-companion-auth-persistence.md) - enabled the actual Windows Credential Manager backend for `keyring`, added durable write/read verification, removed synthetic stored-auth state, and surfaced credential errors
 
 ## Deferred Post-v1 Roadmap
 

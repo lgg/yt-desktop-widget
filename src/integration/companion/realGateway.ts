@@ -1,7 +1,6 @@
 ﻿import {
   GatewayError,
   type CompanionGateway,
-  type GatewayConnectOptions,
   type GatewayConnectResult,
 } from '@/domain/playback/types';
 import {
@@ -21,6 +20,7 @@ const normalizeBridgeError = (error: unknown): GatewayError => {
       if (
         candidate.code === 'auth_required' ||
         candidate.code === 'authorization_disabled' ||
+        candidate.code === 'credential_storage' ||
         candidate.code === 'not_running' ||
         candidate.code === 'api_unavailable' ||
         candidate.code === 'network' ||
@@ -52,11 +52,6 @@ const invokeBridge = async <T>(operation: () => Promise<T>): Promise<T> => {
   }
 };
 
-const bridgeConnectOptions = (options?: GatewayConnectOptions) => {
-  const preserveAuthOnFailure = options?.preserveAuthOnFailure;
-  return preserveAuthOnFailure === undefined ? undefined : { preserveAuthOnFailure };
-};
-
 export const createRealGateway = (): CompanionGateway => ({
   kind: 'real',
   async discover() {
@@ -64,17 +59,10 @@ export const createRealGateway = (): CompanionGateway => ({
     return invokeBridge(() => tauriBridge.companionDiscover());
   },
   async hasStoredAuth() {
-    if (!isTauriRuntime()) {
-      return false;
-    }
-
-    try {
-      return await tauriBridge.companionHasAuth();
-    } catch {
-      return false;
-    }
+    requireTauriRuntime();
+    return invokeBridge(() => tauriBridge.companionHasAuth());
   },
-  async connect(handlers, options) {
+  async connect(handlers) {
     requireTauriRuntime();
 
     let active = true;
@@ -108,9 +96,7 @@ export const createRealGateway = (): CompanionGateway => ({
     };
 
     try {
-      const result = await invokeBridge(() =>
-        tauriBridge.companionConnect(bridgeConnectOptions(options)),
-      );
+      const result = await invokeBridge(() => tauriBridge.companionConnect());
       return {
         initialState: result.initialState,
         connection: {

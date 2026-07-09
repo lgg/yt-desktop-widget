@@ -91,16 +91,42 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
-  it('keeps fresh post-auth reconnects marked authorized during protected retry', async () => {
+  it('does not synthesize stored authorization after approval', async () => {
     const gateway: CompanionGateway = {
       kind: 'real',
       discover: vi.fn(() => Promise.resolve(makeDiscovery())),
       hasStoredAuth: vi.fn(() => Promise.resolve(false)),
-      connect: vi.fn(() =>
-        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
-          code: 'auth_required',
-        })),
+      connect: vi.fn(() => Promise.reject(new Error('connect must not run'))),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.requestAuthCode();
+    await vi.waitFor(() => {
+      const snapshot = controller.getSnapshot();
+      expect(snapshot.connection.status).toBe('error');
+      expect(snapshot.connection.hasStoredAuth).toBe(false);
+      expect(snapshot.connection.authCode).toBeNull();
+      expect(gateway.connect).not.toHaveBeenCalled();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it('surfaces credential probe failures after approval', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() =>
+        Promise.reject(
+          Object.assign(new Error('Windows Credential Manager read failed.'), {
+            code: 'credential_storage',
+          }),
+        ),
       ),
+      connect: vi.fn(() => Promise.reject(new Error('connect must not run'))),
       requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
       completeAuth: vi.fn(() => Promise.resolve()),
       clearAuth: vi.fn(() => Promise.resolve()),
@@ -111,43 +137,11 @@ describe('PlaybackController', () => {
     await controller.completeAuthentication();
 
     const snapshot = controller.getSnapshot();
-    expect(snapshot.connection.status).toBe('reconnecting');
-    expect(snapshot.connection.hasStoredAuth).toBe(true);
+    expect(gateway.connect).not.toHaveBeenCalled();
+    expect(snapshot.connection.status).toBe('error');
+    expect(snapshot.connection.hasStoredAuth).toBe(false);
+    expect(snapshot.connection.detail).toBe('Windows Credential Manager read failed.');
     expect(snapshot.connection.authCode).toBeNull();
-    expect(gateway.connect).toHaveBeenCalledWith(
-      expect.any(Object),
-      { preserveAuthOnFailure: true },
-    );
-
-    vi.useRealTimers();
-  });
-
-  it('keeps polling a fresh post-auth token beyond the first short retry burst', async () => {
-    const gateway: CompanionGateway = {
-      kind: 'real',
-      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
-      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
-      connect: vi.fn(() =>
-        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
-          code: 'auth_required',
-        })),
-      ),
-      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
-      completeAuth: vi.fn(() => Promise.resolve()),
-      clearAuth: vi.fn(() => Promise.resolve()),
-    };
-
-    const controller = new PlaybackController(gateway);
-    await controller.requestAuthCode();
-
-    await vi.advanceTimersByTimeAsync(400);
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.advanceTimersByTimeAsync(2000);
-
-    const snapshot = controller.getSnapshot();
-    expect(gateway.connect).toHaveBeenCalledTimes(4);
-    expect(snapshot.connection.status).toBe('reconnecting');
-    expect(snapshot.connection.hasStoredAuth).toBe(true);
 
     vi.useRealTimers();
   });

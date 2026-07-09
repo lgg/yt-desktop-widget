@@ -29,15 +29,6 @@ export interface BackendCommandError {
   message: string;
 }
 
-export interface CompanionConnectOptions {
-  preserveAuthOnFailure?: boolean;
-}
-
-const companionConnectArgs = (options: CompanionConnectOptions) => {
-  const { preserveAuthOnFailure } = options;
-  return preserveAuthOnFailure === undefined ? {} : { preserveAuthOnFailure };
-};
-
 export const tauriBridge = {
   loadSettings: () => invoke<AppSettings>('load_settings'),
   saveSettings: (settings: AppSettings) => invoke<AppSettings>('save_settings', { settings }),
@@ -53,8 +44,7 @@ export const tauriBridge = {
   openRepository: () => invoke<void>('open_repository'),
   companionHasAuth: () => invoke<boolean>('companion_has_auth'),
   companionDiscover: () => invoke<DiscoveryInfo>('companion_discover'),
-  companionConnect: (options: CompanionConnectOptions = {}) =>
-    invoke<CompanionConnectResponse>('companion_connect', companionConnectArgs(options)),
+  companionConnect: () => invoke<CompanionConnectResponse>('companion_connect'),
   companionDisconnect: () => invoke<void>('companion_disconnect'),
   companionRequestAuthCode: () => invoke<{ code: string }>('companion_request_auth_code'),
   companionCompleteAuth: (code: string) => invoke<void>('companion_complete_auth', { code }),

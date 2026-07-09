@@ -68,7 +68,24 @@ describe('PlaybackController auth flow', () => {
     });
   });
 
-  it('connects after approval even when the auth probe still reports no stored token', async () => {
+  it('keeps durable authorization through a manual reconnect', async () => {
+    const gateway = createGateway();
+    const controller = new PlaybackController(gateway);
+
+    await controller.requestAuthCode();
+    await waitFor(() => {
+      expect(controller.getSnapshot().connection.status).toBe('connected');
+    });
+
+    await controller.reconnectNow();
+
+    expect(gateway.hasStoredAuth).toHaveBeenCalled();
+    expect(gateway.connect).toHaveBeenCalledTimes(2);
+    expect(controller.getSnapshot().connection.status).toBe('connected');
+    expect(controller.getSnapshot().connection.hasStoredAuth).toBe(true);
+  });
+
+  it('does not claim authorization when the post-approval storage probe is false', async () => {
     const gateway = createGateway();
     vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
     const controller = new PlaybackController(gateway);
@@ -78,83 +95,50 @@ describe('PlaybackController auth flow', () => {
     await waitFor(() => {
       const snapshot = controller.getSnapshot();
       expect(gateway.completeAuth).toHaveBeenCalledWith('2413');
-      expect(gateway.connect).toHaveBeenCalledTimes(1);
-      expect(snapshot.connection.status).toBe('connected');
-      expect(snapshot.connection.hasStoredAuth).toBe(true);
+      expect(gateway.connect).not.toHaveBeenCalled();
+      expect(snapshot.connection.status).toBe('error');
+      expect(snapshot.connection.hasStoredAuth).toBe(false);
       expect(snapshot.connection.authCode).toBeNull();
+      expect(snapshot.connection.detail).toContain('credential storage');
     });
   });
 
-  it('retries a transient post-approval auth failure before returning to auth required', async () => {
+  it('does not retry a rejected token after durable storage was confirmed', async () => {
     const gateway = createGateway();
-    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
-    vi.mocked(gateway.connect)
-      .mockRejectedValueOnce(
-        new GatewayError(
-          'auth_required',
-          'Companion authorization is required before the widget can connect.',
-        ),
-      )
-      .mockResolvedValueOnce({
-        initialState: null,
-        connection: createConnection(),
-      });
+    vi.mocked(gateway.connect).mockRejectedValueOnce(
+      new GatewayError(
+        'auth_required',
+        'Companion authorization is required before the widget can connect.',
+      ),
+    );
     const controller = new PlaybackController(gateway);
 
     await controller.requestAuthCode();
 
     await waitFor(() => {
       expect(gateway.connect).toHaveBeenCalledTimes(1);
-      expect(gateway.connect).toHaveBeenLastCalledWith(
-        expect.any(Object),
-        { preserveAuthOnFailure: true },
+      expect(gateway.connect).toHaveBeenLastCalledWith(expect.any(Object));
+      expect(controller.getSnapshot().connection.status).toBe('error');
+      expect(controller.getSnapshot().connection.hasStoredAuth).toBe(true);
+      expect(controller.getSnapshot().connection.detail).toContain(
+        'rejected the stored Companion authorization',
       );
-      expect(controller.getSnapshot().connection.status).toBe('reconnecting');
     });
-
-    await waitFor(
-      () => {
-        expect(gateway.connect).toHaveBeenCalledTimes(2);
-        expect(controller.getSnapshot().connection.status).toBe('connected');
-      },
-      { timeout: 1500 },
-    );
   });
 
-  it('uses the post-approval safe reconnect path for external auth changes', async () => {
+  it('requires durable storage before reconnecting for an external auth change', async () => {
     const gateway = createGateway();
-    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(false);
-    vi.mocked(gateway.connect)
-      .mockRejectedValueOnce(
-        new GatewayError(
-          'auth_required',
-          'Companion authorization is required before the widget can connect.',
-        ),
-      )
-      .mockResolvedValueOnce({
-        initialState: null,
-        connection: createConnection(),
-      });
+    vi.mocked(gateway.hasStoredAuth).mockResolvedValue(true);
     const controller = new PlaybackController(gateway);
 
     await controller.handleExternalAuthChanged(true);
 
     await waitFor(() => {
       expect(gateway.connect).toHaveBeenCalledTimes(1);
-      expect(gateway.connect).toHaveBeenLastCalledWith(
-        expect.any(Object),
-        { preserveAuthOnFailure: true },
-      );
-      expect(controller.getSnapshot().connection.status).toBe('reconnecting');
+      expect(gateway.connect).toHaveBeenLastCalledWith(expect.any(Object));
+      expect(controller.getSnapshot().connection.status).toBe('connected');
+      expect(controller.getSnapshot().connection.hasStoredAuth).toBe(true);
     });
-
-    await waitFor(
-      () => {
-        expect(gateway.connect).toHaveBeenCalledTimes(2);
-        expect(controller.getSnapshot().connection.status).toBe('connected');
-      },
-      { timeout: 1500 },
-    );
   });
 
   it('clears local connection state for external auth clear events without clearing storage again', async () => {

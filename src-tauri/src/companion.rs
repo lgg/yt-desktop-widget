@@ -293,26 +293,68 @@ pub async fn validate_token(
 }
 
 pub fn load_token(settings: &ConnectionSettings) -> Result<Option<String>, CommandError> {
-  let entry = keyring::Entry::new(KEYRING_SERVICE, &keyring_account(settings))?;
+  let entry = token_entry(settings)?;
   match entry.get_password() {
     Ok(value) => Ok(Some(value)),
     Err(keyring::Error::NoEntry) => Ok(None),
-    Err(error) => Err(CommandError::from(error)),
+    Err(error) => Err(credential_storage_error("read", error)),
   }
 }
 
 pub fn store_token(settings: &ConnectionSettings, token: &str) -> Result<(), CommandError> {
-  let entry = keyring::Entry::new(KEYRING_SERVICE, &keyring_account(settings))?;
-  entry.set_password(token)?;
+  let entry = token_entry(settings)?;
+  entry
+    .set_password(token)
+    .map_err(|error| credential_storage_error("write", error))?;
+
+  let persisted = match entry.get_password() {
+    Ok(value) => value,
+    Err(error) => {
+      let _ = entry.delete_credential();
+      return Err(credential_storage_error("verify", error));
+    }
+  };
+
+  if let Err(error) = verify_persisted_token(token, &persisted) {
+    let _ = entry.delete_credential();
+    return Err(error);
+  }
+
   Ok(())
 }
 
 pub fn clear_token(settings: &ConnectionSettings) -> Result<(), CommandError> {
-  let entry = keyring::Entry::new(KEYRING_SERVICE, &keyring_account(settings))?;
+  let entry = token_entry(settings)?;
   match entry.delete_credential() {
     Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
-    Err(error) => Err(CommandError::from(error)),
+    Err(error) => Err(credential_storage_error("delete", error)),
   }
+}
+
+fn token_entry(settings: &ConnectionSettings) -> Result<keyring::Entry, CommandError> {
+  keyring::Entry::new(KEYRING_SERVICE, &keyring_account(settings))
+    .map_err(|error| credential_storage_error("open", error))
+}
+
+fn verify_persisted_token(expected: &str, persisted: &str) -> Result<(), CommandError> {
+  if expected == persisted {
+    return Ok(());
+  }
+
+  Err(CommandError::new(
+    "credential_storage",
+    "The OS credential store did not retain the Companion token exactly.",
+  ))
+}
+
+fn credential_storage_error(action: &str, error: keyring::Error) -> CommandError {
+  CommandError::new(
+    "credential_storage",
+    format!(
+      "The OS credential store could not {} Companion authorization: {}",
+      action, error
+    ),
+  )
 }
 
 fn emit_event(app: &AppHandle, event_name: &str, payload: CompanionEvent) {
@@ -761,18 +803,26 @@ mod tests {
   #[cfg(target_os = "windows")]
   #[test]
   fn windows_keyring_round_trips_companion_sized_tokens() {
-    let account = format!("companion-keyring-probe-{}", std::process::id());
-    let entry = keyring::Entry::new("io.github.lgg.ytm-desktop-widget.probe", &account)
-      .expect("create keyring probe entry");
+    let settings = ConnectionSettings {
+      host: format!("keyring-probe-{}", std::process::id()),
+      port: 9863,
+      source_mode: "auto".to_string(),
+    };
     let token = "a".repeat(512);
+    let _ = clear_token(&settings);
 
-    entry
-      .set_password(&token)
-      .expect("store Companion-sized probe token");
-    let loaded = entry.get_password().expect("load Companion-sized probe token");
-    let _ = entry.delete_credential();
+    store_token(&settings, &token).expect("store Companion-sized probe token");
+    let loaded = load_token(&settings).expect("load Companion-sized probe token");
+    clear_token(&settings).expect("delete Companion-sized probe token");
 
-    assert_eq!(loaded, token);
+    assert_eq!(loaded, Some(token));
+  }
+
+  #[test]
+  fn rejects_a_keyring_readback_that_differs_from_the_issued_token() {
+    let result = verify_persisted_token("issued-token", "different-token");
+
+    assert!(result.is_err());
   }
 
   #[test]

@@ -176,8 +176,10 @@ Beads was removed as the active tracker. Its full migration archive is preserved
 
 ## Auth and storage
 
-- Companion tokens are stored through the Rust `keyring` crate, which maps to Windows Credential Manager on Windows.
+- Companion tokens are stored through the Rust `keyring` crate with its `windows-native` backend, which maps to Windows Credential Manager.
 - Fresh Companion tokens are accepted into the keyring only after an authenticated state request succeeds.
+- Token writes are read back through a new keyring entry before the backend reports authorization success.
+- `Stored securely` is derived only from a successful backend credential probe; the frontend never synthesizes this state.
 - Reconnect and command failures never erase a stored token automatically; the user controls credential removal through `Clear auth`.
 - App settings are persisted in the Tauri app config directory as JSON.
 - Browser preview stores settings in `localStorage` only for local development.

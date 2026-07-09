@@ -82,7 +82,7 @@ Out of scope:
 | What is the comparison baseline? | Resolved | Commit `de61ccf`, the last repository snapshot before the 2026-07-07 Companion changes. |
 | What is the authoritative server implementation? | Resolved | YTMDesktop tag `v2.0.11`, peeled commit `3d49f521344879492f0d9f250f4e3b21720b24b9`. |
 | Is the Allow action reaching token creation? | Resolved | Yes. The live server disables new auth requests after the user's successful request, matching the upstream post-token behavior. |
-| Which recent change is the root cause? | Resolved | Commit `66e4ef0` added implicit keyring deletion on authenticated `401`; later protected retries did not cover subsequent ordinary reconnects. |
+| Which recent change is the root cause? | Superseded by 0031 | Commit `66e4ef0` caused the visible re-pair loop, but task 0031 proved the deeper persistence failure: `keyring` lacked its `windows-native` feature, so a new entry could not read the token. |
 
 ## Risks
 
@@ -93,6 +93,10 @@ Out of scope:
 | Reverting protocol corrections breaks v2.0.11 schema validation. | High | Preserve request schemas confirmed from upstream source and restore only proven lifecycle behavior. |
 | Multiple windows race during post-auth reconnect. | Medium | Trace and test event ordering and ensure one owner performs post-auth activation. |
 
+## Follow-up Correction
+
+Task 0031 invalidated the 0030 keyring conclusion. The 0030 probe called `set_password` and `get_password` on the same `Entry`, which passes with keyring's non-persistent fallback. The correct durability test creates a new entry through `load_token`; that test failed until `windows-native` was enabled.
+
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
@@ -100,4 +104,4 @@ Out of scope:
 - Related reports: [`0008`](../reports/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md), [`0029`](../reports/0029-fix-companion-post-approval-loop-after-realtime-url.md)
 - Time log: [`time-log.md`](../time-log.md)
 - Report: [`0030-restore-companion-auth-baseline.md`](../reports/0030-restore-companion-auth-baseline.md)
-- PR/commit: branch `codex/0030-restore-companion-auth-baseline`; commit pending
+- PR/commit: `8ba8939` on `master`

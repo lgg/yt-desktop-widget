@@ -144,9 +144,7 @@ async fn companion_discover(
 async fn companion_connect(
   app: AppHandle,
   state: tauri::State<'_, AppState>,
-  preserve_auth_on_failure: Option<bool>,
 ) -> Result<CompanionConnectResponse, CommandError> {
-  let _ = preserve_auth_on_failure;
   let settings = state.settings.load();
   let token = companion::load_token(&settings.api)?.ok_or_else(CommandError::auth_required)?;
   let mut manager = state.companion.lock().await;

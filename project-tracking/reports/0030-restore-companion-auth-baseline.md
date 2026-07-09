@@ -4,6 +4,8 @@
 
 Compared the current Companion flow with repository baseline `de61ccf` and the exact YTMDesktop v2.0.11 implementation at upstream commit `3d49f521`.
 
+Correction from task 0031: this report correctly identified the automatic deletion regression, but its keyring durability check was insufficient. It reused one in-memory `Entry`; a new-entry read proved the Windows backend was not enabled.
+
 The concrete regression was introduced in commit `66e4ef0`: a single `401` during connect or command execution began deleting the OS-keyring token automatically. The later protected-retry flags only delayed that deletion; an ordinary reconnect still erased the freshly issued credential and restarted pairing.
 
 The corrected flow validates the token against authenticated `/api/v1/state` before storing it, never deletes stored auth implicitly, and never retries a pairing code after YTMDesktop has consumed it.
@@ -71,7 +73,7 @@ The corrected flow validates the token against authenticated `/api/v1/state` bef
 | Frontend verification | Passed | `npm run verify`: lint, 31 tests, TypeScript, and Vite build passed. |
 | Native check | Passed | `cargo check -j1` completed successfully. |
 | Portable build | Passed | `npm run build:desktop` built `src-tauri/target/release/ytm-desktop-widget.exe`. |
-| Security review | Passed | No token value was logged; keyring remains the only persistent token store; temporary probe credential was deleted. |
+| Security review | Superseded by 0031 | No token leaked, but the same-entry keyring probe did not prove persistence. Task 0031 added a new-entry production round-trip and enabled `windows-native`. |
 | Rust formatting | Not available | `cargo fmt --check` could not run because `rustfmt` is not installed; `git diff --check` is used in final verification. |
 | Time tracking review | Passed | Task, report, and time log use the same tracked 40-minute interval. |
 
@@ -85,7 +87,7 @@ The corrected flow validates the token against authenticated `/api/v1/state` bef
 | --- | --- |
 | What changed from the pre-week baseline? | Commit `66e4ef0` added automatic keyring deletion on any authenticated `401`; the baseline retained credentials until explicit clear. |
 | Did YTMDesktop v2.0.11 change its API? | No relevant server contract change was found. The exact v2.0.11 source confirms one-use codes, raw tokens, raw `Authorization`, and `/api/v1/realtime` namespace semantics. |
-| Can the Windows keyring hold the issued token? | Yes. A 512-character token round-tripped byte-for-byte in the real Windows credential backend. |
+| Can the Windows keyring hold the issued token? | Corrected by 0031: yes after enabling `windows-native`. The original same-entry probe had exercised the non-persistent fallback. |
 | Why did later preserve-auth fixes not stop the loop? | They protected only selected post-auth calls. A later ordinary reconnect still reached the deletion branch from `66e4ef0`. |
 
 ## Open Questions

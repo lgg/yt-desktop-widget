@@ -8,7 +8,6 @@ import type {
   ConnectionState,
   DiscoveryInfo,
   GatewayConnection,
-  GatewayConnectOptions,
   GatewayDisconnectOptions,
   GatewayDisconnectReason,
   GatewayError,
@@ -18,20 +17,17 @@ import type {
 
 const SOCKET_RECONNECT_DELAYS = [1250, 2500, 5000, 10000, 15000] as const;
 const DISCOVERY_RECONNECT_DELAYS = [5000, 10000, 15000, 30000, 60000] as const;
-const POST_AUTH_CONNECT_RETRY_DELAYS = [400, 1000, 2000, 4000, 8000, 15000] as const;
 const AUTH_CODE_READY_DETAIL =
   'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
 const AUTH_FAILED_DETAIL =
   'Pairing was not completed. Generate a new code, then press Allow in YTMDesktop.';
-const POST_AUTH_RETRY_DETAIL =
-  'YTMDesktop accepted the pairing request. Waiting for the Companion token to become active.';
 const STORED_AUTH_REJECTED_DETAIL =
   'YTMDesktop rejected the stored Companion authorization. Reconnect to retry, or clear auth explicitly before pairing again.';
+const CREDENTIAL_NOT_PERSISTED_DETAIL =
+  'YTMDesktop approved pairing, but the credential storage did not retain the token. Generate a new code after resolving the storage error.';
 
 interface BeginConnectOptions {
-  skipStoredAuthGate?: boolean;
-  preserveAuthOnFailure?: boolean;
-  authRetryAttempt?: number;
+  requireStoredAuth?: boolean;
 }
 
 interface DisposeOptions {
@@ -76,11 +72,6 @@ const getRetryDetail = (reason: GatewayDisconnectReason, detail?: string) => {
     default:
       return 'Connection lost. Retrying shortly.';
   }
-};
-
-const getConnectOptions = (options: BeginConnectOptions): GatewayConnectOptions | undefined => {
-  const { preserveAuthOnFailure } = options;
-  return preserveAuthOnFailure === undefined ? undefined : { preserveAuthOnFailure };
 };
 
 const areDiscoveriesEqual = (
@@ -281,9 +272,7 @@ export class PlaybackController {
     this.clearReconnectTimer();
     await this.disconnectInternal();
     await this.beginConnect(true, {
-      skipStoredAuthGate: true,
-      preserveAuthOnFailure: true,
-      authRetryAttempt: 0,
+      requireStoredAuth: true,
     });
   }
 
@@ -324,18 +313,26 @@ export class PlaybackController {
     }
 
     this.clearReconnectTimer();
-    const hasStoredAuth = await this.gateway.hasStoredAuth();
-    const hasFreshPostAuthToken =
-      options.skipStoredAuthGate === true &&
-      options.preserveAuthOnFailure === true &&
-      this.gateway.kind === 'real';
-    const effectiveHasStoredAuth = hasStoredAuth || hasFreshPostAuthToken;
+    let hasStoredAuth: boolean;
+    try {
+      hasStoredAuth = await this.gateway.hasStoredAuth();
+    } catch (error) {
+      this.patchConnection((state) =>
+        reduceConnectionState(state, {
+          type: 'error',
+          message: toErrorMessage(error),
+          clearAuthCode: options.requireStoredAuth === true,
+        }),
+      );
+      return;
+    }
+
     this.patchConnection((state) =>
       reduceConnectionState(state, {
         type: 'discovering',
-        hasStoredAuth: effectiveHasStoredAuth,
+        hasStoredAuth,
         reconnecting,
-        authCode: hasFreshPostAuthToken ? null : undefined,
+        authCode: options.requireStoredAuth ? null : undefined,
       }),
     );
 
@@ -345,7 +342,7 @@ export class PlaybackController {
         reduceConnectionState(state, {
           type: 'availability',
           discovery,
-          hasStoredAuth: effectiveHasStoredAuth,
+          hasStoredAuth,
         }),
       );
 
@@ -354,7 +351,17 @@ export class PlaybackController {
         return;
       }
 
-      if (!options.skipStoredAuthGate && !effectiveHasStoredAuth && this.gateway.kind === 'real') {
+      if (!hasStoredAuth && this.gateway.kind === 'real') {
+        if (options.requireStoredAuth) {
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'error',
+              message: CREDENTIAL_NOT_PERSISTED_DETAIL,
+            }),
+          );
+          return;
+        }
+
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
@@ -364,31 +371,28 @@ export class PlaybackController {
         return;
       }
 
-      const connectedHasStoredAuth = effectiveHasStoredAuth || this.gateway.kind === 'real';
-      const { connection, initialState } = await this.gateway.connect(
-        {
-          onConnected: () => {
-            this.patchConnection((state) =>
-              reduceConnectionState(state, {
-                type: 'connected',
-                hasStoredAuth: connectedHasStoredAuth,
-              }),
-            );
-          },
-          onError: (detail) => {
-            this.patchConnection((state) =>
-              reduceConnectionState(state, { type: 'error', message: detail }),
-            );
-          },
-          onDisconnected: (reason, detail) => {
-            this.scheduleReconnect(reason, detail);
-          },
-          onState: (rawState) => {
-            this.patchPlayback(rawState);
-          },
+      const connectedHasStoredAuth = hasStoredAuth;
+      const { connection, initialState } = await this.gateway.connect({
+        onConnected: () => {
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'connected',
+              hasStoredAuth: connectedHasStoredAuth,
+            }),
+          );
         },
-        getConnectOptions(options),
-      );
+        onError: (detail) => {
+          this.patchConnection((state) =>
+            reduceConnectionState(state, { type: 'error', message: detail }),
+          );
+        },
+        onDisconnected: (reason, detail) => {
+          this.scheduleReconnect(reason, detail);
+        },
+        onState: (rawState) => {
+          this.patchPlayback(rawState);
+        },
+      });
 
       this.connection = connection;
       this.patchConnection((state) =>
@@ -414,11 +418,7 @@ export class PlaybackController {
       }
 
       if (gatewayError?.code === 'auth_required') {
-        if (this.schedulePostAuthConnectRetry(options)) {
-          return;
-        }
-
-        if (effectiveHasStoredAuth) {
+        if (hasStoredAuth) {
           this.patchConnection((state) =>
             reduceConnectionState(state, {
               type: 'error',
@@ -448,38 +448,6 @@ export class PlaybackController {
 
       this.scheduleReconnect('socket_error', toErrorMessage(error));
     }
-  }
-
-  private schedulePostAuthConnectRetry(options: BeginConnectOptions) {
-    if (!options.preserveAuthOnFailure) {
-      return false;
-    }
-
-    const attempt = options.authRetryAttempt ?? 0;
-    const delay = POST_AUTH_CONNECT_RETRY_DELAYS[attempt];
-    if (delay == null) {
-      return false;
-    }
-
-    this.clearReconnectTimer();
-    const retryAt = Date.now() + delay;
-    this.patchConnection((state) =>
-      reduceConnectionState(state, {
-        type: 'retry_scheduled',
-        retryAttempt: state.retryAttempt + 1,
-        retryAt,
-        detail: POST_AUTH_RETRY_DETAIL,
-      }),
-    );
-
-    this.reconnectTimer = window.setTimeout(() => {
-      void this.beginConnect(true, {
-        ...options,
-        authRetryAttempt: attempt + 1,
-      });
-    }, delay);
-
-    return true;
   }
 
   private scheduleReconnect(reason: GatewayDisconnectReason, detail?: string) {
