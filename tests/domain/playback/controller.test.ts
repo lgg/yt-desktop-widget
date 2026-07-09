@@ -179,7 +179,7 @@ describe('PlaybackController auth flow', () => {
     expect(controller.getSnapshot().connection.hasStoredAuth).toBe(false);
   });
 
-  it('returns to an actionable auth state when Companion approval fails', async () => {
+  it('requires a new pairing code when Companion approval fails', async () => {
     const gateway = createGateway(
       vi.fn(() => Promise.reject(new Error('Pairing was denied or timed out.'))),
     );
@@ -189,8 +189,8 @@ describe('PlaybackController auth flow', () => {
 
     await waitFor(() => {
       const snapshot = controller.getSnapshot();
-      expect(snapshot.connection.status).toBe('auth_required');
-      expect(snapshot.connection.authCode).toBe('2413');
+      expect(snapshot.connection.status).toBe('error');
+      expect(snapshot.connection.authCode).toBeNull();
       expect(snapshot.connection.detail).toBe('Pairing was denied or timed out.');
     });
   });

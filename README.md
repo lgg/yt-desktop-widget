@@ -51,6 +51,9 @@ Verified from upstream docs during the latest protocol audit:
 - Auth completion endpoint: `POST /api/v1/auth/request`
   - request body: `appId`, `code`
 - Authenticated REST requests pass the token as the raw `Authorization` header value
+- Pairing codes are single-use once `POST /api/v1/auth/request` begins
+- A newly issued token is verified against `GET /api/v1/state` before it is stored
+- Stored Companion credentials are removed only by the explicit `Clear auth` action, not by a transient `401`
 - Playback state endpoint: `GET /api/v1/state`
 - Playback command endpoint: `POST /api/v1/command`
   - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "seekTo", "data": 42 }`
@@ -174,6 +177,8 @@ Beads was removed as the active tracker. Its full migration archive is preserved
 ## Auth and storage
 
 - Companion tokens are stored through the Rust `keyring` crate, which maps to Windows Credential Manager on Windows.
+- Fresh Companion tokens are accepted into the keyring only after an authenticated state request succeeds.
+- Reconnect and command failures never erase a stored token automatically; the user controls credential removal through `Clear auth`.
 - App settings are persisted in the Tauri app config directory as JSON.
 - Browser preview stores settings in `localStorage` only for local development.
 - The Companion `appId` used for auth is `ytmdesktopwidget`, matching the v2 API lowercase-alphanumeric constraint.

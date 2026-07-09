@@ -152,6 +152,70 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
+  it('does not turn a rejected stored token into an automatic pairing loop', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn(() =>
+        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
+          code: 'auth_required',
+        })),
+      ),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+
+    const snapshot = controller.getSnapshot();
+    expect(snapshot.connection.status).toBe('error');
+    expect(snapshot.connection.hasStoredAuth).toBe(true);
+    expect(snapshot.connection.detail).toContain('stored Companion authorization');
+    expect(gateway.clearAuth).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it('does not retry a pairing code after YTMDesktop has consumed it', async () => {
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn(() =>
+        Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState: null,
+        }),
+      ),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
+      completeAuth: vi.fn(() =>
+        Promise.reject(Object.assign(new Error('Authorization request denied.'), {
+          code: 'auth_required',
+        })),
+      ),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.requestAuthCode();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const snapshot = controller.getSnapshot();
+    expect(snapshot.connection.status).toBe('error');
+    expect(snapshot.connection.authCode).toBeNull();
+    expect(snapshot.connection.hasStoredAuth).toBe(false);
+    expect(gateway.completeAuth).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
   it('shows an actionable error when pairing-code generation is disabled by YTMDesktop', async () => {
     const gateway: CompanionGateway = {
       kind: 'real',

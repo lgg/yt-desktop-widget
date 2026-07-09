@@ -17,7 +17,7 @@ export type ConnectionEvent =
     }
   | { type: 'authenticating'; authCode: string }
   | { type: 'retry_scheduled'; retryAttempt: number; retryAt: number; detail: string }
-  | { type: 'error'; message: string }
+  | { type: 'error'; message: string; clearAuthCode?: boolean }
   | { type: 'clear_auth' };
 
 export const createInitialConnectionState = (): ConnectionState => ({
@@ -92,6 +92,7 @@ export const reduceConnectionState = (
         status: 'error',
         detail: event.message,
         lastError: event.message,
+        authCode: event.clearAuthCode ? null : state.authCode,
         retryAt: null,
       };
     case 'clear_auth':

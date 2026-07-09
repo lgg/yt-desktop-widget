@@ -38,6 +38,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Live Companion auth disabled-request diagnosis - [`0027-fix-companion-auth-infinite-post-allow-loop.md`](../tasks/0027-fix-companion-auth-infinite-post-allow-loop.md) - `AUTHORIZATION_DISABLED` is now surfaced as a real Companion setting blocker, and fresh-token validation retries for longer before falling back
 - Completed P1: Live Companion stored-token reconnect loop - [`0028-fix-stored-token-reconnect-loop.md`](../tasks/0028-fix-stored-token-reconnect-loop.md) - REST auth now falls back from `Bearer`-prefixed stored values to raw tokens, and realtime Socket.IO connects to the documented `/api/v1/realtime` endpoint with raw `auth.token`
 - Completed P1: Live Companion Socket.IO namespace fix - [`0029-fix-companion-post-approval-loop-after-realtime-url.md`](../tasks/0029-fix-companion-post-approval-loop-after-realtime-url.md) - corrected `rust_socketio` usage so the Engine.IO base URL remains `http://<host>:<port>` and `/api/v1/realtime` is used as the namespace
+- Completed P1: Restore Companion auth baseline - [`0030-restore-companion-auth-baseline.md`](../tasks/0030-restore-companion-auth-baseline.md) - compared the pre-week baseline with YTMDesktop v2.0.11 source, removed implicit token deletion, validated fresh tokens before keyring storage, and stopped reuse of consumed pairing codes
 
 ## Deferred Post-v1 Roadmap
 

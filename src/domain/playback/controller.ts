@@ -22,9 +22,11 @@ const POST_AUTH_CONNECT_RETRY_DELAYS = [400, 1000, 2000, 4000, 8000, 15000] as c
 const AUTH_CODE_READY_DETAIL =
   'Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.';
 const AUTH_FAILED_DETAIL =
-  'Pairing was not completed. Generate a new code or retry, then press Allow in YTMDesktop.';
+  'Pairing was not completed. Generate a new code, then press Allow in YTMDesktop.';
 const POST_AUTH_RETRY_DETAIL =
   'YTMDesktop accepted the pairing request. Waiting for the Companion token to become active.';
+const STORED_AUTH_REJECTED_DETAIL =
+  'YTMDesktop rejected the stored Companion authorization. Reconnect to retry, or clear auth explicitly before pairing again.';
 
 interface BeginConnectOptions {
   skipStoredAuthGate?: boolean;
@@ -48,12 +50,6 @@ const getAuthFailureDetail = (error: unknown): string => {
   const message = toErrorMessage(error);
   return message === 'Unexpected error' ? AUTH_FAILED_DETAIL : message;
 };
-
-const isGatewayErrorCode = (error: unknown, code: GatewayError['code']): boolean =>
-  typeof error === 'object' &&
-  error !== null &&
-  'code' in error &&
-  (error as Partial<GatewayError>).code === code;
 
 const getDelayForAttempt = (reason: GatewayDisconnectReason, attempt: number) => {
   const delays =
@@ -267,24 +263,14 @@ export class PlaybackController {
       await this.reconnectAfterAuth();
     } catch (error) {
       if (!this.disposed && this.authCode === code) {
-        if (isGatewayErrorCode(error, 'authorization_disabled')) {
-          this.authCode = null;
-          this.patchConnection((state) =>
-            reduceConnectionState(state, {
-              type: 'error',
-              message: getAuthFailureDetail(error),
-            }),
-          );
-        } else {
-          this.patchConnection((state) =>
-            reduceConnectionState(state, {
-              type: 'auth_required',
-              authCode: code,
-              detail: getAuthFailureDetail(error),
-              hasStoredAuth: false,
-            }),
-          );
-        }
+        this.authCode = null;
+        this.patchConnection((state) =>
+          reduceConnectionState(state, {
+            type: 'error',
+            message: getAuthFailureDetail(error),
+            clearAuthCode: true,
+          }),
+        );
       }
 
       throw error;
@@ -429,6 +415,16 @@ export class PlaybackController {
 
       if (gatewayError?.code === 'auth_required') {
         if (this.schedulePostAuthConnectRetry(options)) {
+          return;
+        }
+
+        if (effectiveHasStoredAuth) {
+          this.patchConnection((state) =>
+            reduceConnectionState(state, {
+              type: 'error',
+              message: STORED_AUTH_REJECTED_DETAIL,
+            }),
+          );
           return;
         }
 

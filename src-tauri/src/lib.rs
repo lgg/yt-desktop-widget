@@ -146,6 +146,7 @@ async fn companion_connect(
   state: tauri::State<'_, AppState>,
   preserve_auth_on_failure: Option<bool>,
 ) -> Result<CompanionConnectResponse, CommandError> {
+  let _ = preserve_auth_on_failure;
   let settings = state.settings.load();
   let token = companion::load_token(&settings.api)?.ok_or_else(CommandError::auth_required)?;
   let mut manager = state.companion.lock().await;
@@ -155,10 +156,6 @@ async fn companion_connect(
   {
     Ok(initial_state) => initial_state,
     Err(companion::CompanionError::AuthRequired) => {
-      drop(manager);
-      if !preserve_auth_on_failure.unwrap_or(false) {
-        companion::clear_token(&settings.api)?;
-      }
       return Err(CommandError::auth_required());
     }
     Err(error) => return Err(error.into()),
@@ -189,6 +186,7 @@ async fn companion_complete_auth(
 ) -> Result<(), CommandError> {
   let settings = state.settings.load();
   let token = companion::complete_auth(&settings.api, &code).await?;
+  companion::validate_token(&settings.api, &token).await?;
   companion::store_token(&settings.api, &token)?;
   let _ = app.emit(
     COMPANION_AUTH_CHANGED_EVENT,
@@ -223,11 +221,7 @@ async fn companion_send_command(
   let manager = state.companion.lock().await;
   match manager.send_command(&settings.api, &token, &command).await {
     Ok(()) => Ok(()),
-    Err(companion::CompanionError::AuthRequired) => {
-      drop(manager);
-      companion::clear_token(&settings.api)?;
-      Err(CommandError::auth_required())
-    }
+    Err(companion::CompanionError::AuthRequired) => Err(CommandError::auth_required()),
     Err(error) => Err(error.into()),
   }
 }

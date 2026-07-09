@@ -268,34 +268,7 @@ impl CompanionManager {
     settings: &ConnectionSettings,
     token: &str,
   ) -> Result<Value, CompanionError> {
-    let url = format!("{}/api/v1/state", base_url(settings));
-    let auth_values = authorization_header_values(token);
-    for (index, auth_value) in auth_values.iter().enumerate() {
-      let response = self
-        .client
-        .get(&url)
-        .header(AUTHORIZATION, auth_value)
-        .send()
-        .await
-        .map_err(|_| CompanionError::NotRunning)?;
-
-      let status = response.status();
-      let body = response
-        .text()
-        .await
-        .map_err(|error| CompanionError::Network(error.to_string()))?;
-
-      match validate_status_with_body(status, &body) {
-        Ok(()) => {
-          return serde_json::from_str::<Value>(&body)
-            .map_err(|error| CompanionError::Unknown(error.to_string()));
-        }
-        Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
-        Err(error) => return Err(error),
-      }
-    }
-
-    Err(CompanionError::AuthRequired)
+    validate_token_with_client(&self.client, settings, token).await
   }
 }
 
@@ -310,6 +283,13 @@ pub async fn complete_auth(
   code: &str,
 ) -> Result<String, CompanionError> {
   complete_auth_with_client(&reqwest::Client::new(), settings, code).await
+}
+
+pub async fn validate_token(
+  settings: &ConnectionSettings,
+  token: &str,
+) -> Result<Value, CompanionError> {
+  validate_token_with_client(&reqwest::Client::new(), settings, token).await
 }
 
 pub fn load_token(settings: &ConnectionSettings) -> Result<Option<String>, CommandError> {
@@ -408,6 +388,40 @@ async fn complete_auth_with_client(
       summarize_json(&body)
     ))
   })
+}
+
+async fn validate_token_with_client(
+  client: &reqwest::Client,
+  settings: &ConnectionSettings,
+  token: &str,
+) -> Result<Value, CompanionError> {
+  let url = format!("{}/api/v1/state", base_url(settings));
+  let auth_values = authorization_header_values(token);
+  for (index, auth_value) in auth_values.iter().enumerate() {
+    let response = client
+      .get(&url)
+      .header(AUTHORIZATION, auth_value)
+      .send()
+      .await
+      .map_err(|_| CompanionError::NotRunning)?;
+
+    let status = response.status();
+    let body = response
+      .text()
+      .await
+      .map_err(|error| CompanionError::Network(error.to_string()))?;
+
+    match validate_status_with_body(status, &body) {
+      Ok(()) => {
+        return serde_json::from_str::<Value>(&body)
+          .map_err(|error| CompanionError::Unknown(error.to_string()));
+      }
+      Err(CompanionError::AuthRequired) if index + 1 < auth_values.len() => continue,
+      Err(error) => return Err(error),
+    }
+  }
+
+  Err(CompanionError::AuthRequired)
 }
 
 fn command_request_body(command: &PlaybackCommand) -> Value {
@@ -583,6 +597,8 @@ fn payload_to_string(payload: Payload) -> String {
 mod tests {
   use super::*;
   use serde_json::json;
+  use tokio::io::{AsyncReadExt, AsyncWriteExt};
+  use tokio::net::TcpListener;
 
   #[test]
   fn app_id_matches_companion_v2_constraints() {
@@ -695,6 +711,43 @@ mod tests {
     );
   }
 
+  #[tokio::test]
+  async fn validates_a_fresh_token_with_the_exact_raw_authorization_value() {
+    let listener = TcpListener::bind(("127.0.0.1", 0))
+      .await
+      .expect("bind token validation server");
+    let port = listener.local_addr().expect("read validation address").port();
+    let server = tokio::spawn(async move {
+      let (mut stream, _) = listener.accept().await.expect("accept validation request");
+      let mut buffer = vec![0_u8; 4096];
+      let read = stream.read(&mut buffer).await.expect("read validation request");
+      let request = String::from_utf8_lossy(&buffer[..read]).to_ascii_lowercase();
+
+      assert!(request.starts_with("get /api/v1/state "));
+      assert!(request.contains("\r\nauthorization: fresh-token\r\n"));
+
+      stream
+        .write_all(
+          b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}",
+        )
+        .await
+        .expect("write validation response");
+    });
+    let settings = ConnectionSettings {
+      host: "127.0.0.1".to_string(),
+      port,
+      source_mode: "auto".to_string(),
+    };
+
+    let state =
+      validate_token_with_client(&reqwest::Client::new(), &settings, "fresh-token")
+        .await
+        .expect("validate fresh token");
+
+    assert_eq!(state, json!({}));
+    server.await.expect("join validation server");
+  }
+
   #[test]
   fn extracts_nested_companion_auth_values() {
     let body = json!({ "data": { "attributes": { "token": "  secret-token  " } } });
@@ -703,6 +756,23 @@ mod tests {
       extract_token_like_value(&body, &["token"]),
       Some("secret-token".to_string())
     );
+  }
+
+  #[cfg(target_os = "windows")]
+  #[test]
+  fn windows_keyring_round_trips_companion_sized_tokens() {
+    let account = format!("companion-keyring-probe-{}", std::process::id());
+    let entry = keyring::Entry::new("io.github.lgg.ytm-desktop-widget.probe", &account)
+      .expect("create keyring probe entry");
+    let token = "a".repeat(512);
+
+    entry
+      .set_password(&token)
+      .expect("store Companion-sized probe token");
+    let loaded = entry.get_password().expect("load Companion-sized probe token");
+    let _ = entry.delete_credential();
+
+    assert_eq!(loaded, token);
   }
 
   #[test]
