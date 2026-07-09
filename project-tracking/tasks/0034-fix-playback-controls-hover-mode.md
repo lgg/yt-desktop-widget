@@ -69,7 +69,7 @@ Out of scope:
 - [x] Focused tests fail before and pass after the behavioral fix.
 - [x] Browser smoke verifies hidden, hover-only, and always-visible controls with compact height changes.
 - [x] `npm run verify`, `cargo check -j1`, and `npm run build:desktop` pass or skipped checks are recorded with reasons.
-- [ ] A separate branch/PR is created and merged to `master` if validation passes and remote access is available.
+- [x] A separate branch/PR is created and merged to `master` if validation passes and remote access is available.
 - [x] Related code, docs, tests, config, roadmap, task, report, bootstrap-sync, and time-log files are updated when relevant.
 - [x] Time tracking is filled in task, report, and `project-tracking/time-log.md`.
 - [x] No mismatch remains between frontend, native backend, Companion API assumptions, tests, docs, and release/config.
@@ -83,7 +83,7 @@ Out of scope:
 - [x] Browser QA: simulator smoke for always-visible, hover-only collapsed/un-collapsed, and fully hidden controls.
 - [x] Documentation review: README, roadmap, task, report, and time log.
 - [x] Release/config review: portable-only packaging unchanged.
-- [ ] GitHub review: create PR and merge to `master` when checks pass.
+- [x] GitHub review: PR #1 created and merged to `master`.
 - [x] Time tracking review: task, report, and time-log values match.
 
 ## Questions and Answers

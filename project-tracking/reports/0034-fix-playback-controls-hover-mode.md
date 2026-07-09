@@ -102,4 +102,4 @@ Added a separate playback-controls hover mode and removed transform-based transp
 
 ## Next Steps
 
-- Create the PR for branch `codex/0034-fix-playback-controls-hover-mode`, merge to `master`, and push `master`.
+- Completed: PR #1 (`https://github.com/lgg/yt-desktop-widget/pull/1`) was merged to `master` with merge commit `8c93651`.
