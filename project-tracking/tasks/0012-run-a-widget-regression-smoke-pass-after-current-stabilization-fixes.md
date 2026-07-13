@@ -67,6 +67,7 @@ Out of scope:
 - 2026-07-09: Task `0032` expanded and passed the browser smoke flow for compact playing/paused layouts and previous/play-pause/next simulator commands. Settings and tray interaction in the portable runtime remain open.
 - 2026-07-09: Task `0033` added browser smoke coverage for display preferences: progress row safe spacing, hidden playback controls, hidden progress row, and collapsed height when both are hidden. Settings and tray interaction in the portable runtime remain open.
 - 2026-07-09: Task `0034` added browser smoke coverage for hover-only playback controls, always-visible controls, hover-hidden height collapse, and transform-free transport-button hover behavior. Settings/tray interaction in the portable runtime remains open.
+- 2026-07-13: Task `0035` superseded hover-hidden height collapse with a stable reserved controls row after live pointer-boundary jitter, and expanded browser smoke to six passing scenarios covering real settings clicks/persistence, connection-badge visibility, stable hover geometry, and wall-clock progress rate. Settings/tray interaction in the portable runtime remains open.
 
 ## Dependencies
 

@@ -91,6 +91,7 @@ Out of scope:
 - 2026-07-07: Follow-up audit found and fixed stale keyring token handling after auth-required failures and invalid seek payload edge cases. Updated `src-tauri/src/lib.rs`, `src-tauri/src/companion.rs`, and this tracking set.
 - 2026-07-07: Deep full-code audit found and fixed progress smoothing clock drift and cross-window settings propagation. Updated `src/domain/playback/progress.ts`, `tests/domain/playback/progress.test.tsx`, `src/integration/companion/tauriBridge.ts`, `src/app/AppProvider.tsx`, `src-tauri/src/lib.rs`, and this tracking set.
 - 2026-07-09: User confirmed successful Allow, durable authorization after reconnect, and live realtime playback state against YTMDesktop v2.0.11 after task `0031`. Task `0032` then fixed compact window sizing and realtime render churn; live command and seek confirmation remain open.
+- 2026-07-13: Task `0035` traced the user's accelerated/pinned progress report to a frontend contract mismatch: official YTMDesktop v2.0.11 source treats `player.videoProgress` as elapsed seconds, while the mapper treated it as a percentage. The mapper and simulator now use elapsed seconds consistently, with unit/component/browser coverage. Live command, seek, and real-track timing confirmation remain open.
 
 ## Dependencies
 
@@ -111,6 +112,7 @@ Out of scope:
 | Does the auth `appId` change affect existing users? | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. If a stored token becomes invalid, the native bridge now clears it when Companion returns auth-required. |
 | Can malformed seek seconds reach Companion? | Resolved | The UI already constrains normal seek input; the native command payload builder now also clamps negative or non-finite seconds to `0`. |
 | Why did progress fail to move smoothly between socket updates? | Resolved | `useSmoothedProgress` compared `performance.now()` to `Date.now()` snapshot timestamps. It now uses `Date.now()` consistently. |
+| What unit does Companion use for `player.videoProgress`? | Resolved | Official YTMDesktop v2.0.11 source divides `videoProgress` by `durationSeconds`, proving that `videoProgress` is elapsed seconds rather than a percentage. Task `0035` corrected the frontend mapping and simulator contract. |
 | Do Settings-window changes affect the main widget immediately? | Resolved | Saved settings now emit a backend event and each Tauri webview applies the new settings payload. |
 
 ## Risks

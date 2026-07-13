@@ -103,11 +103,19 @@ export const mapCompanionState = (
   const queueItem = getSelectedQueueItem(rawState);
   const coverUrl =
     pickLargestThumbnail(video?.thumbnails) ?? pickLargestThumbnail(queueItem?.thumbnails);
-  const durationSeconds = clamp(video?.durationSeconds ?? 0, 0, Number.MAX_SAFE_INTEGER);
-  const progressRatio = durationSeconds
-    ? clamp((rawState.player?.videoProgress ?? 0) / 100, 0, 1)
+  const rawDurationSeconds = video?.durationSeconds ?? 0;
+  const durationSeconds = Number.isFinite(rawDurationSeconds)
+    ? clamp(rawDurationSeconds, 0, Number.MAX_SAFE_INTEGER)
     : 0;
-  const elapsedSeconds = durationSeconds * progressRatio;
+  const rawElapsedSeconds = rawState.player?.videoProgress ?? 0;
+  const elapsedSeconds = Number.isFinite(rawElapsedSeconds)
+    ? clamp(
+        rawElapsedSeconds,
+        0,
+        durationSeconds || Number.MAX_SAFE_INTEGER,
+      )
+    : 0;
+  const progressRatio = durationSeconds ? elapsedSeconds / durationSeconds : 0;
   const nextId = video?.id ?? previous?.id ?? 'unknown-track';
   const metadataFilled = video?.metadataFilled ?? true;
   const canSeek = !video?.isLive && durationSeconds > 0;

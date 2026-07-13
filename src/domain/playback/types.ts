@@ -21,6 +21,7 @@ export interface UiSettings {
   hidePlaybackControls: boolean;
   showPlaybackControlsOnHover: boolean;
   hideProgressBar: boolean;
+  hideConnectionBadge: boolean;
   hideSettingsButton: boolean;
   hideCloseButton: boolean;
   themeMode: ThemeMode;

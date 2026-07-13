@@ -52,7 +52,7 @@ test('renders the simulated widget and settings views', async ({ page }) => {
   await expect(page.getByText('Show playback controls only on hover')).toBeVisible();
 });
 
-test('mounts hover-only playback controls only while the widget is hovered', async ({ page }) => {
+test('keeps hover-only playback controls stable while changing visibility', async ({ page }) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
   await expect(page.getByText('Night Train Window')).toBeVisible();
@@ -60,14 +60,16 @@ test('mounts hover-only playback controls only while the widget is hovered', asy
   const collapsedHeight = await page.locator('.widget-window__layout').evaluate(
     (element) => element.scrollHeight,
   );
-  await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
+  const transportControls = page.locator('.transport-controls');
+  await expect(transportControls).toHaveClass(/transport-controls--hidden/);
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
 
   await page.locator('.widget-window').hover();
   const hoveredHeight = await page.locator('.widget-window__layout').evaluate(
     (element) => element.scrollHeight,
   );
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
-  expect(hoveredHeight).toBeGreaterThan(collapsedHeight + 40);
+  expect(hoveredHeight).toBe(collapsedHeight);
 
   await page.getByRole('button', { name: 'Pause' }).hover();
   const transportTransforms = await page.locator('.transport-controls').evaluate((row) => {
@@ -83,12 +85,55 @@ test('mounts hover-only playback controls only while the widget is hovered', asy
   expect(transportTransforms.row).toBe('none');
   expect(transportTransforms.buttons).toEqual(['none', 'none', 'none']);
 
-  await page.locator('.widget-window').dispatchEvent('pointerout', { relatedTarget: null });
+  await page.mouse.move(2_000, 2_000);
   const collapsedAgainHeight = await page.locator('.widget-window__layout').evaluate(
     (element) => element.scrollHeight,
   );
-  await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
+  await expect(transportControls).toHaveClass(/transport-controls--hidden/);
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
   expect(collapsedAgainHeight).toBe(collapsedHeight);
+});
+
+test('persists hover and connection badge preferences without layout shifts', async ({ page }) => {
+  await page.setViewportSize({ width: 720, height: 760 });
+  await page.goto('/?view=settings&source=simulator');
+
+  const hoverOnlyToggle = page.getByLabel('Show playback controls only on hover');
+  const badgeToggle = page.getByLabel('Hide connection status until hover');
+  await expect(hoverOnlyToggle).toBeChecked();
+  await hoverOnlyToggle.uncheck();
+  await expect(hoverOnlyToggle).not.toBeChecked();
+  await badgeToggle.check();
+  await expect(badgeToggle).toBeChecked();
+
+  await page.reload();
+  await expect(hoverOnlyToggle).not.toBeChecked();
+  await expect(badgeToggle).toBeChecked();
+
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+  const badge = page.locator('.widget-window__connection-badge');
+  const layout = page.locator('.widget-window__layout');
+  const idleHeight = await layout.evaluate((element) => element.scrollHeight);
+  await expect(badge).toHaveClass(/widget-window__connection-badge--hidden/);
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+
+  await page.locator('.widget-window').hover();
+  await expect(badge).not.toHaveClass(/widget-window__connection-badge--hidden/);
+  await expect(layout).toHaveJSProperty('scrollHeight', idleHeight);
+});
+
+test('advances simulator progress at wall-clock speed', async ({ page }) => {
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+  const slider = page.getByRole('slider', { name: 'Seek position' });
+  const before = Number(await slider.getAttribute('aria-valuenow'));
+
+  await page.waitForTimeout(2_100);
+
+  const after = Number(await slider.getAttribute('aria-valuenow'));
+  expect(after - before).toBeGreaterThanOrEqual(1);
+  expect(after - before).toBeLessThanOrEqual(3);
 });
 
 test('keeps playback controls mounted when hover-only controls are disabled', async ({ page }) => {

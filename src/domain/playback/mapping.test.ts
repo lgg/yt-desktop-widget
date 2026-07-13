@@ -27,10 +27,32 @@ describe('mapCompanionState', () => {
 
     expect(snapshot).not.toBeNull();
     expect(snapshot?.title).toBe('Northern Glass');
-    expect(snapshot?.elapsedSeconds).toBe(100);
+    expect(snapshot?.elapsedSeconds).toBe(50);
+    expect(snapshot?.progressRatio).toBe(0.25);
     expect(snapshot?.playbackState).toBe('playing');
     expect(snapshot?.canSeek).toBe(true);
     expect(snapshot?.coverUrl).toBe('https://example.com/cover.png');
+  });
+
+  it('treats Companion videoProgress as elapsed seconds instead of a percentage', () => {
+    const snapshot = mapCompanionState(
+      {
+        player: {
+          trackState: 1,
+          videoProgress: 4,
+        },
+        video: {
+          id: 'track-timing',
+          title: 'Real Clock',
+          durationSeconds: 248,
+        },
+      },
+      null,
+      1_000,
+    );
+
+    expect(snapshot?.elapsedSeconds).toBe(4);
+    expect(snapshot?.progressRatio).toBeCloseTo(4 / 248);
   });
 
   it('keeps previous metadata when a track update is incomplete', () => {

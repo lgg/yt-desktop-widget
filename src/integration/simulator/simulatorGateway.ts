@@ -48,14 +48,14 @@ const makeDiscovery = (): DiscoveryInfo => ({
 
 const buildState = (
   index: number,
-  progressRatio: number,
+  elapsedSeconds: number,
   trackState: number,
 ): CompanionRawState => {
   const track = TRACKS[index] ?? TRACKS[0];
   return {
     player: {
       trackState,
-      videoProgress: progressRatio * 100,
+      videoProgress: elapsedSeconds,
       volume: 55,
       adPlaying: false,
       queue: {
@@ -102,7 +102,7 @@ const buildState = (
 export const createSimulatorGateway = (): CompanionGateway => {
   let intervalId: number | null = null;
   let currentTrackIndex = 0;
-  let progressRatio = 0.16;
+  let elapsedSeconds = TRACKS[0].durationSeconds * 0.16;
   let trackState = 1;
   let handlersRef:
     | {
@@ -112,20 +112,20 @@ export const createSimulatorGateway = (): CompanionGateway => {
     | null = null;
 
   const emit = () => {
-    handlersRef?.onState(buildState(currentTrackIndex, progressRatio, trackState));
+    handlersRef?.onState(buildState(currentTrackIndex, elapsedSeconds, trackState));
   };
 
   const sendCommand = (command: PlaybackCommand): Promise<void> => {
     switch (command.type) {
       case 'next':
         currentTrackIndex = (currentTrackIndex + 1) % TRACKS.length;
-        progressRatio = 0;
+        elapsedSeconds = 0;
         emit();
         return Promise.resolve();
       case 'previous':
         currentTrackIndex =
           (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
-        progressRatio = 0;
+        elapsedSeconds = 0;
         emit();
         return Promise.resolve();
       case 'playPause':
@@ -142,9 +142,9 @@ export const createSimulatorGateway = (): CompanionGateway => {
         return Promise.resolve();
       case 'seekTo': {
         const track = TRACKS[currentTrackIndex] ?? TRACKS[0];
-        progressRatio = Math.max(
+        elapsedSeconds = Math.max(
           0,
-          Math.min(command.seconds / track.durationSeconds, 1),
+          Math.min(command.seconds, track.durationSeconds),
         );
         emit();
         return Promise.resolve();
@@ -171,10 +171,10 @@ export const createSimulatorGateway = (): CompanionGateway => {
         intervalId = window.setInterval(() => {
           if (trackState === 1) {
             const track = TRACKS[currentTrackIndex] ?? TRACKS[0];
-            progressRatio += 1 / track.durationSeconds;
-            if (progressRatio >= 1) {
+            elapsedSeconds += 1;
+            if (elapsedSeconds >= track.durationSeconds) {
               currentTrackIndex = (currentTrackIndex + 1) % TRACKS.length;
-              progressRatio = 0;
+              elapsedSeconds = 0;
             }
             emit();
           }
@@ -182,7 +182,7 @@ export const createSimulatorGateway = (): CompanionGateway => {
       }
 
       return Promise.resolve({
-        initialState: buildState(currentTrackIndex, progressRatio, trackState),
+        initialState: buildState(currentTrackIndex, elapsedSeconds, trackState),
         connection: {
           send: sendCommand,
           disconnect: () => {

@@ -12,7 +12,8 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Supports previous, play/pause, next, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Display preferences can remove playback controls or the progress row from the compact layout, allowing the widget height to shrink.
-- Playback controls can be kept always visible or shown only while hovering; hover-hidden controls do not reserve layout height.
+- Playback controls can be kept always visible or faded out until hover; the controls keep a stable reserved row so pointer leave cannot resize or jitter the widget.
+- The connection-status badge can optionally fade out until hover while keeping its layout footprint reserved.
 - Hides to tray instead of quitting by default.
 - Ships with a real Companion client and a separate simulator for local development and tests.
 - Uses i18n JSON messages from day one, with English wired as the default locale.
@@ -57,6 +58,7 @@ Verified from upstream docs during the latest protocol audit:
 - A newly issued token is verified against `GET /api/v1/state` before it is stored
 - Stored Companion credentials are removed only by the explicit `Clear auth` action, not by a transient `401`
 - Playback state endpoint: `GET /api/v1/state`
+- Companion `player.videoProgress` is elapsed playback time in seconds, while `videoDetails.durationSeconds` is total duration in seconds; the frontend derives the progress ratio from those two values.
 - Playback command endpoint: `POST /api/v1/command`
   - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "seekTo", "data": 42 }`
 - Realtime Socket.IO base URL: `http://<host>:<port>`

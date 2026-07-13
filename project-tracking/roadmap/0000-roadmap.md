@@ -7,12 +7,13 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 ## Current Tracking Snapshot
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
-- Total migrated issues: 15
+- Migrated Beads issues: 15
+- Total tracked tasks: 35
 - Open: 5
 - In progress: 1
 - Blocked: 0
 - Deferred: 6
-- Completed: 3
+- Completed: 23
 
 ## Current Stabilization Work
 
@@ -23,7 +24,8 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Open P2: ytw-l48.4 - [`0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md`](../tasks/0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md)
 - In Progress P2: ytw-l48.5 - [`0014-restore-settings-window-dragging-on-empty-frame-areas.md`](../tasks/0014-restore-settings-window-dragging-on-empty-frame-areas.md)
 - Completed P1: Widget display preferences layout - [`0033-fix-widget-display-preference-layout.md`](../tasks/0033-fix-widget-display-preference-layout.md) - display preferences now remove controls/progress from the compact layout, trigger auto-height resync, and add safe progress-row spacing.
-- Completed P1: Playback controls hover mode - [`0034-fix-playback-controls-hover-mode.md`](../tasks/0034-fix-playback-controls-hover-mode.md) - playback controls now have a separate hover-only setting, shrink out of layout while hidden by hover, and avoid transform-based transport-button jitter.
+- Completed P1: Playback controls hover mode - [`0034-fix-playback-controls-hover-mode.md`](../tasks/0034-fix-playback-controls-hover-mode.md) - introduced the separate hover-only setting and transform-free buttons; its height-collapse behavior was superseded by task `0035` after live feedback exposed pointer-boundary jitter.
+- Completed P1: Hover, progress, and status-badge stabilization - [`0035-fix-hover-progress-and-connection-badge.md`](../tasks/0035-fix-hover-progress-and-connection-badge.md) - fixed persisted false settings, made hover visibility layout-stable, corrected Companion elapsed-seconds mapping, and added optional hover-only connection-badge visibility.
 
 ## Companion / Audit Work
 

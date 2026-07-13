@@ -23,7 +23,9 @@ impl Default for ConnectionSettings {
 #[serde(rename_all = "camelCase", default)]
 pub struct UiSettings {
   pub hide_playback_controls: bool,
+  pub show_playback_controls_on_hover: bool,
   pub hide_progress_bar: bool,
+  pub hide_connection_badge: bool,
   pub hide_settings_button: bool,
   pub hide_close_button: bool,
   pub theme_mode: String,
@@ -33,7 +35,9 @@ impl Default for UiSettings {
   fn default() -> Self {
     Self {
       hide_playback_controls: false,
+      show_playback_controls_on_hover: true,
       hide_progress_bar: false,
+      hide_connection_badge: false,
       hide_settings_button: true,
       hide_close_button: true,
       theme_mode: "dark".to_string(),
@@ -171,5 +175,26 @@ impl From<TauriError> for CommandError {
 impl From<keyring::Error> for CommandError {
   fn from(error: keyring::Error) -> Self {
     Self::new("unknown", error.to_string())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::AppSettings;
+  use serde_json::json;
+
+  #[test]
+  fn preserves_hover_and_connection_badge_preferences_through_native_settings() {
+    let settings: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "showPlaybackControlsOnHover": false,
+        "hideConnectionBadge": true
+      }
+    }))
+    .expect("settings should deserialize");
+
+    let serialized = serde_json::to_value(settings).expect("settings should serialize");
+    assert_eq!(serialized["ui"]["showPlaybackControlsOnHover"], false);
+    assert_eq!(serialized["ui"]["hideConnectionBadge"], true);
   }
 }

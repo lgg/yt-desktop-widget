@@ -215,6 +215,20 @@ export const SettingsWindow = () => {
               description={t('settingsWindow.sections.ui.hideProgressDescription')}
             />
             <Toggle
+              checked={settings.ui.hideConnectionBadge}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideConnectionBadge: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideConnectionBadge')}
+              description={t('settingsWindow.sections.ui.hideConnectionBadgeDescription')}
+            />
+            <Toggle
               checked={settings.ui.hideSettingsButton}
               onChange={(nextValue) =>
                 void updateSettings((current) => ({

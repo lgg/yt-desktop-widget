@@ -60,9 +60,10 @@ export const WidgetWindow = () => {
   const syncHeightRef = useRef<() => void>(() => undefined);
   const playback = session.playback ?? session.lastKnownPlayback;
   const controlsEnabled = !settings.ui.hidePlaybackControls && !!playback;
-  const controlsRendered =
+  const controlsVisible =
     controlsEnabled && (!settings.ui.showPlaybackControlsOnHover || hovered);
   const progressRendered = !settings.ui.hideProgressBar && !!playback;
+  const connectionBadgeVisible = !settings.ui.hideConnectionBadge || hovered;
   const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
   const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
   const canSendCommands = session.connection.status === 'connected' && !!session.playback;
@@ -196,9 +197,7 @@ export const WidgetWindow = () => {
     playback?.id,
     playback?.playbackState,
     settings.ui.hidePlaybackControls,
-    settings.ui.showPlaybackControlsOnHover,
     settings.ui.hideProgressBar,
-    controlsRendered,
     ready,
   ]);
   const renderStateCard = () => {
@@ -314,7 +313,15 @@ export const WidgetWindow = () => {
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
         <div ref={layoutRef} className="widget-window__layout">
           <header className="widget-window__header">
-            <div data-tauri-drag-region className="widget-window__drag-anchor drag-region">
+            <div
+              data-tauri-drag-region
+              className={
+                connectionBadgeVisible
+                  ? 'widget-window__drag-anchor widget-window__connection-badge drag-region'
+                  : 'widget-window__drag-anchor widget-window__connection-badge widget-window__connection-badge--hidden drag-region'
+              }
+              aria-hidden={!connectionBadgeVisible}
+            >
               <ConnectionBadge
                 status={session.connection.status}
                 label={getStatusLabel(t, session.connection.status)}
@@ -382,12 +389,13 @@ export const WidgetWindow = () => {
 
           {renderStateCard()}
 
-          {playback && (controlsRendered || progressRendered) ? (
+          {playback && (controlsEnabled || progressRendered) ? (
             <footer className="widget-window__footer">
-              {controlsRendered ? (
+              {controlsEnabled ? (
                 <TransportControls
                   playbackState={playback.playbackState}
                   disabled={!canSendCommands}
+                  visible={controlsVisible}
                   onPrevious={() => void sendCommand({ type: 'previous' })}
                   onPlayPause={() => void sendCommand({ type: 'playPause' })}
                   onNext={() => void sendCommand({ type: 'next' })}

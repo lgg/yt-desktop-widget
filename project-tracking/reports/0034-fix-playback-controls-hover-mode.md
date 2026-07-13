@@ -100,6 +100,10 @@ Added a separate playback-controls hover mode and removed transform-based transp
 - Browser smoke validates Chromium behavior; WebView2/Tauri should match, but live DPI/window-boundary pointer leave still needs user confirmation.
 - Existing settings JSON receives the new setting through defaults merge; no migration file is needed.
 
+## Follow-up Correction
+
+Live portable feedback on 2026-07-13 invalidated the height-collapse decision: native resize on hover created a pointer-boundary feedback loop and visible jitter. Task [`0035`](../tasks/0035-fix-hover-progress-and-connection-badge.md) keeps the hover preference but reserves the controls row and changes visibility without resizing the widget. It also fixes the native settings schema that had dropped the persisted false value.
+
 ## Next Steps
 
 - Completed: PR #1 (`https://github.com/lgg/yt-desktop-widget/pull/1`) was merged to `master` with merge commit `8c93651`.

@@ -88,6 +88,7 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.ui.hidePlaybackControls === right.ui.hidePlaybackControls &&
   left.ui.showPlaybackControlsOnHover === right.ui.showPlaybackControlsOnHover &&
   left.ui.hideProgressBar === right.ui.hideProgressBar &&
+  left.ui.hideConnectionBadge === right.ui.hideConnectionBadge &&
   left.ui.hideSettingsButton === right.ui.hideSettingsButton &&
   left.ui.hideCloseButton === right.ui.hideCloseButton &&
   left.ui.themeMode === right.ui.themeMode &&

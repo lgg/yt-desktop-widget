@@ -106,7 +106,7 @@ describe('PlaybackController', () => {
     onState(makeRawState(25.05));
 
     expect(snapshots).toHaveLength(countAfterInitialState);
-    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(50);
+    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(25);
     vi.useRealTimers();
   });
 
@@ -167,7 +167,7 @@ describe('PlaybackController', () => {
     vi.advanceTimersByTime(100);
     onState(makeRawState(60));
 
-    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(120);
+    expect(controller.getSnapshot().playback?.elapsedSeconds).toBe(60);
     vi.useRealTimers();
   });
 

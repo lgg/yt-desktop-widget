@@ -28,11 +28,13 @@ const createConnectedModel = ({
   hidePlaybackControls = false,
   showPlaybackControlsOnHover = true,
   hideProgressBar = false,
+  hideConnectionBadge = false,
 }: {
   playbackState?: 'playing' | 'paused';
   hidePlaybackControls?: boolean;
   showPlaybackControlsOnHover?: boolean;
   hideProgressBar?: boolean;
+  hideConnectionBadge?: boolean;
 } = {}): AppModel => ({
   ready: true,
   settings: {
@@ -41,6 +43,7 @@ const createConnectedModel = ({
       hidePlaybackControls,
       showPlaybackControlsOnHover,
       hideProgressBar,
+      ...({ hideConnectionBadge } as Record<'hideConnectionBadge', boolean>),
       hideSettingsButton: true,
       hideCloseButton: true,
       themeMode: 'dark',
@@ -160,7 +163,7 @@ describe('WidgetWindow', () => {
     expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
   });
 
-  it('renders enabled playback controls only while hovered by default', () => {
+  it('keeps hover-only playback controls mounted while changing only visibility', () => {
     mockUseAppModel.mockReturnValue(createConnectedModel());
 
     render(
@@ -170,15 +173,41 @@ describe('WidgetWindow', () => {
     );
 
     const widget = document.querySelector('.widget-window') as HTMLElement;
+    const controls = document.querySelector('.transport-controls') as HTMLElement;
+    expect(controls).toBeInTheDocument();
+    expect(controls).toHaveClass('transport-controls--hidden');
     expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
 
     fireEvent.pointerEnter(widget);
+    expect(controls).not.toHaveClass('transport-controls--hidden');
     expect(screen.getByRole('button', { name: 'Previous' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
 
     fireEvent.pointerLeave(widget);
+    expect(controls).toHaveClass('transport-controls--hidden');
     expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+  });
+
+  it('hides the connection badge until hover without removing its layout anchor', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel({ hideConnectionBadge: true }));
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const widget = document.querySelector('.widget-window') as HTMLElement;
+    const badgeAnchor = document.querySelector('.widget-window__connection-badge') as HTMLElement;
+    expect(badgeAnchor).toBeInTheDocument();
+    expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
+
+    fireEvent.pointerEnter(widget);
+    expect(badgeAnchor).not.toHaveClass('widget-window__connection-badge--hidden');
+
+    fireEvent.pointerLeave(widget);
+    expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
   });
 
   it('keeps enabled playback controls in layout when hover-only mode is disabled', () => {
@@ -347,7 +376,7 @@ describe('WidgetWindow', () => {
     });
   });
 
-  it('resyncs intrinsic height when hover-only controls mount and unmount', async () => {
+  it('keeps intrinsic height stable when hover-only controls change visibility', async () => {
     runtimeMock.isTauri = true;
     let layoutHeight = 420;
     mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
@@ -396,15 +425,13 @@ describe('WidgetWindow', () => {
 
     layoutHeight = 490;
     fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
-    await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(492);
-    });
+    await Promise.resolve();
+    expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
 
     layoutHeight = 420;
     fireEvent.pointerLeave(document.querySelector('.widget-window') as HTMLElement);
-    await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
-    });
+    await Promise.resolve();
+    expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
   });
 
   it('renders authorization actions when auth is required', () => {
@@ -416,6 +443,7 @@ describe('WidgetWindow', () => {
           hidePlaybackControls: false,
           showPlaybackControlsOnHover: true,
           hideProgressBar: false,
+          hideConnectionBadge: false,
           hideSettingsButton: true,
           hideCloseButton: true,
           themeMode: 'dark',

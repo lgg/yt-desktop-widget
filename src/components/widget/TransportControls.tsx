@@ -4,6 +4,7 @@ import type { PlaybackState } from '@/domain/playback/types';
 interface TransportControlsProps {
   playbackState: PlaybackState;
   disabled: boolean;
+  visible?: boolean;
   onPrevious: () => void;
   onPlayPause: () => void;
   onNext: () => void;
@@ -12,16 +13,20 @@ interface TransportControlsProps {
 export const TransportControls = ({
   playbackState,
   disabled,
+  visible = true,
   onNext,
   onPlayPause,
   onPrevious,
 }: TransportControlsProps) => (
-  <div className="transport-controls">
+  <div
+    className={visible ? 'transport-controls' : 'transport-controls transport-controls--hidden'}
+    aria-hidden={!visible}
+  >
     <button
       className="transport-controls__button"
       type="button"
       onClick={onPrevious}
-      disabled={disabled}
+      disabled={disabled || !visible}
       aria-label="Previous"
     >
       <PreviousIcon />
@@ -30,7 +35,7 @@ export const TransportControls = ({
       className="transport-controls__button transport-controls__button--primary"
       type="button"
       onClick={onPlayPause}
-      disabled={disabled}
+      disabled={disabled || !visible}
       aria-label={playbackState === 'playing' ? 'Pause' : 'Play'}
     >
       {playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />}
@@ -39,7 +44,7 @@ export const TransportControls = ({
       className="transport-controls__button"
       type="button"
       onClick={onNext}
-      disabled={disabled}
+      disabled={disabled || !visible}
       aria-label="Next"
     >
       <NextIcon />

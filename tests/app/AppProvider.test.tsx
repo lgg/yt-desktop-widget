@@ -11,6 +11,7 @@ const defaultSettings: AppSettings = {
     hidePlaybackControls: false,
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
+    hideConnectionBadge: false,
     hideSettingsButton: true,
     hideCloseButton: true,
     themeMode: 'dark',

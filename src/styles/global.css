@@ -467,11 +467,27 @@ a,
   transform: translateY(0);
 }
 
+.widget-window__connection-badge {
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+.widget-window__connection-badge--hidden {
+  opacity: 0;
+}
+
 .transport-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+.transport-controls--hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .transport-controls__button--primary {
@@ -788,6 +804,7 @@ a,
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
   transition: background-color 160ms ease;
+  pointer-events: none;
 }
 
 .toggle-row__thumb {

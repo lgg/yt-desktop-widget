@@ -103,10 +103,14 @@ Out of scope:
 | Removing transforms could make controls feel flatter. | Low | Preserve opacity/background transitions and button hover background feedback without group translate. |
 | Browser hover behavior may differ from WebView2. | Medium | Use component tests plus Playwright metrics and rebuild portable executable for live check. |
 
+## Follow-up Correction
+
+Live portable feedback on 2026-07-13 showed that unmounting the controls and resizing the native window on every pointer enter/leave created a pointer-boundary feedback loop and visible height jitter. Task [`0035`](0035-fix-hover-progress-and-connection-badge.md) supersedes only that layout decision: enabled controls now remain mounted in a stable reserved row and fade in/out without changing intrinsic widget height. The separate hover preference and transform-free transport buttons remain in effect.
+
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
-- Related tasks: [`0032`](0032-fix-widget-layout-and-playback-stability.md), [`0033`](0033-fix-widget-display-preference-layout.md), [`0012`](0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md)
+- Related tasks: [`0032`](0032-fix-widget-layout-and-playback-stability.md), [`0033`](0033-fix-widget-display-preference-layout.md), [`0035`](0035-fix-hover-progress-and-connection-badge.md), [`0012`](0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md)
 - Related report: [`0034`](../reports/0034-fix-playback-controls-hover-mode.md)
 - Time log: [`time-log.md`](../time-log.md)
 - Branch: `codex/0034-fix-playback-controls-hover-mode`

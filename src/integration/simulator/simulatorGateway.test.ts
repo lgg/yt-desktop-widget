@@ -22,10 +22,13 @@ describe('createSimulatorGateway', () => {
 
     expect(onConnected).toHaveBeenCalledTimes(1);
     expect(initialState?.video?.title).toBeTruthy();
+    const initialProgress = initialState?.player?.videoProgress ?? 0;
 
     vi.advanceTimersByTime(1_000);
 
     expect(onState).toHaveBeenCalled();
+    const nextProgress = onState.mock.calls.at(-1)?.[0]?.player?.videoProgress ?? 0;
+    expect(nextProgress - initialProgress).toBeCloseTo(1);
     await connection.send({ type: 'next' });
     expect(onState.mock.calls.at(-1)?.[0]?.video?.id).not.toBe(initialState?.video?.id);
 

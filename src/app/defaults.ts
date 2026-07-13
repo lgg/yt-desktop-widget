@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     hidePlaybackControls: false,
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
+    hideConnectionBadge: false,
     hideSettingsButton: true,
     hideCloseButton: true,
     themeMode: 'dark',
