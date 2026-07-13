@@ -1,4 +1,10 @@
-import { NextIcon, PauseIcon, PlayIcon, PreviousIcon } from '@/components/icons';
+import { useI18n } from '@/app/i18n';
+import {
+  NextIcon,
+  PauseIcon,
+  PlayIcon,
+  PreviousIcon,
+} from '@/components/icons';
 import type { PlaybackState } from '@/domain/playback/types';
 
 interface TransportControlsProps {
@@ -17,37 +23,49 @@ export const TransportControls = ({
   onNext,
   onPlayPause,
   onPrevious,
-}: TransportControlsProps) => (
-  <div
-    className={visible ? 'transport-controls' : 'transport-controls transport-controls--hidden'}
-    aria-hidden={!visible}
-  >
-    <button
-      className="transport-controls__button"
-      type="button"
-      onClick={onPrevious}
-      disabled={disabled || !visible}
-      aria-label="Previous"
+}: TransportControlsProps) => {
+  const { t } = useI18n();
+
+  return (
+    <div
+      className={
+        visible
+          ? 'transport-controls'
+          : 'transport-controls transport-controls--hidden'
+      }
+      aria-hidden={!visible}
     >
-      <PreviousIcon />
-    </button>
-    <button
-      className="transport-controls__button transport-controls__button--primary"
-      type="button"
-      onClick={onPlayPause}
-      disabled={disabled || !visible}
-      aria-label={playbackState === 'playing' ? 'Pause' : 'Play'}
-    >
-      {playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />}
-    </button>
-    <button
-      className="transport-controls__button"
-      type="button"
-      onClick={onNext}
-      disabled={disabled || !visible}
-      aria-label="Next"
-    >
-      <NextIcon />
-    </button>
-  </div>
-);
+      <button
+        className="transport-controls__button"
+        type="button"
+        onClick={onPrevious}
+        disabled={disabled || !visible}
+        aria-label={t('widget.transport.previous')}
+      >
+        <PreviousIcon />
+      </button>
+      <button
+        className="transport-controls__button transport-controls__button--primary"
+        type="button"
+        onClick={onPlayPause}
+        disabled={disabled || !visible}
+        aria-label={
+          playbackState === 'playing'
+            ? t('widget.transport.pause')
+            : t('widget.transport.play')
+        }
+      >
+        {playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />}
+      </button>
+      <button
+        className="transport-controls__button"
+        type="button"
+        onClick={onNext}
+        disabled={disabled || !visible}
+        aria-label={t('widget.transport.next')}
+      >
+        <NextIcon />
+      </button>
+    </div>
+  );
+};

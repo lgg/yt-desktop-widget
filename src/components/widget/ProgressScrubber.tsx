@@ -1,5 +1,12 @@
-﻿import { useEffect, useRef, useState, type PointerEvent, type PointerEventHandler } from 'react';
+﻿import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type PointerEventHandler,
+} from 'react';
 
+import { useI18n } from '@/app/i18n';
 import { useSmoothedProgress } from '@/domain/playback/progress';
 import type { PlaybackSnapshot } from '@/domain/playback/types';
 import { formatDuration } from '@/utils/time';
@@ -20,10 +27,14 @@ export const ProgressScrubber = ({
   visible,
   onSeek,
 }: ProgressScrubberProps) => {
+  const { t } = useI18n();
   const [dragValue, setDragValue] = useState<number | null>(null);
   const [pendingSeek, setPendingSeek] = useState<number | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
-  const smoothedSeconds = useSmoothedProgress(playback, dragValue ?? pendingSeek);
+  const smoothedSeconds = useSmoothedProgress(
+    playback,
+    dragValue ?? pendingSeek,
+  );
   const durationSeconds = playback.durationSeconds;
 
   useEffect(() => {
@@ -39,7 +50,8 @@ export const ProgressScrubber = ({
   }, [pendingSeek]);
 
   const activeSeconds = dragValue ?? pendingSeek ?? smoothedSeconds;
-  const ratio = durationSeconds > 0 ? clamp(activeSeconds / durationSeconds, 0, 1) : 0;
+  const ratio =
+    durationSeconds > 0 ? clamp(activeSeconds / durationSeconds, 0, 1) : 0;
 
   const valueFromPointer = (clientX: number) => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -93,7 +105,9 @@ export const ProgressScrubber = ({
 
   return (
     <div className={`progress-row ${visible ? 'progress-row--visible' : ''}`}>
-      <span className="progress-row__time">{formatDuration(activeSeconds)}</span>
+      <span className="progress-row__time">
+        {formatDuration(activeSeconds)}
+      </span>
       <div
         ref={trackRef}
         className={`progress-row__track ${disabled ? 'progress-row__track--disabled' : ''}`}
@@ -106,16 +120,23 @@ export const ProgressScrubber = ({
           setDragValue(null);
         }}
         role="slider"
-        aria-label="Seek position"
+        aria-label={t('widget.progress.seekPosition')}
         aria-valuemin={0}
         aria-valuemax={durationSeconds}
         aria-valuenow={Math.floor(activeSeconds)}
       >
-        <div className="progress-row__bar" style={{ width: `${ratio * 100}%` }} />
-        <div className="progress-row__thumb" style={{ left: `${ratio * 100}%` }} />
+        <div
+          className="progress-row__bar"
+          style={{ width: `${ratio * 100}%` }}
+        />
+        <div
+          className="progress-row__thumb"
+          style={{ left: `${ratio * 100}%` }}
+        />
       </div>
-      <span className="progress-row__time">{formatDuration(durationSeconds)}</span>
+      <span className="progress-row__time">
+        {formatDuration(durationSeconds)}
+      </span>
     </div>
   );
 };
-

@@ -2,7 +2,7 @@
 
 ## Status
 
-Open
+Completed
 
 ## Source
 
@@ -47,19 +47,19 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] The original Beads issue state is represented in markdown.
-- [ ] Relevant implementation, documentation, and verification notes are captured or linked.
-- [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
-- [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
+- [x] The original Beads issue state is represented in markdown.
+- [x] Relevant implementation, documentation, and verification notes are captured or linked.
+- [x] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
+- [x] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
 
 ## Verification Plan
 
-- [ ] Lint/static checks: run `npm run lint` or `npm run verify` when code changes.
-- [ ] Tests: run `npm test`; add targeted tests for changed logic.
-- [ ] Build: run `npm run build:desktop` for release/runtime-sensitive changes.
-- [ ] Manual QA: verify the affected widget/settings/Companion scenario on Windows when automation cannot cover it.
-- [ ] Deploy/config review: review Tauri permissions, startup behavior, packaging, and env/config docs when touched.
-- [ ] Documentation review: update README, ARCHITECTURE, decisions, roadmap, tasks, and reports as applicable.
+- [x] Lint/static checks: `npm run verify` passed in task `0036`.
+- [x] Tests: 55 Vitest, 8 Playwright, and 16 Rust tests passed in task `0036`.
+- [x] Build: `npm run build:desktop` passed for version `2.0.0`.
+- [x] Manual QA: the user confirmed the latest portable Companion/widget behavior on 2026-07-13.
+- [x] Deploy/config review: portable-only packaging, tray/window code, permissions, and version config were reviewed.
+- [x] Documentation review: README, architecture, decisions, roadmap, tasks, and report `0036` were synchronized.
 
 ## Progress History
 
@@ -68,6 +68,7 @@ Out of scope:
 - 2026-07-09: Task `0033` added browser smoke coverage for display preferences: progress row safe spacing, hidden playback controls, hidden progress row, and collapsed height when both are hidden. Settings and tray interaction in the portable runtime remain open.
 - 2026-07-09: Task `0034` added browser smoke coverage for hover-only playback controls, always-visible controls, hover-hidden height collapse, and transform-free transport-button hover behavior. Settings/tray interaction in the portable runtime remains open.
 - 2026-07-13: Task `0035` superseded hover-hidden height collapse with a stable reserved controls row after live pointer-boundary jitter, and expanded browser smoke to six passing scenarios covering real settings clicks/persistence, connection-badge visibility, stable hover geometry, and wall-clock progress rate. Settings/tray interaction in the portable runtime remains open.
+- 2026-07-13: The user confirmed the latest portable application works correctly. Task `0036` expanded the smoke suite to eight scenarios and passed full frontend, native, version, and desktop-build verification. Closed.
 
 ## Dependencies
 
@@ -83,18 +84,19 @@ Out of scope:
 
 ## Questions and Answers
 
-| Question | Status | Answer / Decision |
-| --- | --- | --- |
-| Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
+| Question                                        | Status | Answer / Decision                                                                                       |
+| ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| Are there missing details from the Beads issue? | Open   | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
 
 ## Risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Migrated task loses subtle Beads context. | Medium | Keep the raw JSONL archive and the progress history in this file. |
+| Risk                                                  | Impact | Mitigation                                                                       |
+| ----------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Migrated task loses subtle Beads context.             | Medium | Keep the raw JSONL archive and the progress history in this file.                |
 | Runtime behavior differs from documented assumptions. | Medium | Verify with portable Windows build and live YTMDesktop Companion where required. |
 
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
 - Raw Beads export: [`beads-export-2026-07-05.jsonl`](../archive/beads-export-2026-07-05.jsonl)
+- Completion report: [`0036-add-display-controls-localization-and-central-versioning.md`](../reports/0036-add-display-controls-localization-and-central-versioning.md)

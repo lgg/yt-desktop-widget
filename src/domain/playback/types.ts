@@ -1,4 +1,5 @@
 export type ThemeMode = 'dark' | 'system';
+export type Locale = 'en' | 'ru';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
 export type CloseButtonAction = 'exit' | 'hideToTray';
 export type ConnectionStatus =
@@ -22,9 +23,12 @@ export interface UiSettings {
   showPlaybackControlsOnHover: boolean;
   hideProgressBar: boolean;
   hideConnectionBadge: boolean;
+  hideTrackDetails: boolean;
+  useArtworkAsPlaybackControl: boolean;
   hideSettingsButton: boolean;
   hideCloseButton: boolean;
   themeMode: ThemeMode;
+  locale: Locale;
 }
 
 export interface WindowPosition {
@@ -165,10 +169,7 @@ export class GatewayError extends Error {
     | 'network'
     | 'unknown';
 
-  constructor(
-    code: GatewayError['code'],
-    message: string,
-  ) {
+  constructor(code: GatewayError['code'], message: string) {
     super(message);
     this.code = code;
   }

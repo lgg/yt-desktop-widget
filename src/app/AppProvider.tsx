@@ -10,7 +10,12 @@ import {
 } from 'react';
 
 import { DEFAULT_SETTINGS, REPOSITORY_URL } from '@/app/defaults';
-import { closeWidgetWindow, APP_WINDOW_VISIBILITY_EVENT, showAppWindow, type AppWindowLabel } from '@/app/windowController';
+import {
+  closeWidgetWindow,
+  APP_WINDOW_VISIBILITY_EVENT,
+  showAppWindow,
+  type AppWindowLabel,
+} from '@/app/windowController';
 import { loadSettings, saveSettings } from '@/app/settingsRepository';
 import { PlaybackController } from '@/domain/playback/controller';
 import { createInitialConnectionState } from '@/domain/playback/connectionMachine';
@@ -31,7 +36,9 @@ export interface AppModel {
   settings: AppSettings;
   session: PlaybackSessionState;
   resolvedSourceMode: Exclude<DataSourceMode, 'auto'>;
-  updateSettings: (recipe: (current: AppSettings) => AppSettings) => Promise<void>;
+  updateSettings: (
+    recipe: (current: AppSettings) => AppSettings,
+  ) => Promise<void>;
   reconnect: () => Promise<void>;
   generateAuthCode: () => Promise<void>;
   confirmAuthentication: () => Promise<void>;
@@ -86,19 +93,29 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.api.port === right.api.port &&
   left.api.sourceMode === right.api.sourceMode &&
   left.ui.hidePlaybackControls === right.ui.hidePlaybackControls &&
-  left.ui.showPlaybackControlsOnHover === right.ui.showPlaybackControlsOnHover &&
+  left.ui.showPlaybackControlsOnHover ===
+    right.ui.showPlaybackControlsOnHover &&
   left.ui.hideProgressBar === right.ui.hideProgressBar &&
   left.ui.hideConnectionBadge === right.ui.hideConnectionBadge &&
+  left.ui.hideTrackDetails === right.ui.hideTrackDetails &&
+  left.ui.useArtworkAsPlaybackControl ===
+    right.ui.useArtworkAsPlaybackControl &&
   left.ui.hideSettingsButton === right.ui.hideSettingsButton &&
   left.ui.hideCloseButton === right.ui.hideCloseButton &&
   left.ui.themeMode === right.ui.themeMode &&
+  left.ui.locale === right.ui.locale &&
   left.window.alwaysOnTop === right.window.alwaysOnTop &&
   left.window.launchOnStartup === right.window.launchOnStartup &&
   left.window.closeButtonAction === right.window.closeButtonAction &&
   sameWindowPosition(left.window.mainPosition, right.window.mainPosition) &&
-  sameWindowPosition(left.window.settingsPosition, right.window.settingsPosition);
+  sameWindowPosition(
+    left.window.settingsPosition,
+    right.window.settingsPosition,
+  );
 
-const resolveSourceMode = (preferredMode: DataSourceMode): Exclude<DataSourceMode, 'auto'> => {
+const resolveSourceMode = (
+  preferredMode: DataSourceMode,
+): Exclude<DataSourceMode, 'auto'> => {
   const searchParams = new URLSearchParams(window.location.search);
   const queryMode = searchParams.get('source');
   const envMode = import.meta.env.VITE_YTM_DATA_SOURCE as string | undefined;
@@ -111,8 +128,10 @@ const resolveSourceMode = (preferredMode: DataSourceMode): Exclude<DataSourceMod
   return isTauriRuntime() ? 'real' : 'simulator';
 };
 
-const shouldStartController = (windowLabel: AppWindowLabel, windowVisible: boolean) =>
-  windowLabel === 'main' || windowVisible;
+const shouldStartController = (
+  windowLabel: AppWindowLabel,
+  windowVisible: boolean,
+) => windowLabel === 'main' || windowVisible;
 
 const shouldDisconnectGatewayOnDispose = (
   windowLabel: AppWindowLabel,
@@ -126,7 +145,9 @@ export const AppProvider = ({
   const [ready, setReady] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [session, setSession] = useState(initialSession);
-  const [windowVisible, setWindowVisible] = useState(windowLabel !== 'settings');
+  const [windowVisible, setWindowVisible] = useState(
+    windowLabel !== 'settings',
+  );
   const controllerRef = useRef<PlaybackController | null>(null);
   const settingsRef = useRef(DEFAULT_SETTINGS);
   const previousSourceModeRef = useRef<DataSourceMode>('auto');
@@ -159,7 +180,10 @@ export const AppProvider = ({
         setSettings(loadedSettings);
       })
       .catch((error) => {
-        console.error('Failed to load settings, falling back to defaults.', error);
+        console.error(
+          'Failed to load settings, falling back to defaults.',
+          error,
+        );
         if (cancelled) {
           return;
         }
@@ -234,7 +258,9 @@ export const AppProvider = ({
           return;
         }
 
-        void controllerRef.current?.handleExternalAuthChanged(payload.authorized);
+        void controllerRef.current?.handleExternalAuthChanged(
+          payload.authorized,
+        );
       })
       .then((nextUnlisten) => {
         if (!active) {
@@ -322,7 +348,9 @@ export const AppProvider = ({
     }
 
     const gateway =
-      resolvedSourceMode === 'real' ? createRealGateway() : createSimulatorGateway();
+      resolvedSourceMode === 'real'
+        ? createRealGateway()
+        : createSimulatorGateway();
     const controller = new PlaybackController(gateway);
     controllerRef.current = controller;
 
@@ -337,13 +365,25 @@ export const AppProvider = ({
     return () => {
       unsubscribe();
       void controller.dispose({
-        disconnectGateway: shouldDisconnectGatewayOnDispose(windowLabel, resolvedSourceMode),
+        disconnectGateway: shouldDisconnectGatewayOnDispose(
+          windowLabel,
+          resolvedSourceMode,
+        ),
       });
       controllerRef.current = null;
     };
-  }, [ready, resolvedSourceMode, settings.api.host, settings.api.port, windowLabel, windowVisible]);
+  }, [
+    ready,
+    resolvedSourceMode,
+    settings.api.host,
+    settings.api.port,
+    windowLabel,
+    windowVisible,
+  ]);
 
-  const updateSettings = async (recipe: (current: AppSettings) => AppSettings) => {
+  const updateSettings = async (
+    recipe: (current: AppSettings) => AppSettings,
+  ) => {
     const currentSettings = settingsRef.current;
     const nextSettings = recipe(currentSettings);
 
@@ -425,9 +465,11 @@ export const AppProvider = ({
         updateSettings,
         reconnect: async () => controllerRef.current?.reconnectNow(),
         generateAuthCode: async () => controllerRef.current?.requestAuthCode(),
-        confirmAuthentication: async () => controllerRef.current?.completeAuthentication(),
+        confirmAuthentication: async () =>
+          controllerRef.current?.completeAuthentication(),
         clearAuth: async () => controllerRef.current?.clearAuth(),
-        sendCommand: async (command) => controllerRef.current?.sendCommand(command),
+        sendCommand: async (command) =>
+          controllerRef.current?.sendCommand(command),
         openSettings,
         closeWidget,
         toggleDebugMockMode,

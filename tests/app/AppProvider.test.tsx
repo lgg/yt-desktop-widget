@@ -2,7 +2,10 @@ import { act, render, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AppProvider } from '@/app/AppProvider';
-import type { AppSettings, PlaybackSessionState } from '@/domain/playback/types';
+import type {
+  AppSettings,
+  PlaybackSessionState,
+} from '@/domain/playback/types';
 import type { CompanionAuthEventPayload } from '@/integration/companion/tauriBridge';
 
 const defaultSettings: AppSettings = {
@@ -12,9 +15,12 @@ const defaultSettings: AppSettings = {
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
     hideConnectionBadge: false,
+    hideTrackDetails: false,
+    useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,
     hideCloseButton: true,
     themeMode: 'dark',
+    locale: 'en',
   },
   window: {
     alwaysOnTop: false,
@@ -38,7 +44,9 @@ const initialSession: PlaybackSessionState = {
 };
 
 const appProviderMocks = vi.hoisted(() => ({
-  authChangeHandler: null as ((payload: CompanionAuthEventPayload) => void) | null,
+  authChangeHandler: null as
+    | ((payload: CompanionAuthEventPayload) => void)
+    | null,
   controllerInstances: [] as Array<{
     subscribe: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
@@ -70,8 +78,8 @@ vi.mock('@/integration/companion/tauriBridge', () => ({
     listenToSettingsChanges: vi.fn(() => Promise.resolve(vi.fn())),
     listenToCompanionAuthChanges: vi.fn(
       (handler: (payload: CompanionAuthEventPayload) => void) => {
-      appProviderMocks.authChangeHandler = handler;
-      return Promise.resolve(vi.fn());
+        appProviderMocks.authChangeHandler = handler;
+        return Promise.resolve(vi.fn());
       },
     ),
   },

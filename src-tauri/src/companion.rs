@@ -12,7 +12,7 @@ use crate::models::{CommandError, CompanionEvent, ConnectionSettings, DiscoveryI
 
 const APP_ID: &str = "ytmdesktopwidget";
 const APP_NAME: &str = "YTM Desktop Widget";
-const APP_VERSION: &str = "1.0.0";
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const KEYRING_SERVICE: &str = "io.github.lgg.ytm-desktop-widget";
 
 #[derive(Debug, thiserror::Error)]

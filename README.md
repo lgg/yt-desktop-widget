@@ -11,12 +11,13 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
 - Supports previous, play/pause, next, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
-- Display preferences can remove playback controls or the progress row from the compact layout, allowing the widget height to shrink.
+- Display preferences can remove playback controls, the progress row, or the title/artist block from the compact layout, allowing the widget height to shrink.
 - Playback controls can be kept always visible or faded out until hover; the controls keep a stable reserved row so pointer leave cannot resize or jitter the widget.
+- The full artwork can optionally act as an accessible play/pause control whose action icon appears on hover or keyboard focus.
 - The connection-status badge can optionally fade out until hover while keeping its layout footprint reserved.
 - Hides to tray instead of quitting by default.
 - Ships with a real Companion client and a separate simulator for local development and tests.
-- Uses i18n JSON messages from day one, with English wired as the default locale.
+- Uses matching English and Russian i18n JSON bundles, with English as the default and a persisted language selector in Settings.
 
 ## Stack
 
@@ -146,7 +147,15 @@ For the near-term testing cycle, rebuilds are intentionally portable-only.
 - `npm run lint` - ESLint
 - `npm test` - Vitest
 - `npm run test:e2e` - Playwright simulator smoke test
-- `npm run verify` - lint + tests + web build
+- `npm run version:sync` - synchronize Cargo/lock metadata from the root `package.json` version
+- `npm run version:check` - fail if any required version copy or Tauri version source is out of sync
+- `npm run verify` - version consistency + lint + tests + web build
+
+## Version source
+
+The root `package.json` is the only version value edited manually. The UI imports it directly, Tauri resolves its version from that file, and the Companion client reports Cargo's package version. After changing the root version, run `npm run version:sync`; `npm run verify` includes `version:check` so drift cannot pass normal validation.
+
+The current application version is `2.0.0`.
 
 ## Build outputs
 
@@ -215,22 +224,19 @@ Because that machine was low on free disk space during Rust validation, the Rust
 
 Those environment variables were only a local validation workaround. They are not required by the project itself.
 
-## What still needs live Companion validation
+## Live Companion validation
 
-The full auth approval round-trip, durable credential reload, reconnect, and live realtime state updates were confirmed by the user against YTMDesktop v2.0.11 on 2026-07-09.
+The full auth approval round-trip, durable credential reload, reconnect, and live realtime state updates were confirmed by the user against YTMDesktop v2.0.11 on 2026-07-09. On 2026-07-13, the user also confirmed the latest portable build's playback commands, seek/progress timing, hover behavior, settings interaction, and window behavior.
 
-These paths remain open for real-world verification against the latest portable build:
+Future live regression passes should still include uncommon upstream states such as:
 
-- previous, play/pause, and next command behavior after the playback-stability changes
-- live seek success and failure behavior
 - edge cases like ads, livestreams, and transient Companion restarts
 
-## Known limitations and intentional v1 deferrals
+## Known limitations and intentional deferrals
 
 - Single widget size and layout only
 - No manual resize yet
-- Windows-only delivery focus for v1
-- English-only locale bundle, though the i18n structure is ready for more JSON locales
-- Seek UI is implemented as a best-effort path because the `seekTo` command is documented, but live seek behavior was not verified against a local YTMDesktop instance here
+- Windows-only delivery focus
+- English and Russian are the only bundled locales
 - No macOS packaging work yet
 - Further visual refinements and alternate window modes are intentionally deferred

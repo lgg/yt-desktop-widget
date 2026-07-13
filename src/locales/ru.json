@@ -1,0 +1,180 @@
+{
+  "app": {
+    "title": "YTM Desktop Widget",
+    "loading": "Подготавливаем виджет…",
+    "settings": "Настройки",
+    "retry": "Переподключиться",
+    "close": "Скрыть в трей",
+    "closeWidget": "Закрыть виджет",
+    "exitApp": "Выйти из приложения",
+    "hideToTray": "Скрыть в трей"
+  },
+  "status": {
+    "discovering": "Поиск",
+    "connected": "В эфире",
+    "auth_required": "Нужна авторизация",
+    "authenticating": "Авторизация",
+    "reconnecting": "Переподключение",
+    "disconnected": "Ожидание",
+    "error": "Требует внимания"
+  },
+  "widget": {
+    "transport": {
+      "previous": "Предыдущий трек",
+      "play": "Воспроизвести",
+      "pause": "Пауза",
+      "next": "Следующий трек"
+    },
+    "artwork": {
+      "play": "Воспроизвести: {{title}}",
+      "pause": "Поставить на паузу: {{title}}"
+    },
+    "progress": {
+      "seekPosition": "Позиция воспроизведения"
+    },
+    "states": {
+      "discovering": {
+        "eyebrow": "Companion",
+        "title": "Ищем проигрыватель",
+        "body": "Ищем локальный Companion Server YTMDesktop и восстанавливаем предыдущий сеанс."
+      },
+      "disconnected": {
+        "eyebrow": "Ожидание",
+        "title": "Откройте YTMDesktop, чтобы продолжить",
+        "body": "Виджет работает только через официальный Companion Server API. Запустите YTMDesktop и убедитесь, что Companion Server включён."
+      },
+      "auth_required": {
+        "eyebrow": "Безопасное подключение",
+        "title": "Авторизуйте виджет",
+        "body": "Создайте код подключения, сравните его с кодом в YTMDesktop и подтвердите доступ."
+      },
+      "authenticating": {
+        "eyebrow": "Подключение",
+        "title": "Ожидаем подтверждения",
+        "body": "Подтвердите код в YTMDesktop. Виджет подключится сразу после предоставления доступа Companion Server."
+      },
+      "paused": {
+        "eyebrow": "Пауза",
+        "title": "Воспроизведение приостановлено",
+        "body": "Последний трек готов продолжить воспроизведение."
+      },
+      "empty": {
+        "eyebrow": "Подключено",
+        "title": "Сейчас ничего не играет",
+        "body": "Выберите трек в YTMDesktop, и виджет сразу обновится."
+      },
+      "reconnecting": {
+        "eyebrow": "Восстанавливаем соединение",
+        "title": "Поток снова запускается",
+        "body": "Обновления Companion ненадолго остановились. Виджет повторяет подключение в фоновом режиме."
+      },
+      "error": {
+        "eyebrow": "Companion",
+        "title": "Соединение требует внимания",
+        "body": "API вернул неожиданную ошибку. Повторите подключение или заново авторизуйте виджет в настройках."
+      }
+    },
+    "auth": {
+      "generate": "Создать код",
+      "confirm": "Подтвердить в YTMDesktop",
+      "regenerate": "Новый код",
+      "clear": "Удалить авторизацию",
+      "codeLabel": "Код подключения"
+    },
+    "actions": {
+      "openSettings": "Открыть настройки",
+      "closeWidget": "Закрыть виджет"
+    },
+    "adPlaying": "Реклама"
+  },
+  "settingsWindow": {
+    "title": "Настройки виджета",
+    "subtitle": "Настройте соединение, отображение и поведение окна, не покидая экран текущего трека.",
+    "sections": {
+      "api": {
+        "title": "API / Соединение",
+        "description": "Управление доступностью Companion API, авторизацией и восстановлением соединения.",
+        "endpoint": "Адрес Companion",
+        "endpointPlaceholder": "127.0.0.1:9863",
+        "endpointInvalid": "Укажите host:port или локальный HTTP-адрес, например 127.0.0.1:9863.",
+        "mode": "Источник данных",
+        "connected": "Состояние соединения",
+        "paired": "Авторизация",
+        "pairedYes": "Надёжно сохранена",
+        "pairedNo": "Не авторизовано"
+      },
+      "ui": {
+        "title": "Интерфейс / Отображение",
+        "description": "Настройте, какие элементы виджета остаются видимыми в состоянии покоя.",
+        "language": "Язык",
+        "hideControls": "Скрыть кнопки воспроизведения",
+        "hideControlsDescription": "Убрать кнопки управления из компактной раскладки.",
+        "showControlsOnHover": "Показывать кнопки воспроизведения только при наведении",
+        "showControlsOnHoverDescription": "Кнопки сохраняют своё место и появляются только при наведении на виджет.",
+        "artworkPlaybackControl": "Использовать обложку как кнопку play/pause",
+        "artworkPlaybackControlDescription": "Сделать всю обложку кликабельной и показывать действие play или pause при наведении на виджет.",
+        "hideProgress": "Скрыть прогресс-бар",
+        "hideProgressDescription": "Убрать прошедшее время и полосу перемотки из компактной раскладки.",
+        "hideTrackDetails": "Скрыть название трека и исполнителя",
+        "hideTrackDetailsDescription": "Убрать блок информации о треке из компактной раскладки.",
+        "hideConnectionBadge": "Скрывать статус соединения до наведения",
+        "hideConnectionBadgeDescription": "Сохранять место статуса и показывать его при наведении на виджет.",
+        "hideSettingsButton": "Скрывать кнопку настроек",
+        "hideSettingsButtonDescription": "Кнопка настроек появляется только при наведении на виджет.",
+        "hideCloseButton": "Скрывать кнопку закрытия",
+        "hideCloseButtonDescription": "Кнопка закрытия появляется только при наведении на виджет.",
+        "theme": "Тема",
+        "themeDescription": "Тёмная тема сохраняет приглушённый стеклянный вид; системная следует теме Windows."
+      },
+      "window": {
+        "title": "Окно / Поведение",
+        "description": "Настройте поведение виджета на рабочем столе Windows.",
+        "alwaysOnTop": "Поверх остальных окон",
+        "alwaysOnTopDescription": "Держать виджет поверх обычных окон.",
+        "startup": "Запускать при входе в систему",
+        "startupDescription": "Автоматически запускать виджет при входе в Windows.",
+        "closeButtonAction": "Действие кнопки закрытия"
+      },
+      "dev": {
+        "title": "Для разработчика",
+        "description": "Используйте симулятор, не ослабляя production-интеграцию.",
+        "sourceMode": "Предпочтительный источник данных",
+        "sourceModeDescription": "Auto использует реальный Companion bridge в Tauri и симулятор в браузерном preview.",
+        "resolvedMode": "Фактический режим"
+      },
+      "about": {
+        "title": "О приложении",
+        "description": "Метаданные проекта этого desktop-виджета.",
+        "repo": "Репозиторий GitHub",
+        "version": "Версия"
+      }
+    },
+    "actions": {
+      "reconnect": "Переподключиться сейчас",
+      "pair": "Создать код",
+      "confirmPair": "Подтвердить подключение",
+      "clearAuth": "Удалить авторизацию",
+      "openRepo": "yt-desktop-widget",
+      "runDebugMockMode": "Запустить отладочный mock-режим",
+      "stopDebugMockMode": "Остановить отладочный mock-режим",
+      "close": "Скрыть настройки"
+    },
+    "theme": {
+      "dark": "Тёмная",
+      "system": "Системная"
+    },
+    "language": {
+      "en": "Английский",
+      "ru": "Русский"
+    },
+    "sourceMode": {
+      "auto": "Auto",
+      "real": "Реальный API",
+      "simulator": "Симулятор"
+    },
+    "closeButtonAction": {
+      "exit": "Выйти из приложения",
+      "hideToTray": "Скрыть в трей"
+    }
+  }
+}

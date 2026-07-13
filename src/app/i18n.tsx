@@ -1,8 +1,10 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useMemo } from 'react';
 
-import messages from '@/locales/en.json';
+import type { Locale } from '@/domain/playback/types';
+import englishMessages from '@/locales/en.json';
+import russianMessages from '@/locales/ru.json';
 
-type MessageTree = typeof messages;
+type MessageTree = typeof englishMessages;
 type TranslationValues = Record<string, string | number>;
 
 interface I18nContextValue {
@@ -12,6 +14,11 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue>({
   t: (key) => key,
 });
+
+const messagesByLocale: Record<Locale, MessageTree> = {
+  en: englishMessages,
+  ru: russianMessages,
+};
 
 const resolveMessage = (key: string, tree: MessageTree): string => {
   const resolved = key.split('.').reduce<unknown>((current, segment) => {
@@ -31,15 +38,28 @@ const applyValues = (message: string, values?: TranslationValues) => {
   }
 
   return Object.entries(values).reduce(
-    (result, [token, value]) => result.replaceAll(`{{${token}}}`, String(value)),
+    (result, [token, value]) =>
+      result.replaceAll(`{{${token}}}`, String(value)),
     message,
   );
 };
 
-export const I18nProvider = ({ children }: React.PropsWithChildren) => {
-  const value: I18nContextValue = {
-    t: (key, values) => applyValues(resolveMessage(key, messages), values),
-  };
+export const I18nProvider = ({
+  children,
+  locale = 'en',
+}: React.PropsWithChildren<{ locale?: Locale }>) => {
+  const activeLocale = messagesByLocale[locale] ? locale : 'en';
+  const messages = messagesByLocale[activeLocale];
+  const value = useMemo<I18nContextValue>(
+    () => ({
+      t: (key, values) => applyValues(resolveMessage(key, messages), values),
+    }),
+    [messages],
+  );
+
+  useEffect(() => {
+    document.documentElement.lang = activeLocale;
+  }, [activeLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };

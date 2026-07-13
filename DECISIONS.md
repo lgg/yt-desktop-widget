@@ -185,3 +185,25 @@ Trade-off:
 
 - setup / installer artifacts are not produced in normal rebuilds right now
 - release packaging validation is intentionally deferred for this test phase
+
+## 12. Use root package.json as the application version source
+
+Status: accepted
+
+Reasoning:
+
+- the UI, Tauri package metadata, Rust package, Companion identity, and lockfiles must not drift independently
+- `package.json` is already visible to the frontend and can be referenced directly by Tauri v2
+- Cargo manifest and lockfile copies can be synchronized and checked automatically
+
+Implementation notes:
+
+- edit only the root `package.json` version manually
+- run `npm run version:sync` after a version change
+- `npm run verify` runs `version:check` before lint, tests, and build
+- React displays the imported package version, Tauri resolves `../package.json`, and Companion uses `CARGO_PKG_VERSION`
+
+Trade-off:
+
+- Cargo still requires a concrete manifest version, so synchronization is enforced rather than fully eliminated
+- a version bump must run the sync command before validation succeeds

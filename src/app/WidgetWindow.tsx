@@ -11,7 +11,13 @@ import { useI18n } from '@/app/i18n';
 import { setMainAppWindowHeight } from '@/app/windowController';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import { ConnectionBadge } from '@/components/ConnectionBadge';
-import { CloseIcon, SettingsIcon, SparkIcon } from '@/components/icons';
+import {
+  CloseIcon,
+  PauseIcon,
+  PlayIcon,
+  SettingsIcon,
+  SparkIcon,
+} from '@/components/icons';
 import { CoverCard } from '@/components/widget/CoverCard';
 import { ProgressScrubber } from '@/components/widget/ProgressScrubber';
 import { TransportControls } from '@/components/widget/TransportControls';
@@ -63,12 +69,16 @@ export const WidgetWindow = () => {
   const controlsVisible =
     controlsEnabled && (!settings.ui.showPlaybackControlsOnHover || hovered);
   const progressRendered = !settings.ui.hideProgressBar && !!playback;
+  const trackDetailsRendered = !settings.ui.hideTrackDetails && !!playback;
   const connectionBadgeVisible = !settings.ui.hideConnectionBadge || hovered;
   const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
   const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
-  const canSendCommands = session.connection.status === 'connected' && !!session.playback;
+  const canSendCommands =
+    session.connection.status === 'connected' && !!session.playback;
   const titleLine = playback?.title ?? t('widget.states.disconnected.title');
-  const artistLine = playback ? formatArtistLine(playback.artists) : session.connection.detail;
+  const artistLine = playback
+    ? formatArtistLine(playback.artists)
+    : session.connection.detail;
   const coverState =
     session.connection.status === 'discovering'
       ? {
@@ -91,6 +101,24 @@ export const WidgetWindow = () => {
                 title: t('widget.states.error.title'),
               }
             : null;
+  const artworkAction =
+    settings.ui.useArtworkAsPlaybackControl && playback && !coverState
+      ? {
+          label: t(
+            playback.playbackState === 'playing'
+              ? 'widget.artwork.pause'
+              : 'widget.artwork.play',
+            { title: titleLine },
+          ),
+          disabled: !canSendCommands,
+          visible: hovered,
+          icon:
+            playback.playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />,
+          onActivate: () => {
+            void sendCommand({ type: 'playPause' });
+          },
+        }
+      : undefined;
 
   const syncHeightSoon = () => {
     syncHeightRef.current();
@@ -198,12 +226,15 @@ export const WidgetWindow = () => {
     playback?.playbackState,
     settings.ui.hidePlaybackControls,
     settings.ui.hideProgressBar,
+    settings.ui.hideTrackDetails,
     ready,
   ]);
   const renderStateCard = () => {
     switch (session.connection.status) {
       case 'discovering':
-        return <WidgetStateCard body={t('widget.states.discovering.body')} compact />;
+        return (
+          <WidgetStateCard body={t('widget.states.discovering.body')} compact />
+        );
       case 'auth_required':
         return (
           <WidgetStateCard
@@ -253,10 +284,16 @@ export const WidgetWindow = () => {
       case 'disconnected':
         return (
           <WidgetStateCard
-            body={session.connection.detail ?? t('widget.states.disconnected.body')}
+            body={
+              session.connection.detail ?? t('widget.states.disconnected.body')
+            }
             compact
             actions={
-              <button className="secondary-button" type="button" onClick={() => void handleReconnect()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void handleReconnect()}
+              >
                 {t('app.retry')}
               </button>
             }
@@ -265,10 +302,16 @@ export const WidgetWindow = () => {
       case 'reconnecting':
         return (
           <WidgetStateCard
-            body={session.connection.detail ?? t('widget.states.reconnecting.body')}
+            body={
+              session.connection.detail ?? t('widget.states.reconnecting.body')
+            }
             compact
             actions={
-              <button className="secondary-button" type="button" onClick={() => void handleReconnect()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void handleReconnect()}
+              >
                 {t('app.retry')}
               </button>
             }
@@ -280,7 +323,11 @@ export const WidgetWindow = () => {
             body={session.connection.detail ?? t('widget.states.error.body')}
             compact
             actions={
-              <button className="secondary-button" type="button" onClick={() => void handleReconnect()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void handleReconnect()}
+              >
                 {t('app.retry')}
               </button>
             }
@@ -357,30 +404,42 @@ export const WidgetWindow = () => {
             </div>
           </header>
 
-          <section data-tauri-drag-region className="widget-window__hero drag-region">
-            <CoverCard artworkUrl={playback?.coverUrl ?? null} title={titleLine}>
+          <section
+            data-tauri-drag-region
+            className="widget-window__hero drag-region"
+          >
+            <CoverCard
+              artworkUrl={playback?.coverUrl ?? null}
+              title={titleLine}
+              action={artworkAction}
+            >
               {coverState ? (
                 <div className="cover-card__state">
-                  <span className="cover-card__state-eyebrow">{coverState.eyebrow}</span>
-                  <h2 className="cover-card__state-title">{coverState.title}</h2>
+                  <span className="cover-card__state-eyebrow">
+                    {coverState.eyebrow}
+                  </span>
+                  <h2 className="cover-card__state-title">
+                    {coverState.title}
+                  </h2>
                 </div>
               ) : null}
             </CoverCard>
-            {!coverState ? (
+            {!coverState && trackDetailsRendered ? (
               <div className="widget-window__meta">
                 <h1>{ready ? titleLine : t('app.loading')}</h1>
                 <p>{artistLine}</p>
-                {playback?.isAdPlaying ? (
-                  <div className="inline-pill">
-                    <SparkIcon />
-                    <span>{t('widget.adPlaying')}</span>
-                  </div>
-                ) : null}
+              </div>
+            ) : null}
+            {!coverState && playback?.isAdPlaying ? (
+              <div className="inline-pill">
+                <SparkIcon />
+                <span>{t('widget.adPlaying')}</span>
               </div>
             ) : null}
           </section>
 
-          {session.connection.authCode && session.connection.status === 'auth_required' ? (
+          {session.connection.authCode &&
+          session.connection.status === 'auth_required' ? (
             <div className="code-chip code-chip--floating">
               <span>{t('widget.auth.codeLabel')}</span>
               <strong>{session.connection.authCode}</strong>

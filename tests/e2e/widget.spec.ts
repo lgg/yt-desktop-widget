@@ -10,24 +10,28 @@ test('renders the simulated widget and settings views', async ({ page }) => {
   await expect(page.getByText('Live')).toBeVisible();
   await page.locator('.widget-window').hover();
 
-  const playingHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const playingHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   expect(playingHeight).toBeLessThanOrEqual(500);
 
-  const progressMetrics = await page.locator('.progress-row').evaluate((row) => {
-    const rowRect = row.getBoundingClientRect();
-    const layoutRect = row.closest('.widget-window__layout')?.getBoundingClientRect();
-    const [elapsedTime, durationTime] = Array.from(
-      row.querySelectorAll('.progress-row__time'),
-    ).map((element) => element.getBoundingClientRect());
+  const progressMetrics = await page
+    .locator('.progress-row')
+    .evaluate((row) => {
+      const rowRect = row.getBoundingClientRect();
+      const layoutRect = row
+        .closest('.widget-window__layout')
+        ?.getBoundingClientRect();
+      const [elapsedTime, durationTime] = Array.from(
+        row.querySelectorAll('.progress-row__time'),
+      ).map((element) => element.getBoundingClientRect());
 
-    return {
-      bottomGap: layoutRect ? layoutRect.bottom - rowRect.bottom : 0,
-      leftInset: elapsedTime ? elapsedTime.left - rowRect.left : 0,
-      rightInset: durationTime ? rowRect.right - durationTime.right : 0,
-    };
-  });
+      return {
+        bottomGap: layoutRect ? layoutRect.bottom - rowRect.bottom : 0,
+        leftInset: elapsedTime ? elapsedTime.left - rowRect.left : 0,
+        rightInset: durationTime ? rowRect.right - durationTime.right : 0,
+      };
+    });
   expect(progressMetrics.leftInset).toBeGreaterThanOrEqual(14);
   expect(progressMetrics.rightInset).toBeGreaterThanOrEqual(14);
   expect(progressMetrics.bottomGap).toBeGreaterThanOrEqual(18);
@@ -49,56 +53,66 @@ test('renders the simulated widget and settings views', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(page.getByText('API / Connection')).toBeVisible();
   await expect(page.getByText('UI / Display')).toBeVisible();
-  await expect(page.getByText('Show playback controls only on hover')).toBeVisible();
+  await expect(
+    page.getByText('Show playback controls only on hover'),
+  ).toBeVisible();
 });
 
-test('keeps hover-only playback controls stable while changing visibility', async ({ page }) => {
+test('keeps hover-only playback controls stable while changing visibility', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
   await expect(page.getByText('Night Train Window')).toBeVisible();
 
-  const collapsedHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const collapsedHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   const transportControls = page.locator('.transport-controls');
   await expect(transportControls).toHaveClass(/transport-controls--hidden/);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
 
   await page.locator('.widget-window').hover();
-  const hoveredHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const hoveredHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   expect(hoveredHeight).toBe(collapsedHeight);
 
   await page.getByRole('button', { name: 'Pause' }).hover();
-  const transportTransforms = await page.locator('.transport-controls').evaluate((row) => {
-    const buttonTransforms = Array.from(
-      row.querySelectorAll('.transport-controls__button'),
-    ).map((element) => window.getComputedStyle(element).transform);
+  const transportTransforms = await page
+    .locator('.transport-controls')
+    .evaluate((row) => {
+      const buttonTransforms = Array.from(
+        row.querySelectorAll('.transport-controls__button'),
+      ).map((element) => window.getComputedStyle(element).transform);
 
-    return {
-      row: window.getComputedStyle(row).transform,
-      buttons: buttonTransforms,
-    };
-  });
+      return {
+        row: window.getComputedStyle(row).transform,
+        buttons: buttonTransforms,
+      };
+    });
   expect(transportTransforms.row).toBe('none');
   expect(transportTransforms.buttons).toEqual(['none', 'none', 'none']);
 
   await page.mouse.move(2_000, 2_000);
-  const collapsedAgainHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const collapsedAgainHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(transportControls).toHaveClass(/transport-controls--hidden/);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
   expect(collapsedAgainHeight).toBe(collapsedHeight);
 });
 
-test('persists hover and connection badge preferences without layout shifts', async ({ page }) => {
+test('persists hover and connection badge preferences without layout shifts', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 720, height: 760 });
   await page.goto('/?view=settings&source=simulator');
 
-  const hoverOnlyToggle = page.getByLabel('Show playback controls only on hover');
+  const hoverOnlyToggle = page.getByLabel(
+    'Show playback controls only on hover',
+  );
   const badgeToggle = page.getByLabel('Hide connection status until hover');
   await expect(hoverOnlyToggle).toBeChecked();
   await hoverOnlyToggle.uncheck();
@@ -112,6 +126,7 @@ test('persists hover and connection badge preferences without layout shifts', as
 
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
+  await page.mouse.move(2_000, 2_000);
   const badge = page.locator('.widget-window__connection-badge');
   const layout = page.locator('.widget-window__layout');
   const idleHeight = await layout.evaluate((element) => element.scrollHeight);
@@ -119,7 +134,9 @@ test('persists hover and connection badge preferences without layout shifts', as
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
 
   await page.locator('.widget-window').hover();
-  await expect(badge).not.toHaveClass(/widget-window__connection-badge--hidden/);
+  await expect(badge).not.toHaveClass(
+    /widget-window__connection-badge--hidden/,
+  );
   await expect(layout).toHaveJSProperty('scrollHeight', idleHeight);
 });
 
@@ -136,7 +153,9 @@ test('advances simulator progress at wall-clock speed', async ({ page }) => {
   expect(after - before).toBeLessThanOrEqual(3);
 });
 
-test('keeps playback controls mounted when hover-only controls are disabled', async ({ page }) => {
+test('keeps playback controls mounted when hover-only controls are disabled', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
   await page.evaluate((storageKey) => {
@@ -154,12 +173,14 @@ test('keeps playback controls mounted when hover-only controls are disabled', as
   await page.reload();
   await expect(page.getByText('Night Train Window')).toBeVisible();
 
-  const alwaysVisibleHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const alwaysVisibleHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
 
-  await page.locator('.widget-window').dispatchEvent('pointerout', { relatedTarget: null });
+  await page
+    .locator('.widget-window')
+    .dispatchEvent('pointerout', { relatedTarget: null });
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   await expect(page.locator('.widget-window__layout')).toHaveJSProperty(
     'scrollHeight',
@@ -167,16 +188,20 @@ test('keeps playback controls mounted when hover-only controls are disabled', as
   );
 });
 
-test('collapses the simulated widget when display sections are hidden', async ({ page }) => {
+test('collapses the simulated widget when display sections are hidden', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
   await page.locator('.widget-window').hover();
 
-  const fullHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const fullHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
-  await expect(page.getByRole('slider', { name: 'Seek position' })).toBeVisible();
+  await expect(
+    page.getByRole('slider', { name: 'Seek position' }),
+  ).toBeVisible();
 
   await page.evaluate((storageKey) => {
     window.localStorage.setItem(
@@ -192,11 +217,13 @@ test('collapses the simulated widget when display sections are hidden', async ({
   await page.reload();
   await page.locator('.widget-window').hover();
 
-  const noControlsHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const noControlsHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
-  await expect(page.getByRole('slider', { name: 'Seek position' })).toBeVisible();
+  await expect(
+    page.getByRole('slider', { name: 'Seek position' }),
+  ).toBeVisible();
   expect(noControlsHeight).toBeLessThan(fullHeight - 40);
 
   await page.evaluate((storageKey) => {
@@ -213,11 +240,13 @@ test('collapses the simulated widget when display sections are hidden', async ({
   await page.reload();
   await page.locator('.widget-window').hover();
 
-  const noProgressHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const noProgressHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
-  await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(0);
+  await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(
+    0,
+  );
   expect(noProgressHeight).toBeLessThan(fullHeight - 15);
 
   await page.evaluate((storageKey) => {
@@ -234,11 +263,97 @@ test('collapses the simulated widget when display sections are hidden', async ({
   await page.reload();
   await page.locator('.widget-window').hover();
 
-  const collapsedHeight = await page.locator('.widget-window__layout').evaluate(
-    (element) => element.scrollHeight,
-  );
+  const collapsedHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
-  await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(0);
+  await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(
+    0,
+  );
   expect(collapsedHeight).toBeLessThan(noControlsHeight);
   expect(collapsedHeight).toBeLessThan(noProgressHeight);
+});
+
+test('puts theme first, switches locale, and reports version 2.0.0', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 720, height: 760 });
+  await page.goto('/?view=settings&source=simulator');
+
+  const uiSection = page
+    .locator('.settings-section')
+    .filter({ hasText: 'UI / Display' });
+  const themeTop = await uiSection.getByText('Theme mode').boundingBox();
+  const languageTop = await uiSection
+    .getByText('Language', { exact: true })
+    .boundingBox();
+  expect(themeTop?.y).toBeLessThan(languageTop?.y ?? 0);
+  await expect(page.getByText('Version: 2.0.0')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Russian' }).click();
+  await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
+  await expect(page.getByText('Версия: 2.0.0')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
+});
+
+test('hides track details and controls playback from the full artwork', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+  const fullHeight = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => element.scrollHeight);
+
+  await page.evaluate((storageKey) => {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ui: {
+          hideTrackDetails: true,
+          useArtworkAsPlaybackControl: true,
+        },
+      }),
+    );
+  }, SETTINGS_STORAGE_KEY);
+  await page.reload();
+  await page.mouse.move(2_000, 2_000);
+
+  const layout = page.locator('.widget-window__layout');
+  const compactHeight = await layout.evaluate(
+    (element) => element.scrollHeight,
+  );
+  const pauseArtwork = page.getByRole('button', {
+    name: 'Pause Night Train Window',
+  });
+  const indicator = page.locator('.cover-card__playback-indicator');
+  await expect(page.getByText('Night Train Window')).toHaveCount(0);
+  await expect(pauseArtwork).toBeVisible();
+  await expect(indicator).not.toHaveClass(
+    /cover-card__playback-indicator--visible/,
+  );
+  expect(compactHeight).toBeLessThan(fullHeight);
+
+  await page.locator('.widget-window').hover();
+  await expect(indicator).toHaveClass(
+    /cover-card__playback-indicator--visible/,
+  );
+  await pauseArtwork.click();
+  const playArtwork = page.getByRole('button', {
+    name: 'Play Night Train Window',
+  });
+  await expect(playArtwork).toBeVisible();
+
+  await playArtwork.focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('button', { name: 'Pause Night Train Window' }),
+  ).toBeVisible();
+
+  await page.mouse.move(2_000, 2_000);
+  await expect(indicator).not.toHaveClass(
+    /cover-card__playback-indicator--visible/,
+  );
 });

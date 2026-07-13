@@ -8,28 +8,29 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 35
-- Open: 5
-- In progress: 1
+- Total tracked tasks: 36
+- Open: 0
+- In progress: 0
 - Blocked: 0
 - Deferred: 6
-- Completed: 23
+- Completed: 30
 
 ## Current Stabilization Work
 
-- Open P1: ytw-l48 - [`0001-stabilize-current-widget-interaction-regressions.md`](../tasks/0001-stabilize-current-widget-interaction-regressions.md)
-- Open P1: ytw-l48.1 - [`0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md`](../tasks/0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md)
+- Completed P1: ytw-l48 - [`0001-stabilize-current-widget-interaction-regressions.md`](../tasks/0001-stabilize-current-widget-interaction-regressions.md) - all child regressions closed after the user's 2026-07-13 portable/live confirmation and task `0036` verification.
+- Completed P1: ytw-l48.1 - [`0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md`](../tasks/0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md)
 - Completed P1: ytw-l48.2 - [`0003-fix-main-widget-close-button-honoring-the-configured-action.md`](../tasks/0003-fix-main-widget-close-button-honoring-the-configured-action.md)
 - Completed P2: ytw-l48.3 - [`0004-keep-connection-state-and-authorization-cards-on-one-row-in-settings.md`](../tasks/0004-keep-connection-state-and-authorization-cards-on-one-row-in-settings.md)
-- Open P2: ytw-l48.4 - [`0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md`](../tasks/0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md)
-- In Progress P2: ytw-l48.5 - [`0014-restore-settings-window-dragging-on-empty-frame-areas.md`](../tasks/0014-restore-settings-window-dragging-on-empty-frame-areas.md)
+- Completed P2: ytw-l48.4 - [`0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md`](../tasks/0012-run-a-widget-regression-smoke-pass-after-current-stabilization-fixes.md) - user confirmation plus 55 Vitest, 8 Playwright, 16 Rust, static, and desktop-build checks passed in task `0036`.
+- Completed P2: ytw-l48.5 - [`0014-restore-settings-window-dragging-on-empty-frame-areas.md`](../tasks/0014-restore-settings-window-dragging-on-empty-frame-areas.md)
 - Completed P1: Widget display preferences layout - [`0033-fix-widget-display-preference-layout.md`](../tasks/0033-fix-widget-display-preference-layout.md) - display preferences now remove controls/progress from the compact layout, trigger auto-height resync, and add safe progress-row spacing.
 - Completed P1: Playback controls hover mode - [`0034-fix-playback-controls-hover-mode.md`](../tasks/0034-fix-playback-controls-hover-mode.md) - introduced the separate hover-only setting and transform-free buttons; its height-collapse behavior was superseded by task `0035` after live feedback exposed pointer-boundary jitter.
 - Completed P1: Hover, progress, and status-badge stabilization - [`0035-fix-hover-progress-and-connection-badge.md`](../tasks/0035-fix-hover-progress-and-connection-badge.md) - fixed persisted false settings, made hover visibility layout-stable, corrected Companion elapsed-seconds mapping, and added optional hover-only connection-badge visibility.
+- Completed P1: Version 2.0 display/localization pass - [`0036-add-display-controls-localization-and-central-versioning.md`](../tasks/0036-add-display-controls-localization-and-central-versioning.md) - added track-details hiding, artwork-wide play/pause, English/Russian localization, theme-first ordering, centralized version `2.0.0`, and reconciled the remaining active backlog.
 
 ## Companion / Audit Work
 
-- Open P2: ytw-5v6.3 - [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../tasks/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md) - protocol audit/code-doc alignment completed on 2026-07-07; live YTMDesktop validation still open
+- Completed P2: ytw-5v6.3 - [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../tasks/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md) - auth, durable reconnect, realtime, playback commands, seek/progress timing, and latest portable behavior were confirmed live by 2026-07-13.
 - Completed P2: full audit - [`0017-full-code-audit-latest-ytmdesktop.md`](../tasks/0017-full-code-audit-latest-ytmdesktop.md) - checked latest YTMDesktop v2.0.11 docs/release state, fixed endpoint parsing, realtime reconnect state, artwork CSS URL escaping, and scrubber edge case
 - Completed P1: Companion auth UX - [`0018-fix-companion-auth-completion-flow.md`](../tasks/0018-fix-companion-auth-completion-flow.md) - code generation now starts `/auth/request` token exchange automatically and duplicate confirm clicks are deduplicated
 - Completed P1: TypeScript build fix - [`0019-fix-controller-auth-test-typescript-build.md`](../tasks/0019-fix-controller-auth-test-typescript-build.md) - fixed `TS2349` in the controller auth regression test after local build feedback
@@ -46,13 +47,12 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Fix Companion auth persistence - [`0031-fix-companion-auth-persistence.md`](../tasks/0031-fix-companion-auth-persistence.md) - enabled the actual Windows Credential Manager backend for `keyring`, added durable write/read verification, removed synthetic stored-auth state, and surfaced credential errors
 - Completed P1: Widget layout and playback stability - [`0032-fix-widget-layout-and-playback-stability.md`](../tasks/0032-fix-widget-layout-and-playback-stability.md) - restored shrinkable intrinsic window sizing, removed the paused card, filtered progress-only realtime churn, and expanded transport/browser regression coverage
 
-## Deferred Post-v1 Roadmap
+## Deferred Roadmap
 
-- Open P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md)
+- Deferred P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md) - umbrella retained only for the explicitly deferred future children below.
 - Deferred P3: ytw-5v6.1 - [`0006-add-future-widget-size-presets-and-manual-resize-support.md`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md)
 - Deferred P4: ytw-5v6.2 - [`0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md)
 - Deferred P3: ytw-5v6.4 - [`0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md`](../tasks/0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md)
-- Deferred P4: ytw-5v6.5 - [`0010-expand-localization-beyond-the-english-only-v1-bundle.md`](../tasks/0010-expand-localization-beyond-the-english-only-v1-bundle.md)
 - Deferred P3: ytw-5v6.6 - [`0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md`](../tasks/0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md)
 - Deferred P3: ytw-5v6.7 - [`0013-add-richer-diagnostics-and-logging-around-companion-reconnects-and-runti.md`](../tasks/0013-add-richer-diagnostics-and-logging-around-companion-reconnects-and-runti.md)
 
@@ -66,7 +66,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - The app is Windows-first for the current delivery cycle.
 - Manual test builds are portable-only unless a task explicitly re-enables installer packaging.
-- Live YTMDesktop Companion behavior must be validated on a real local YTMDesktop instance before treating Companion integration as fully verified.
+- Live YTMDesktop Companion behavior was confirmed through playback commands and seek/progress in the 2026-07-13 portable pass; repeat smoke after meaningful Companion/runtime changes.
 - Markdown files under `project-tracking/` are now the source of truth for roadmap, tasks, reports, decisions, checklists, bootstrap sync, and AI iteration time log.
 
 ## Review Rhythm

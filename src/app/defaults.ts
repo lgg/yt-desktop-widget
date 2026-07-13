@@ -1,3 +1,5 @@
+import packageJson from '../../package.json';
+
 import type { AppSettings } from '@/domain/playback/types';
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -11,9 +13,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
     hideConnectionBadge: false,
+    hideTrackDetails: false,
+    useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,
     hideCloseButton: true,
     themeMode: 'dark',
+    locale: 'en',
   },
   window: {
     alwaysOnTop: false,
@@ -24,5 +29,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
 };
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = packageJson.version;
 export const REPOSITORY_URL = 'https://github.com/lgg/yt-desktop-widget';

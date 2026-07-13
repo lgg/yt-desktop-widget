@@ -8,7 +8,9 @@ import { WidgetWindow } from '@/app/WidgetWindow';
 const mockUseAppModel = vi.fn<() => AppModel>();
 const resolvedAction = () => Promise.resolve();
 const runtimeMock = vi.hoisted(() => ({ isTauri: false }));
-const setMainAppWindowHeightMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const setMainAppWindowHeightMock = vi.hoisted(() =>
+  vi.fn(() => Promise.resolve()),
+);
 
 vi.mock('@/app/AppProvider', () => ({
   useAppModel: (): AppModel => mockUseAppModel(),
@@ -29,12 +31,16 @@ const createConnectedModel = ({
   showPlaybackControlsOnHover = true,
   hideProgressBar = false,
   hideConnectionBadge = false,
+  hideTrackDetails = false,
+  useArtworkAsPlaybackControl = false,
 }: {
   playbackState?: 'playing' | 'paused';
   hidePlaybackControls?: boolean;
   showPlaybackControlsOnHover?: boolean;
   hideProgressBar?: boolean;
   hideConnectionBadge?: boolean;
+  hideTrackDetails?: boolean;
+  useArtworkAsPlaybackControl?: boolean;
 } = {}): AppModel => ({
   ready: true,
   settings: {
@@ -44,9 +50,14 @@ const createConnectedModel = ({
       showPlaybackControlsOnHover,
       hideProgressBar,
       ...({ hideConnectionBadge } as Record<'hideConnectionBadge', boolean>),
+      ...({
+        hideTrackDetails,
+        useArtworkAsPlaybackControl,
+      } as Record<'hideTrackDetails' | 'useArtworkAsPlaybackControl', boolean>),
       hideSettingsButton: true,
       hideCloseButton: true,
       themeMode: 'dark',
+      locale: 'en',
     },
     window: {
       alwaysOnTop: true,
@@ -58,7 +69,12 @@ const createConnectedModel = ({
   },
   resolvedSourceMode: 'simulator',
   session: {
-    connection: { status: 'connected', hasStoredAuth: true, retryAttempt: 0, retryAt: null },
+    connection: {
+      status: 'connected',
+      hasStoredAuth: true,
+      retryAttempt: 0,
+      retryAt: null,
+    },
     playback: {
       id: 'track-1',
       title: 'Night Train Window',
@@ -108,12 +124,16 @@ describe('WidgetWindow', () => {
 
     expect(screen.getByText('Night Train Window')).toBeInTheDocument();
     expect(screen.getByText('Moseca Harbor')).toBeInTheDocument();
-    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
   });
 
   it('keeps paused playback compact without a redundant state card', () => {
-    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ playbackState: 'paused' }),
+    );
 
     render(
       <I18nProvider>
@@ -121,7 +141,9 @@ describe('WidgetWindow', () => {
       </I18nProvider>,
     );
 
-    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument();
     expect(screen.queryByText('Playback is paused')).not.toBeInTheDocument();
   });
@@ -136,7 +158,9 @@ describe('WidgetWindow', () => {
       </I18nProvider>,
     );
 
-    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -148,7 +172,9 @@ describe('WidgetWindow', () => {
   });
 
   it('removes playback controls from layout when the display preference hides them', () => {
-    mockUseAppModel.mockReturnValue(createConnectedModel({ hidePlaybackControls: true }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ hidePlaybackControls: true }),
+    );
 
     render(
       <I18nProvider>
@@ -156,11 +182,19 @@ describe('WidgetWindow', () => {
       </I18nProvider>,
     );
 
-    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
 
-    expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Previous' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Pause' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Next' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps hover-only playback controls mounted while changing only visibility', () => {
@@ -173,24 +207,34 @@ describe('WidgetWindow', () => {
     );
 
     const widget = document.querySelector('.widget-window') as HTMLElement;
-    const controls = document.querySelector('.transport-controls') as HTMLElement;
+    const controls = document.querySelector(
+      '.transport-controls',
+    ) as HTMLElement;
     expect(controls).toBeInTheDocument();
     expect(controls).toHaveClass('transport-controls--hidden');
-    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Pause' }),
+    ).not.toBeInTheDocument();
 
     fireEvent.pointerEnter(widget);
     expect(controls).not.toHaveClass('transport-controls--hidden');
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Previous' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
 
     fireEvent.pointerLeave(widget);
     expect(controls).toHaveClass('transport-controls--hidden');
-    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Pause' }),
+    ).not.toBeInTheDocument();
   });
 
   it('hides the connection badge until hover without removing its layout anchor', () => {
-    mockUseAppModel.mockReturnValue(createConnectedModel({ hideConnectionBadge: true }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ hideConnectionBadge: true }),
+    );
 
     render(
       <I18nProvider>
@@ -199,12 +243,16 @@ describe('WidgetWindow', () => {
     );
 
     const widget = document.querySelector('.widget-window') as HTMLElement;
-    const badgeAnchor = document.querySelector('.widget-window__connection-badge') as HTMLElement;
+    const badgeAnchor = document.querySelector(
+      '.widget-window__connection-badge',
+    ) as HTMLElement;
     expect(badgeAnchor).toBeInTheDocument();
     expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
 
     fireEvent.pointerEnter(widget);
-    expect(badgeAnchor).not.toHaveClass('widget-window__connection-badge--hidden');
+    expect(badgeAnchor).not.toHaveClass(
+      'widget-window__connection-badge--hidden',
+    );
 
     fireEvent.pointerLeave(widget);
     expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
@@ -229,7 +277,9 @@ describe('WidgetWindow', () => {
   });
 
   it('removes the progress scrubber from layout when the display preference hides it', () => {
-    mockUseAppModel.mockReturnValue(createConnectedModel({ hideProgressBar: true }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ hideProgressBar: true }),
+    );
 
     render(
       <I18nProvider>
@@ -237,24 +287,94 @@ describe('WidgetWindow', () => {
       </I18nProvider>,
     );
 
-    expect(screen.queryByRole('slider', { name: 'Seek position' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('slider', { name: 'Seek position' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('removes track title and artist from layout when the display preference hides them', () => {
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ hideTrackDetails: true }),
+    );
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      document.querySelector('.widget-window__meta'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Night Train Window')).not.toBeInTheDocument();
+    expect(screen.queryByText('Moseca Harbor')).not.toBeInTheDocument();
+  });
+
+  it('uses the full artwork as one accessible play-pause control when enabled', () => {
+    const model = createConnectedModel({ useArtworkAsPlaybackControl: true });
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const artworkControl = screen.getByRole('button', {
+      name: 'Pause Night Train Window',
+    });
+    const indicator = document.querySelector('.cover-card__playback-indicator');
+    expect(indicator).toBeInTheDocument();
+    expect(indicator).not.toHaveClass(
+      'cover-card__playback-indicator--visible',
+    );
+
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
+    expect(indicator).toHaveClass('cover-card__playback-indicator--visible');
+    fireEvent.click(artworkControl);
+
+    expect(model.sendCommand).toHaveBeenCalledTimes(1);
+    expect(model.sendCommand).toHaveBeenCalledWith({ type: 'playPause' });
+  });
+
+  it('keeps the artwork non-interactive when artwork playback control is disabled', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel());
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Pause Night Train Window' }),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector('.cover-card__playback-indicator'),
+    ).not.toBeInTheDocument();
   });
 
   it('measures intrinsic layout height instead of the current expanded viewport', async () => {
     runtimeMock.isTauri = true;
-    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ playbackState: 'paused' }),
+    );
     const observeMutations = vi.fn();
 
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback(0);
       return 1;
     });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
-    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      return this.classList.contains('widget-window__layout') ? 438 : 700;
-    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(
+      () => undefined,
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('widget-window__layout') ? 438 : 700;
+      },
+    );
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       () =>
         ({
@@ -300,31 +420,34 @@ describe('WidgetWindow', () => {
     await waitFor(() => {
       expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(440);
     });
-    expect(observeMutations).toHaveBeenCalledWith(
-      expect.any(HTMLElement),
-      {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      },
-    );
+    expect(observeMutations).toHaveBeenCalledWith(expect.any(HTMLElement), {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
   });
 
   it('resyncs intrinsic height when display preferences remove footer sections', async () => {
     runtimeMock.isTauri = true;
     let layoutHeight = 490;
-    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ playbackState: 'paused' }),
+    );
 
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback(0);
       return 1;
     });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
-    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      return this.classList.contains('widget-window__layout') ? layoutHeight : 700;
-    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(
+      () => undefined,
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('widget-window__layout')
+          ? layoutHeight
+          : 700;
+      },
+    );
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -379,18 +502,24 @@ describe('WidgetWindow', () => {
   it('keeps intrinsic height stable when hover-only controls change visibility', async () => {
     runtimeMock.isTauri = true;
     let layoutHeight = 420;
-    mockUseAppModel.mockReturnValue(createConnectedModel({ playbackState: 'paused' }));
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ playbackState: 'paused' }),
+    );
 
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback(0);
       return 1;
     });
-    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
-    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      return this.classList.contains('widget-window__layout') ? layoutHeight : 700;
-    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(
+      () => undefined,
+    );
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains('widget-window__layout')
+          ? layoutHeight
+          : 700;
+      },
+    );
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -424,12 +553,16 @@ describe('WidgetWindow', () => {
     });
 
     layoutHeight = 490;
-    fireEvent.pointerEnter(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
     await Promise.resolve();
     expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
 
     layoutHeight = 420;
-    fireEvent.pointerLeave(document.querySelector('.widget-window') as HTMLElement);
+    fireEvent.pointerLeave(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
     await Promise.resolve();
     expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
   });
@@ -444,9 +577,12 @@ describe('WidgetWindow', () => {
           showPlaybackControlsOnHover: true,
           hideProgressBar: false,
           hideConnectionBadge: false,
+          hideTrackDetails: false,
+          useArtworkAsPlaybackControl: false,
           hideSettingsButton: true,
           hideCloseButton: true,
           themeMode: 'dark',
+          locale: 'en',
         },
         window: {
           alwaysOnTop: true,
@@ -488,6 +624,8 @@ describe('WidgetWindow', () => {
 
     expect(screen.getByText('Authorize this widget')).toBeInTheDocument();
     expect(screen.getByText('DEV-OK')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Confirm in YTMDesktop' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Confirm in YTMDesktop' }),
+    ).toBeInTheDocument();
   });
 });

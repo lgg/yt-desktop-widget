@@ -26,9 +26,12 @@ pub struct UiSettings {
   pub show_playback_controls_on_hover: bool,
   pub hide_progress_bar: bool,
   pub hide_connection_badge: bool,
+  pub hide_track_details: bool,
+  pub use_artwork_as_playback_control: bool,
   pub hide_settings_button: bool,
   pub hide_close_button: bool,
   pub theme_mode: String,
+  pub locale: String,
 }
 
 impl Default for UiSettings {
@@ -38,9 +41,12 @@ impl Default for UiSettings {
       show_playback_controls_on_hover: true,
       hide_progress_bar: false,
       hide_connection_badge: false,
+      hide_track_details: false,
+      use_artwork_as_playback_control: false,
       hide_settings_button: true,
       hide_close_button: true,
       theme_mode: "dark".to_string(),
+      locale: "en".to_string(),
     }
   }
 }
@@ -188,7 +194,10 @@ mod tests {
     let settings: AppSettings = serde_json::from_value(json!({
       "ui": {
         "showPlaybackControlsOnHover": false,
-        "hideConnectionBadge": true
+        "hideConnectionBadge": true,
+        "hideTrackDetails": true,
+        "useArtworkAsPlaybackControl": true,
+        "locale": "ru"
       }
     }))
     .expect("settings should deserialize");
@@ -196,5 +205,8 @@ mod tests {
     let serialized = serde_json::to_value(settings).expect("settings should serialize");
     assert_eq!(serialized["ui"]["showPlaybackControlsOnHover"], false);
     assert_eq!(serialized["ui"]["hideConnectionBadge"], true);
+    assert_eq!(serialized["ui"]["hideTrackDetails"], true);
+    assert_eq!(serialized["ui"]["useArtworkAsPlaybackControl"], true);
+    assert_eq!(serialized["ui"]["locale"], "ru");
   }
 }

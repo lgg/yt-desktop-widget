@@ -18,9 +18,13 @@ export const SettingsSection = ({
     <div className="settings-section__header">
       <div>
         <h2 className="settings-section__title">{title}</h2>
-        {description ? <p className="settings-section__description">{description}</p> : null}
+        {description ? (
+          <p className="settings-section__description">{description}</p>
+        ) : null}
       </div>
-      {actions ? <div className="settings-section__actions">{actions}</div> : null}
+      {actions ? (
+        <div className="settings-section__actions">{actions}</div>
+      ) : null}
     </div>
     <div className="settings-section__body">{children}</div>
   </GlassPanel>
@@ -31,7 +35,9 @@ interface SettingsRowProps extends PropsWithChildren {
 }
 
 export const SettingsRow = ({ children, className }: SettingsRowProps) => (
-  <div className={className ? `settings-row ${className}` : 'settings-row'}>{children}</div>
+  <div className={className ? `settings-row ${className}` : 'settings-row'}>
+    {children}
+  </div>
 );
 
 interface ToggleProps {
@@ -41,7 +47,12 @@ interface ToggleProps {
   description: string;
 }
 
-export const Toggle = ({ checked, onChange, label, description }: ToggleProps) => (
+export const Toggle = ({
+  checked,
+  onChange,
+  label,
+  description,
+}: ToggleProps) => (
   <label className="toggle-row">
     <div className="toggle-row__main">
       <span className="toggle-row__label">{label}</span>
@@ -49,6 +60,7 @@ export const Toggle = ({ checked, onChange, label, description }: ToggleProps) =
         <input
           className="toggle-row__input"
           type="checkbox"
+          aria-label={label}
           checked={checked}
           onChange={(event) => onChange(event.target.checked)}
         />

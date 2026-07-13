@@ -2,7 +2,7 @@
 
 ## Status
 
-Deferred
+Completed
 
 ## Source
 
@@ -47,23 +47,25 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] The original Beads issue state is represented in markdown.
-- [ ] Relevant implementation, documentation, and verification notes are captured or linked.
-- [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
-- [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
+- [x] The original Beads issue state is represented in markdown.
+- [x] Russian is available alongside English through matching JSON locale bundles.
+- [x] English remains the default and the selected language persists through the existing settings model.
+- [x] Relevant implementation, documentation, verification, roadmap, task, and report notes are captured or linked.
+- [x] No known mismatch remains between UI, native settings, tests, and localization docs.
 
 ## Verification Plan
 
-- [ ] Lint/static checks: run `npm run lint` or `npm run verify` when code changes.
-- [ ] Tests: run `npm test`; add targeted tests for changed logic.
-- [ ] Build: run `npm run build:desktop` for release/runtime-sensitive changes.
-- [ ] Manual QA: verify the affected widget/settings/Companion scenario on Windows when automation cannot cover it.
-- [ ] Deploy/config review: review Tauri permissions, startup behavior, packaging, and env/config docs when touched.
-- [ ] Documentation review: update README, ARCHITECTURE, decisions, roadmap, tasks, and reports as applicable.
+- [x] Lint/static checks: `npm run verify` passed in task `0036`.
+- [x] Tests: locale render/key-parity component tests and persisted-language Playwright coverage passed.
+- [x] Build: `npm run build:desktop` passed for version `2.0.0`.
+- [x] Manual QA: browser E2E verified English-to-Russian switching and reload persistence.
+- [x] Deploy/config review: localization adds no permission, credential, or packaging change.
+- [x] Documentation review: README, architecture, roadmap, task, and report `0036` are synchronized.
 
 ## Progress History
 
 - No progress notes were recorded in Beads.
+- 2026-07-13: Task `0036` added a persisted `en`/`ru` selector, complete `ru.json`, English fallback/default behavior, document language updates, hardcoded UI-copy cleanup, exact locale-key parity tests, and browser persistence coverage. Closed.
 
 ## Dependencies
 
@@ -75,18 +77,19 @@ Out of scope:
 
 ## Questions and Answers
 
-| Question | Status | Answer / Decision |
-| --- | --- | --- |
-| Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
+| Question                                        | Status | Answer / Decision                                                                                       |
+| ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| Are there missing details from the Beads issue? | Open   | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
 
 ## Risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Migrated task loses subtle Beads context. | Medium | Keep the raw JSONL archive and the progress history in this file. |
+| Risk                                                  | Impact | Mitigation                                                                       |
+| ----------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Migrated task loses subtle Beads context.             | Medium | Keep the raw JSONL archive and the progress history in this file.                |
 | Runtime behavior differs from documented assumptions. | Medium | Verify with portable Windows build and live YTMDesktop Companion where required. |
 
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
 - Raw Beads export: [`beads-export-2026-07-05.jsonl`](../archive/beads-export-2026-07-05.jsonl)
+- Completion report: [`0036-add-display-controls-localization-and-central-versioning.md`](../reports/0036-add-display-controls-localization-and-central-versioning.md)

@@ -1,13 +1,25 @@
 import { type KeyboardEvent, useEffect, useState } from 'react';
 
 import { APP_VERSION } from '@/app/defaults';
-import { formatCompanionEndpoint, parseCompanionEndpoint } from '@/app/endpoint';
+import {
+  formatCompanionEndpoint,
+  parseCompanionEndpoint,
+} from '@/app/endpoint';
 import { useAppModel } from '@/app/AppProvider';
 import { hideCurrentAppWindow } from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
-import { CloseIcon, GitHubIcon, RefreshIcon, SparkIcon } from '@/components/icons';
-import { SettingsSection, SettingsRow, Toggle } from '@/components/settings/SettingsSection';
+import {
+  CloseIcon,
+  GitHubIcon,
+  RefreshIcon,
+  SparkIcon,
+} from '@/components/icons';
+import {
+  SettingsSection,
+  SettingsRow,
+  Toggle,
+} from '@/components/settings/SettingsSection';
 
 export const SettingsWindow = () => {
   const {
@@ -23,17 +35,22 @@ export const SettingsWindow = () => {
     toggleDebugMockMode,
   } = useAppModel();
   const { t } = useI18n();
-  const [endpointDraft, setEndpointDraft] = useState(formatCompanionEndpoint(settings.api.host, settings.api.port));
+  const [endpointDraft, setEndpointDraft] = useState(
+    formatCompanionEndpoint(settings.api.host, settings.api.port),
+  );
   const [endpointError, setEndpointError] = useState<string | null>(null);
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
   const authBusy = session.connection.status === 'authenticating';
   const authStatusDetail =
-    session.connection.status === 'auth_required' || session.connection.status === 'authenticating'
+    session.connection.status === 'auth_required' ||
+    session.connection.status === 'authenticating'
       ? session.connection.detail
       : null;
 
   useEffect(() => {
-    setEndpointDraft(formatCompanionEndpoint(settings.api.host, settings.api.port));
+    setEndpointDraft(
+      formatCompanionEndpoint(settings.api.host, settings.api.port),
+    );
     setEndpointError(null);
   }, [settings.api.host, settings.api.port]);
 
@@ -46,7 +63,10 @@ export const SettingsWindow = () => {
 
     setEndpointError(null);
 
-    if (parsed.host === settings.api.host && parsed.port === settings.api.port) {
+    if (
+      parsed.host === settings.api.host &&
+      parsed.port === settings.api.port
+    ) {
       return;
     }
 
@@ -77,7 +97,10 @@ export const SettingsWindow = () => {
           fallbackClassName="settings-window__background"
         />
         <header className="settings-window__header">
-          <div data-tauri-drag-region className="settings-window__drag-anchor drag-region">
+          <div
+            data-tauri-drag-region
+            className="settings-window__drag-anchor drag-region"
+          >
             <h1>{t('app.settings')}</h1>
           </div>
           <button
@@ -95,14 +118,21 @@ export const SettingsWindow = () => {
             title={t('settingsWindow.sections.api.title')}
             description={t('settingsWindow.sections.api.description')}
             actions={
-              <button className="secondary-button" type="button" onClick={() => void reconnect()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void reconnect()}
+              >
                 <RefreshIcon />
                 <span>{t('settingsWindow.actions.reconnect')}</span>
               </button>
             }
           >
             <div className="settings-field">
-              <label className="settings-field__label" htmlFor="companion-endpoint">
+              <label
+                className="settings-field__label"
+                htmlFor="companion-endpoint"
+              >
                 {t('settingsWindow.sections.api.endpoint')}
               </label>
               <input
@@ -113,22 +143,34 @@ export const SettingsWindow = () => {
                     : 'settings-field__input'
                 }
                 value={endpointDraft}
-                placeholder={t('settingsWindow.sections.api.endpointPlaceholder')}
+                placeholder={t(
+                  'settingsWindow.sections.api.endpointPlaceholder',
+                )}
                 onChange={(event) => setEndpointDraft(event.target.value)}
                 onBlur={() => {
                   void commitEndpoint();
                 }}
                 onKeyDown={handleEndpointKeyDown}
               />
-              {endpointError ? <p className="settings-field__hint settings-field__hint--error">{endpointError}</p> : null}
+              {endpointError ? (
+                <p className="settings-field__hint settings-field__hint--error">
+                  {endpointError}
+                </p>
+              ) : null}
             </div>
             <div className="settings-row-grid settings-row-grid--status">
               <SettingsRow className="settings-row--stacked settings-row--status">
-                <span className="settings-row__label">{t('settingsWindow.sections.api.connected')}</span>
-                <span className="settings-row__value">{t(`status.${session.connection.status}`)}</span>
+                <span className="settings-row__label">
+                  {t('settingsWindow.sections.api.connected')}
+                </span>
+                <span className="settings-row__value">
+                  {t(`status.${session.connection.status}`)}
+                </span>
               </SettingsRow>
               <SettingsRow className="settings-row--stacked settings-row--status">
-                <span className="settings-row__label">{t('settingsWindow.sections.api.paired')}</span>
+                <span className="settings-row__label">
+                  {t('settingsWindow.sections.api.paired')}
+                </span>
                 <span className="settings-row__value">
                   {session.connection.hasStoredAuth
                     ? t('settingsWindow.sections.api.pairedYes')
@@ -153,7 +195,11 @@ export const SettingsWindow = () => {
               >
                 {t('settingsWindow.actions.confirmPair')}
               </button>
-              <button className="ghost-button" type="button" onClick={() => void clearAuth()}>
+              <button
+                className="ghost-button"
+                type="button"
+                onClick={() => void clearAuth()}
+              >
                 {t('settingsWindow.actions.clearAuth')}
               </button>
             </div>
@@ -172,97 +218,20 @@ export const SettingsWindow = () => {
             title={t('settingsWindow.sections.ui.title')}
             description={t('settingsWindow.sections.ui.description')}
           >
-            <Toggle
-              checked={settings.ui.hidePlaybackControls}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hidePlaybackControls: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideControls')}
-              description={t('settingsWindow.sections.ui.hideControlsDescription')}
-            />
-            <Toggle
-              checked={settings.ui.showPlaybackControlsOnHover}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    showPlaybackControlsOnHover: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.showControlsOnHover')}
-              description={t('settingsWindow.sections.ui.showControlsOnHoverDescription')}
-            />
-            <Toggle
-              checked={settings.ui.hideProgressBar}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideProgressBar: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideProgress')}
-              description={t('settingsWindow.sections.ui.hideProgressDescription')}
-            />
-            <Toggle
-              checked={settings.ui.hideConnectionBadge}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideConnectionBadge: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideConnectionBadge')}
-              description={t('settingsWindow.sections.ui.hideConnectionBadgeDescription')}
-            />
-            <Toggle
-              checked={settings.ui.hideSettingsButton}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideSettingsButton: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideSettingsButton')}
-              description={t('settingsWindow.sections.ui.hideSettingsButtonDescription')}
-            />
-            <Toggle
-              checked={settings.ui.hideCloseButton}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideCloseButton: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideCloseButton')}
-              description={t('settingsWindow.sections.ui.hideCloseButtonDescription')}
-            />
             <div className="segmented-control">
-              <span className="segmented-control__label">{t('settingsWindow.sections.ui.theme')}</span>
-              <div className="segmented-control__options" role="tablist">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.ui.theme')}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t('settingsWindow.sections.ui.theme')}
+              >
                 {(['dark', 'system'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
+                    aria-pressed={settings.ui.themeMode === mode}
                     className={
                       settings.ui.themeMode === mode
                         ? 'segmented-control__option segmented-control__option--active'
@@ -283,6 +252,168 @@ export const SettingsWindow = () => {
                 ))}
               </div>
             </div>
+            <div className="segmented-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.ui.language')}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t('settingsWindow.sections.ui.language')}
+              >
+                {(['en', 'ru'] as const).map((locale) => (
+                  <button
+                    key={locale}
+                    type="button"
+                    aria-pressed={settings.ui.locale === locale}
+                    className={
+                      settings.ui.locale === locale
+                        ? 'segmented-control__option segmented-control__option--active'
+                        : 'segmented-control__option'
+                    }
+                    onClick={() =>
+                      void updateSettings((current) => ({
+                        ...current,
+                        ui: {
+                          ...current.ui,
+                          locale,
+                        },
+                      }))
+                    }
+                  >
+                    {t(`settingsWindow.language.${locale}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Toggle
+              checked={settings.ui.hidePlaybackControls}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hidePlaybackControls: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideControls')}
+              description={t(
+                'settingsWindow.sections.ui.hideControlsDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.showPlaybackControlsOnHover}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    showPlaybackControlsOnHover: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.showControlsOnHover')}
+              description={t(
+                'settingsWindow.sections.ui.showControlsOnHoverDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.useArtworkAsPlaybackControl}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    useArtworkAsPlaybackControl: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.artworkPlaybackControl')}
+              description={t(
+                'settingsWindow.sections.ui.artworkPlaybackControlDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.hideProgressBar}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideProgressBar: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideProgress')}
+              description={t(
+                'settingsWindow.sections.ui.hideProgressDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.hideTrackDetails}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideTrackDetails: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideTrackDetails')}
+              description={t(
+                'settingsWindow.sections.ui.hideTrackDetailsDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.hideConnectionBadge}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideConnectionBadge: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideConnectionBadge')}
+              description={t(
+                'settingsWindow.sections.ui.hideConnectionBadgeDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.hideSettingsButton}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideSettingsButton: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideSettingsButton')}
+              description={t(
+                'settingsWindow.sections.ui.hideSettingsButtonDescription',
+              )}
+            />
+            <Toggle
+              checked={settings.ui.hideCloseButton}
+              onChange={(nextValue) =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    hideCloseButton: nextValue,
+                  },
+                }))
+              }
+              label={t('settingsWindow.sections.ui.hideCloseButton')}
+              description={t(
+                'settingsWindow.sections.ui.hideCloseButtonDescription',
+              )}
+            />
           </SettingsSection>
 
           <SettingsSection
@@ -301,7 +432,9 @@ export const SettingsWindow = () => {
                 }))
               }
               label={t('settingsWindow.sections.window.alwaysOnTop')}
-              description={t('settingsWindow.sections.window.alwaysOnTopDescription')}
+              description={t(
+                'settingsWindow.sections.window.alwaysOnTopDescription',
+              )}
             />
             <Toggle
               checked={settings.window.launchOnStartup}
@@ -315,10 +448,14 @@ export const SettingsWindow = () => {
                 }))
               }
               label={t('settingsWindow.sections.window.startup')}
-              description={t('settingsWindow.sections.window.startupDescription')}
+              description={t(
+                'settingsWindow.sections.window.startupDescription',
+              )}
             />
             <div className="segmented-control segmented-control--split">
-              <span className="segmented-control__label">{t('settingsWindow.sections.window.closeButtonAction')}</span>
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.window.closeButtonAction')}
+              </span>
               <div className="segmented-control__options" role="tablist">
                 {(['exit', 'hideToTray'] as const).map((mode) => (
                   <button
@@ -352,7 +489,9 @@ export const SettingsWindow = () => {
               description={t('settingsWindow.sections.dev.description')}
             >
               <div className="segmented-control">
-                <span className="segmented-control__label">{t('settingsWindow.sections.dev.sourceMode')}</span>
+                <span className="segmented-control__label">
+                  {t('settingsWindow.sections.dev.sourceMode')}
+                </span>
                 <div className="segmented-control__options">
                   {(['auto', 'real', 'simulator'] as const).map((mode) => (
                     <button
@@ -379,8 +518,12 @@ export const SettingsWindow = () => {
                 </div>
               </div>
               <SettingsRow>
-                <span className="settings-row__label">Resolved mode</span>
-                <span className="settings-row__value">{resolvedSourceMode}</span>
+                <span className="settings-row__label">
+                  {t('settingsWindow.sections.dev.resolvedMode')}
+                </span>
+                <span className="settings-row__value">
+                  {t(`settingsWindow.sourceMode.${resolvedSourceMode}`)}
+                </span>
               </SettingsRow>
             </SettingsSection>
           ) : null}
@@ -390,12 +533,18 @@ export const SettingsWindow = () => {
               {t('settingsWindow.sections.about.version')}: {APP_VERSION}
             </p>
             <div className="settings-actions-row">
-              <button className="secondary-button" type="button" onClick={() => void openRepository()}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => void openRepository()}
+              >
                 <GitHubIcon />
                 <span>{t('settingsWindow.actions.openRepo')}</span>
               </button>
               <button
-                className={debugMockModeActive ? 'primary-button' : 'secondary-button'}
+                className={
+                  debugMockModeActive ? 'primary-button' : 'secondary-button'
+                }
                 type="button"
                 onClick={() => void toggleDebugMockMode()}
               >

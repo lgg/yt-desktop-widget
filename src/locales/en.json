@@ -25,6 +25,13 @@
       "pause": "Pause",
       "next": "Next"
     },
+    "artwork": {
+      "play": "Play {{title}}",
+      "pause": "Pause {{title}}"
+    },
+    "progress": {
+      "seekPosition": "Seek position"
+    },
     "states": {
       "discovering": {
         "eyebrow": "Companion",
@@ -99,12 +106,17 @@
       "ui": {
         "title": "UI / Display",
         "description": "Control how much UI stays visible when the widget is idle.",
+        "language": "Language",
         "hideControls": "Hide playback controls",
         "hideControlsDescription": "Remove transport buttons from the compact layout.",
         "showControlsOnHover": "Show playback controls only on hover",
         "showControlsOnHoverDescription": "When enabled, controls stay in place and appear only while hovering over the widget.",
+        "artworkPlaybackControl": "Use artwork as play/pause control",
+        "artworkPlaybackControlDescription": "Make the full artwork clickable and reveal the current play or pause action while hovering over the widget.",
         "hideProgress": "Hide progress bar",
         "hideProgressDescription": "Remove elapsed time and the scrubber from the compact layout.",
+        "hideTrackDetails": "Hide track title and artist",
+        "hideTrackDetailsDescription": "Remove the track details block from the compact layout.",
         "hideConnectionBadge": "Hide connection status until hover",
         "hideConnectionBadgeDescription": "Keep the status position reserved and reveal it while hovering over the widget.",
         "hideSettingsButton": "Hide settings button",
@@ -127,11 +139,12 @@
         "title": "Developer",
         "description": "Use the simulator without weakening the production integration path.",
         "sourceMode": "Preferred data source",
-        "sourceModeDescription": "Auto uses the real Companion bridge in Tauri and the simulator in browser previews."
+        "sourceModeDescription": "Auto uses the real Companion bridge in Tauri and the simulator in browser previews.",
+        "resolvedMode": "Resolved mode"
       },
       "about": {
         "title": "About",
-        "description": "Project metadata for this v1 desktop widget.",
+        "description": "Project metadata for this desktop widget.",
         "repo": "GitHub repository",
         "version": "Version"
       }
@@ -149,6 +162,10 @@
     "theme": {
       "dark": "Dark",
       "system": "System"
+    },
+    "language": {
+      "en": "English",
+      "ru": "Russian"
     },
     "sourceMode": {
       "auto": "Auto",

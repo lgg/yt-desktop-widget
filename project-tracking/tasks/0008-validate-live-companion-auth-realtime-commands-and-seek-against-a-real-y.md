@@ -2,7 +2,7 @@
 
 ## Status
 
-Open
+Completed
 
 ## Source
 
@@ -71,18 +71,18 @@ Out of scope:
 - [x] Relevant implementation, documentation, and verification notes are captured or linked.
 - [x] Live YTMDesktop Companion auth approval and durable reconnect are verified on YTMDesktop v2.0.11.
 - [x] Live realtime state updates are verified on a real local instance.
-- [ ] Previous, play/pause, and next commands are verified with the task `0032` portable build.
-- [ ] Live seek is verified on a real local instance.
-- [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
-- [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs after live validation.
+- [x] Previous, play/pause, and next commands are verified with the latest portable build.
+- [x] Live seek is verified on a real local instance.
+- [x] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
+- [x] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs after live validation.
 
 ## Verification Plan
 
-- [ ] Lint/static checks: run `npm run lint` or `npm run verify` when code changes.
-- [ ] Tests: run `npm test`; add targeted tests for changed logic.
-- [ ] Build: run `npm run build:desktop` for release/runtime-sensitive changes.
-- [ ] Manual QA: verify the affected widget/settings/Companion scenario on Windows when automation cannot cover it.
-- [ ] Deploy/config review: review Tauri permissions, startup behavior, packaging, and env/config docs when touched.
+- [x] Lint/static checks: `npm run verify` passed in task `0036`.
+- [x] Tests: full Vitest, Playwright, and Rust suites passed in task `0036`.
+- [x] Build: `npm run build:desktop` passed for version `2.0.0`.
+- [x] Manual QA: the user confirmed the live Companion behavior works correctly on 2026-07-13.
+- [x] Deploy/config review: Companion contract, permissions, credentials, portable packaging, and version metadata were reviewed.
 - [x] Documentation review: update README, ARCHITECTURE, decisions, roadmap, tasks, and reports as applicable.
 
 ## Progress History
@@ -92,6 +92,7 @@ Out of scope:
 - 2026-07-07: Deep full-code audit found and fixed progress smoothing clock drift and cross-window settings propagation. Updated `src/domain/playback/progress.ts`, `tests/domain/playback/progress.test.tsx`, `src/integration/companion/tauriBridge.ts`, `src/app/AppProvider.tsx`, `src-tauri/src/lib.rs`, and this tracking set.
 - 2026-07-09: User confirmed successful Allow, durable authorization after reconnect, and live realtime playback state against YTMDesktop v2.0.11 after task `0031`. Task `0032` then fixed compact window sizing and realtime render churn; live command and seek confirmation remain open.
 - 2026-07-13: Task `0035` traced the user's accelerated/pinned progress report to a frontend contract mismatch: official YTMDesktop v2.0.11 source treats `player.videoProgress` as elapsed seconds, while the mapper treated it as a percentage. The mapper and simulator now use elapsed seconds consistently, with unit/component/browser coverage. Live command, seek, and real-track timing confirmation remain open.
+- 2026-07-13: The user tested the rebuilt portable application against the live Companion and confirmed the remaining playback, seek/progress, hover, and settings behavior works correctly. Task `0036` passed a fresh full automated/native/desktop-build regression set. Closed.
 
 ## Dependencies
 
@@ -105,28 +106,29 @@ Out of scope:
 
 ## Questions and Answers
 
-| Question | Status | Answer / Decision |
-| --- | --- | --- |
-| Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
-| Is live Companion validation complete? | Open | Partially. Auth, durable reconnect, and realtime state are confirmed on v2.0.11; commands after task `0032` and seek remain to be confirmed. |
-| Does the auth `appId` change affect existing users? | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. If a stored token becomes invalid, the native bridge now clears it when Companion returns auth-required. |
-| Can malformed seek seconds reach Companion? | Resolved | The UI already constrains normal seek input; the native command payload builder now also clamps negative or non-finite seconds to `0`. |
-| Why did progress fail to move smoothly between socket updates? | Resolved | `useSmoothedProgress` compared `performance.now()` to `Date.now()` snapshot timestamps. It now uses `Date.now()` consistently. |
-| What unit does Companion use for `player.videoProgress`? | Resolved | Official YTMDesktop v2.0.11 source divides `videoProgress` by `durationSeconds`, proving that `videoProgress` is elapsed seconds rather than a percentage. Task `0035` corrected the frontend mapping and simulator contract. |
-| Do Settings-window changes affect the main widget immediately? | Resolved | Saved settings now emit a backend event and each Tauri webview applies the new settings payload. |
+| Question                                                       | Status   | Answer / Decision                                                                                                                                                                                                             |
+| -------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Are there missing details from the Beads issue?                | Open     | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback.                                                                                                                       |
+| Is live Companion validation complete?                         | Resolved | Yes. Auth, durable reconnect, realtime, playback commands, seek/progress timing, and latest portable behavior were confirmed by the user by 2026-07-13.                                                                       |
+| Does the auth `appId` change affect existing users?            | Resolved | The app now uses `ytmdesktopwidget` because v2 requires lowercase alphanumeric `appId`. If a stored token becomes invalid, the native bridge now clears it when Companion returns auth-required.                              |
+| Can malformed seek seconds reach Companion?                    | Resolved | The UI already constrains normal seek input; the native command payload builder now also clamps negative or non-finite seconds to `0`.                                                                                        |
+| Why did progress fail to move smoothly between socket updates? | Resolved | `useSmoothedProgress` compared `performance.now()` to `Date.now()` snapshot timestamps. It now uses `Date.now()` consistently.                                                                                                |
+| What unit does Companion use for `player.videoProgress`?       | Resolved | Official YTMDesktop v2.0.11 source divides `videoProgress` by `durationSeconds`, proving that `videoProgress` is elapsed seconds rather than a percentage. Task `0035` corrected the frontend mapping and simulator contract. |
+| Do Settings-window changes affect the main widget immediately? | Resolved | Saved settings now emit a backend event and each Tauri webview applies the new settings payload.                                                                                                                              |
 
 ## Risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Migrated task loses subtle Beads context. | Medium | Keep the raw JSONL archive and the progress history in this file. |
-| Runtime behavior differs from documented assumptions. | Medium | Verify with portable Windows build and live YTMDesktop Companion where required. |
-| Existing stored Companion token was created under the previous invalid appId assumption. | Low | Clear stale tokens automatically on auth-required connect/command failures and use the existing re-auth flow. |
-| `rust_socketio` payload shape differs from live Companion `state-update` events. | Medium | Keep realtime payload mapping isolated and verify against a live YTMDesktop instance. |
-| Cross-window settings synchronization behaves differently in packaged Tauri than in static review. | Medium | Manually verify settings changes with both windows open in the portable Windows build. |
+| Risk                                                                                               | Impact | Mitigation                                                                                                    |
+| -------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| Migrated task loses subtle Beads context.                                                          | Medium | Keep the raw JSONL archive and the progress history in this file.                                             |
+| Runtime behavior differs from documented assumptions.                                              | Medium | Verify with portable Windows build and live YTMDesktop Companion where required.                              |
+| Existing stored Companion token was created under the previous invalid appId assumption.           | Low    | Clear stale tokens automatically on auth-required connect/command failures and use the existing re-auth flow. |
+| `rust_socketio` payload shape differs from live Companion `state-update` events.                   | Medium | Keep realtime payload mapping isolated and verify against a live YTMDesktop instance.                         |
+| Cross-window settings synchronization behaves differently in packaged Tauri than in static review. | Medium | Manually verify settings changes with both windows open in the portable Windows build.                        |
 
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
 - Raw Beads export: [`beads-export-2026-07-05.jsonl`](../archive/beads-export-2026-07-05.jsonl)
 - Report: [`0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md`](../reports/0008-validate-live-companion-auth-realtime-commands-and-seek-against-a-real-y.md)
+- Closing report: [`0036-add-display-controls-localization-and-central-versioning.md`](../reports/0036-add-display-controls-localization-and-central-versioning.md)

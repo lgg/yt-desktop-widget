@@ -74,12 +74,13 @@ Responsibilities:
 - `src/components/**`
 - `src/styles/global.css`
 - `src/locales/en.json`
+- `src/locales/ru.json`
 
 Responsibilities:
 
 - reusable glass panels, artwork layers, controls, and settings sections
 - visual consistency across widget and settings windows
-- externalized user-facing strings from day one
+- externalized user-facing strings with matching English/Russian locale keys
 
 ## Runtime topology
 
@@ -151,6 +152,15 @@ Persistence model:
 - Tauri runtime: JSON settings in the app config directory
 - browser preview: `localStorage`
 - auth token: OS keyring through Rust, not in frontend storage
+- locale: persisted as part of UI settings; English is the backward-compatible default
+
+## Version model
+
+- `package.json` is the only manually edited application-version source.
+- Tauri resolves `version` through `../package.json`.
+- React imports the root package version for Settings/About display.
+- Rust Companion metadata uses `CARGO_PKG_VERSION`.
+- `npm run version:sync` updates required Cargo and lockfile copies; `npm run version:check` is part of `npm run verify`.
 
 ## Window model
 
@@ -186,7 +196,7 @@ The current structure is intentionally ready for:
 
 - future window size presets
 - future manual resize support
-- future locale JSON bundles
+- additional locale JSON bundles beyond the current English/Russian pair
 - future macOS window behavior work
 - richer diagnostics and logging around Companion reconnects
 - enabling or disabling seek behavior with minimal UI churn

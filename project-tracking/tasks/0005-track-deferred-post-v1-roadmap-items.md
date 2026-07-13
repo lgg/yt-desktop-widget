@@ -2,7 +2,7 @@
 
 ## Status
 
-Open
+Deferred
 
 ## Source
 
@@ -47,10 +47,10 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] The original Beads issue state is represented in markdown.
-- [ ] Relevant implementation, documentation, and verification notes are captured or linked.
-- [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
-- [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
+- [x] The original Beads issue state is represented in markdown.
+- [x] Relevant implementation, documentation, and verification notes are captured or linked.
+- [x] Delivered child work is reflected in code, tests, documentation, config, roadmap, tasks, and reports.
+- [x] Remaining future work is represented by explicit deferred child tasks without an active open umbrella.
 
 ## Verification Plan
 
@@ -64,6 +64,7 @@ Out of scope:
 ## Progress History
 
 - No progress notes were recorded in Beads.
+- 2026-07-13: Live Companion validation (`0008`) and English/Russian localization (`0010`) are completed. The remaining size presets, macOS, installer, alternate-mode, and diagnostics children remain intentionally deferred, so this umbrella moves from Open to Deferred.
 
 ## Dependencies
 
@@ -81,18 +82,19 @@ Out of scope:
 
 ## Questions and Answers
 
-| Question | Status | Answer / Decision |
-| --- | --- | --- |
-| Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
+| Question                                        | Status | Answer / Decision                                                                                       |
+| ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| Are there missing details from the Beads issue? | Open   | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
 
 ## Risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Migrated task loses subtle Beads context. | Medium | Keep the raw JSONL archive and the progress history in this file. |
+| Risk                                                  | Impact | Mitigation                                                                       |
+| ----------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| Migrated task loses subtle Beads context.             | Medium | Keep the raw JSONL archive and the progress history in this file.                |
 | Runtime behavior differs from documented assumptions. | Medium | Verify with portable Windows build and live YTMDesktop Companion where required. |
 
 ## Links
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
 - Raw Beads export: [`beads-export-2026-07-05.jsonl`](../archive/beads-export-2026-07-05.jsonl)
+- Reconciliation report: [`0036-add-display-controls-localization-and-central-versioning.md`](../reports/0036-add-display-controls-localization-and-central-versioning.md)
