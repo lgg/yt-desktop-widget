@@ -75,6 +75,31 @@ test('keeps hover-only playback controls stable while changing visibility', asyn
   const collapsedHeight = await page
     .locator('.widget-window__layout')
     .evaluate((element) => element.scrollHeight);
+  const layoutDragMetrics = await page
+    .locator('.widget-window__layout')
+    .evaluate((element) => ({
+      hasNativeDragAttribute: element.hasAttribute('data-tauri-drag-region'),
+      appRegion: window
+        .getComputedStyle(element)
+        .getPropertyValue('app-region'),
+    }));
+  const nativeDragMarkerCount = await page
+    .locator(
+      '.widget-window [data-tauri-drag-region], .widget-window .drag-region',
+    )
+    .count();
+  const windowActions = page.locator('.widget-window__window-action');
+  const idleActionRects = await windowActions.evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const rect = button.getBoundingClientRect();
+      return {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      };
+    }),
+  );
   const transportControls = page.locator('.transport-controls');
   await expect(transportControls).toHaveClass(/transport-controls--hidden/);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
@@ -85,6 +110,26 @@ test('keeps hover-only playback controls stable while changing visibility', asyn
     .evaluate((element) => element.scrollHeight);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   expect(hoveredHeight).toBe(collapsedHeight);
+  await expect
+    .poll(() =>
+      windowActions.evaluateAll((buttons) =>
+        buttons.map((button) => {
+          const rect = button.getBoundingClientRect();
+          return {
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          };
+        }),
+      ),
+    )
+    .toEqual(idleActionRects);
+  expect(layoutDragMetrics).toEqual({
+    hasNativeDragAttribute: false,
+    appRegion: 'none',
+  });
+  expect(nativeDragMarkerCount).toBe(0);
 
   await page.getByRole('button', { name: 'Pause' }).hover();
   const transportTransforms = await page
@@ -109,6 +154,54 @@ test('keeps hover-only playback controls stable while changing visibility', asyn
   await expect(transportControls).toHaveClass(/transport-controls--hidden/);
   await expect(page.getByRole('button', { name: 'Pause' })).toBeHidden();
   expect(collapsedAgainHeight).toBe(collapsedHeight);
+
+  for (let cycle = 0; cycle < 4; cycle += 1) {
+    await page.locator('.widget-window').hover();
+    await expect(transportControls).not.toHaveClass(
+      /transport-controls--hidden/,
+    );
+    await page.mouse.move(2_000, 2_000);
+    await expect(transportControls).toHaveClass(/transport-controls--hidden/);
+  }
+});
+
+test('reveals hover-hidden window actions when they receive keyboard focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+  await page.mouse.move(2_000, 2_000);
+
+  const openSettings = page.getByRole('button', { name: 'Open settings' });
+  await expect(openSettings).toHaveCSS('opacity', '0');
+
+  await page.keyboard.press('Tab');
+
+  await expect(openSettings).toBeFocused();
+  await expect(openSettings).toHaveCSS('opacity', '1');
+});
+
+test('disables hover transitions when reduced motion is requested', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+  await expect(page.getByText('Night Train Window')).toBeVisible();
+
+  const transitionDurations = await page.evaluate(() =>
+    [
+      '.widget-window__window-action',
+      '.widget-window__connection-badge',
+      '.transport-controls',
+    ].map(
+      (selector) =>
+        window.getComputedStyle(document.querySelector<HTMLElement>(selector)!)
+          .transitionDuration,
+    ),
+  );
+
+  expect(transitionDurations).toEqual(['0s', '0s', '0s']);
 });
 
 test('persists hover and connection badge preferences without layout shifts', async ({
@@ -334,7 +427,7 @@ test('balances compact widget spacing and header alignment', async ({
           .first()
           .evaluate((element) => window.getComputedStyle(element).transform),
       )
-      .toBe('matrix(1, 0, 0, 1, 0, 0)');
+      .toBe('none');
 
     return layoutHeight;
   };
@@ -371,7 +464,7 @@ test('balances compact widget spacing and header alignment', async ({
       ),
       artworkTopGap: coverRect.top - contentRect.top,
       artworkBottomGap: contentRect.bottom - coverRect.bottom,
-      lowerSurfaceIsDragRegion:
+      lowerSurfaceUsesNativeDragMarker:
         document
           .elementFromPoint(contentRect.left + 10, contentRect.bottom - 5)
           ?.closest('.widget-window__layout')
@@ -397,7 +490,7 @@ test('balances compact widget spacing and header alignment', async ({
       ),
     )
     .toBeLessThanOrEqual(2);
-  expect.soft(artworkOnlyMetrics.lowerSurfaceIsDragRegion).toBe(true);
+  expect.soft(artworkOnlyMetrics.lowerSurfaceUsesNativeDragMarker).toBe(false);
 
   const progressOnlyHeight = await setCompactSettings(false);
 
@@ -661,13 +754,24 @@ test('hides track details and controls playback from the full artwork', async ({
   });
   await expect(playArtwork).toBeVisible();
 
+  await page.mouse.move(2_000, 2_000);
+  await expect(indicator).not.toHaveClass(
+    /cover-card__playback-indicator--visible/,
+  );
+
   await playArtwork.focus();
   await page.keyboard.press('Enter');
-  await expect(
-    page.getByRole('button', { name: 'Pause Night Train Window' }),
-  ).toBeVisible();
+  const pauseArtworkAgain = page.getByRole('button', {
+    name: 'Pause Night Train Window',
+  });
+  await expect(pauseArtworkAgain).toBeVisible();
 
   await page.mouse.move(2_000, 2_000);
+  await expect(indicator).toHaveClass(
+    /cover-card__playback-indicator--visible/,
+  );
+
+  await pauseArtworkAgain.evaluate((button) => button.blur());
   await expect(indicator).not.toHaveClass(
     /cover-card__playback-indicator--visible/,
   );

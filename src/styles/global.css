@@ -670,13 +670,11 @@ a,
 .widget-window__window-action {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-2px);
 }
 
 .widget-window__window-action--visible {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
 }
 
 .widget-window__connection-badge {
@@ -1102,6 +1100,16 @@ a,
     rgba(241, 106, 72, 0.9),
     rgba(218, 90, 61, 0.88)
   );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .toggle-row__input:checked + .toggle-row__visual .toggle-row__thumb {

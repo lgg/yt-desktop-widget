@@ -1,4 +1,5 @@
 import {
+  type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   useEffect,
@@ -53,6 +54,19 @@ const getStatusLabel = (
   }
 };
 
+const NON_DRAGGABLE_TARGET_SELECTOR = [
+  '.no-drag',
+  'a',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  '[contenteditable="true"]',
+  '[role="button"]',
+  '[role="slider"]',
+  '[role="tab"]',
+].join(',');
+
 export const WidgetWindow = () => {
   const {
     ready,
@@ -68,12 +82,17 @@ export const WidgetWindow = () => {
   const { t } = useI18n();
   const connectionMessage = getConnectionMessage(t, session.connection);
   const [hovered, setHovered] = useState(false);
+  const [focusedWithin, setFocusedWithin] = useState(false);
+  const keyboardInteractionRef = useRef(false);
+  const widgetRef = useRef<HTMLElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const syncHeightRef = useRef<() => void>(() => undefined);
   const playback = session.playback ?? session.lastKnownPlayback;
+  const interactionActive = hovered || focusedWithin;
   const controlsEnabled = !settings.ui.hidePlaybackControls && !!playback;
   const controlsVisible =
-    controlsEnabled && (!settings.ui.showPlaybackControlsOnHover || hovered);
+    controlsEnabled &&
+    (!settings.ui.showPlaybackControlsOnHover || interactionActive);
   const progressRendered = !settings.ui.hideProgressBar && !!playback;
   const trackDetailsRendered = !settings.ui.hideTrackDetails && !!playback;
   const compactArtworkLayout =
@@ -89,9 +108,10 @@ export const WidgetWindow = () => {
     settings.ui.connectionBadgeVisibility !== 'hidden';
   const connectionBadgeVisible =
     settings.ui.connectionBadgeVisibility === 'always' ||
-    (settings.ui.connectionBadgeVisibility === 'hover' && hovered);
-  const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
-  const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
+    (settings.ui.connectionBadgeVisibility === 'hover' && interactionActive);
+  const settingsButtonVisible =
+    !settings.ui.hideSettingsButton || interactionActive;
+  const closeButtonVisible = !settings.ui.hideCloseButton || interactionActive;
   const canSendCommands =
     session.connection.status === 'connected' && !!session.playback;
   const titleLine = playback?.title ?? t('widget.states.disconnected.title');
@@ -130,7 +150,7 @@ export const WidgetWindow = () => {
             { title: titleLine },
           ),
           disabled: !canSendCommands,
-          visible: hovered,
+          visible: interactionActive,
           icon:
             playback.playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />,
           onActivate: () => {
@@ -180,7 +200,12 @@ export const WidgetWindow = () => {
     };
 
   const handleLayoutMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || event.target !== event.currentTarget) {
+    const target = event.target;
+    if (
+      event.button !== 0 ||
+      (target instanceof Element &&
+        target.closest(NON_DRAGGABLE_TARGET_SELECTOR))
+    ) {
       return;
     }
 
@@ -189,6 +214,47 @@ export const WidgetWindow = () => {
       console.error('Failed to start dragging the widget window.', error);
     });
   };
+
+  const handleBlurCapture = (event: ReactFocusEvent<HTMLElement>) => {
+    const nextTarget = event.relatedTarget;
+    if (
+      !(nextTarget instanceof Node) ||
+      !event.currentTarget.contains(nextTarget)
+    ) {
+      setFocusedWithin(false);
+    }
+  };
+
+  const handleFocusCapture = () => {
+    setFocusedWithin(keyboardInteractionRef.current);
+  };
+
+  useEffect(() => {
+    const clearInteractionState = () => {
+      setHovered(false);
+      setFocusedWithin(false);
+    };
+
+    const markKeyboardInteraction = () => {
+      keyboardInteractionRef.current = true;
+      if (widgetRef.current?.contains(document.activeElement)) {
+        setFocusedWithin(true);
+      }
+    };
+    const markPointerInteraction = () => {
+      keyboardInteractionRef.current = false;
+      setFocusedWithin(false);
+    };
+
+    window.addEventListener('blur', clearInteractionState);
+    window.addEventListener('keydown', markKeyboardInteraction, true);
+    window.addEventListener('pointerdown', markPointerInteraction, true);
+    return () => {
+      window.removeEventListener('blur', clearInteractionState);
+      window.removeEventListener('keydown', markKeyboardInteraction, true);
+      window.removeEventListener('pointerdown', markPointerInteraction, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -378,32 +444,34 @@ export const WidgetWindow = () => {
 
   return (
     <main
+      ref={widgetRef}
       className="widget-window"
       style={getAppearanceStyle(settings.ui)}
       onPointerEnter={() => setHovered(true)}
+      onPointerMove={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
+      onFocusCapture={handleFocusCapture}
+      onBlurCapture={handleBlurCapture}
     >
       <div className="widget-window__content">
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
         <div
           ref={layoutRef}
-          data-tauri-drag-region
           onMouseDown={handleLayoutMouseDown}
           className={
             artworkOnlyLayout
-              ? 'widget-window__layout widget-window__layout--artwork-only drag-region'
+              ? 'widget-window__layout widget-window__layout--artwork-only'
               : progressOnlyLayout
-                ? 'widget-window__layout widget-window__layout--progress-only drag-region'
-                : 'widget-window__layout drag-region'
+                ? 'widget-window__layout widget-window__layout--progress-only'
+                : 'widget-window__layout'
           }
         >
           <header className="widget-window__header">
             <div
-              data-tauri-drag-region
               className={
                 connectionBadgeVisible
-                  ? 'widget-window__drag-anchor widget-window__connection-badge drag-region'
-                  : 'widget-window__drag-anchor widget-window__connection-badge widget-window__connection-badge--hidden drag-region'
+                  ? 'widget-window__drag-anchor widget-window__connection-badge'
+                  : 'widget-window__drag-anchor widget-window__connection-badge widget-window__connection-badge--hidden'
               }
               aria-hidden={!connectionBadgeVisible}
             >
@@ -444,10 +512,7 @@ export const WidgetWindow = () => {
             </div>
           </header>
 
-          <section
-            data-tauri-drag-region
-            className="widget-window__hero drag-region"
-          >
+          <section className="widget-window__hero">
             <CoverCard
               artworkUrl={playback?.coverUrl ?? null}
               title={titleLine}

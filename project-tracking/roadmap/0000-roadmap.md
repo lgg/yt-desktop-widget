@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 41
+- Total tracked tasks: 42
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 6
-- Completed: 35
+- Completed: 36
 
 ## Current Stabilization Work
 
+- Completed P1: Fix stuck hover and control jitter - [`0042-fix-stuck-hover-and-control-jitter.md`](../tasks/0042-fix-stuck-hover-and-control-jitter.md) - removed conflicting native drag regions from the hover boundary, stabilized pointer/focus/blur visibility and button geometry, added reduced-motion handling, and completed a fresh frontend/native/dependency audit.
 - Completed P1: Widget height, drag surface, LIVE badge modes, and full audit - [`0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md`](../tasks/0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md) - equalized compact progress/artwork-only height, restored lower-surface dragging, added explicit always/hover/hidden status modes with migration, and completed a fresh repository-wide audit.
 - Completed P1: Settings drag and transparency controls - [`0040-fix-settings-drag-and-add-transparency-controls.md`](../tasks/0040-fix-settings-drag-and-add-transparency-controls.md) - keeps the Settings header draggable after scrolling and adds persisted surface, artwork-background, and gradient-overlay transparency controls with current visuals as defaults.
 - Completed P1: ytw-l48 - [`0001-stabilize-current-widget-interaction-regressions.md`](../tasks/0001-stabilize-current-widget-interaction-regressions.md) - all child regressions closed after the user's 2026-07-13 portable/live confirmation and task `0036` verification.

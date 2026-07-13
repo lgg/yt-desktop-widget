@@ -256,6 +256,63 @@ describe('WidgetWindow', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('reveals hover-only controls for keyboard focus and hides them after focus leaves the widget', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel());
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const openSettings = screen.getByRole('button', {
+      name: 'Open settings',
+    });
+    const controls = document.querySelector(
+      '.transport-controls',
+    ) as HTMLElement;
+    expect(openSettings).not.toHaveClass(
+      'widget-window__window-action--visible',
+    );
+    expect(controls).toHaveClass('transport-controls--hidden');
+
+    fireEvent.keyDown(window, { key: 'Tab' });
+    fireEvent.focus(openSettings);
+    expect(openSettings).toHaveClass('widget-window__window-action--visible');
+    expect(controls).not.toHaveClass('transport-controls--hidden');
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeEnabled();
+
+    fireEvent.blur(openSettings, { relatedTarget: document.body });
+    expect(openSettings).not.toHaveClass(
+      'widget-window__window-action--visible',
+    );
+    expect(controls).toHaveClass('transport-controls--hidden');
+  });
+
+  it('clears hover-only UI when the window loses focus and restores it on pointer movement', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel());
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const widget = document.querySelector('.widget-window') as HTMLElement;
+    const controls = document.querySelector(
+      '.transport-controls',
+    ) as HTMLElement;
+
+    fireEvent.pointerEnter(widget);
+    expect(controls).not.toHaveClass('transport-controls--hidden');
+
+    fireEvent.blur(window);
+    expect(controls).toHaveClass('transport-controls--hidden');
+
+    fireEvent.pointerMove(widget);
+    expect(controls).not.toHaveClass('transport-controls--hidden');
+  });
+
   it('hides the connection badge until hover without removing its layout anchor', () => {
     mockUseAppModel.mockReturnValue(
       createConnectedModel({ connectionBadgeVisibility: 'hover' }),
@@ -306,7 +363,7 @@ describe('WidgetWindow', () => {
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
   });
 
-  it('starts native dragging from blank lower layout surface only', () => {
+  it('uses explicit native dragging for blank layout surface without turning the hover container into a drag region', () => {
     runtimeMock.isTauri = true;
     mockUseAppModel.mockReturnValue(
       createConnectedModel({
@@ -324,7 +381,8 @@ describe('WidgetWindow', () => {
     );
 
     const layout = document.querySelector('.widget-window__layout');
-    expect(layout).toHaveAttribute('data-tauri-drag-region');
+    expect(layout).not.toHaveAttribute('data-tauri-drag-region');
+    expect(layout).not.toHaveClass('drag-region');
     fireEvent.mouseDown(layout as Element, { button: 0, buttons: 1 });
     expect(
       windowControllerMocks.startCurrentAppWindowDragging,
@@ -334,6 +392,48 @@ describe('WidgetWindow', () => {
       screen.getByRole('button', { name: 'Pause Night Train Window' }),
       { button: 0, buttons: 1 },
     );
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it('drags from non-interactive artwork without any native drag markers and ignores interactive descendants', () => {
+    runtimeMock.isTauri = true;
+    mockUseAppModel.mockReturnValue(createConnectedModel());
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      document.querySelectorAll(
+        '.widget-window [data-tauri-drag-region], .widget-window .drag-region',
+      ),
+    ).toHaveLength(0);
+
+    fireEvent.mouseDown(document.querySelector('.cover-card') as Element, {
+      button: 0,
+      buttons: 1,
+    });
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(document.querySelector('.cover-card') as Element, {
+      button: 2,
+      buttons: 2,
+    });
+
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Open settings' }), {
+      button: 0,
+      buttons: 1,
+    });
+    fireEvent.mouseDown(screen.getByRole('slider', { name: 'Seek position' }), {
+      button: 0,
+      buttons: 1,
+    });
     expect(
       windowControllerMocks.startCurrentAppWindowDragging,
     ).toHaveBeenCalledTimes(1);
