@@ -106,4 +106,4 @@ Out of scope:
 - Related task: [`0034-fix-playback-controls-hover-mode.md`](0034-fix-playback-controls-hover-mode.md)
 - Related report: [`0034-fix-playback-controls-hover-mode.md`](../reports/0034-fix-playback-controls-hover-mode.md)
 - Time log: [`time-log.md`](../time-log.md)
-- PR/commit: pending
+- Commit: `a828e0b` on branch `codex/0035-fix-hover-progress-status-badge`

@@ -118,3 +118,4 @@ Fixed all four reported regressions: the hover-only setting can now be switched 
 
 - User smoke-test the rebuilt portable executable against several normal tracks, including one longer than 100 seconds.
 - Continue open live command/seek coverage in task `0008` and the broader portable smoke pass in task `0012`.
+- Delivery commit: `a828e0b` on branch `codex/0035-fix-hover-progress-status-badge`.
