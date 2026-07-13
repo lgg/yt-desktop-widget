@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 39
+- Total tracked tasks: 40
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 6
-- Completed: 33
+- Completed: 34
 
 ## Current Stabilization Work
 
+- Completed P1: Settings drag and transparency controls - [`0040-fix-settings-drag-and-add-transparency-controls.md`](../tasks/0040-fix-settings-drag-and-add-transparency-controls.md) - keeps the Settings header draggable after scrolling and adds persisted surface, artwork-background, and gradient-overlay transparency controls with current visuals as defaults.
 - Completed P1: ytw-l48 - [`0001-stabilize-current-widget-interaction-regressions.md`](../tasks/0001-stabilize-current-widget-interaction-regressions.md) - all child regressions closed after the user's 2026-07-13 portable/live confirmation and task `0036` verification.
 - Completed P1: ytw-l48.1 - [`0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md`](../tasks/0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md)
 - Completed P1: ytw-l48.2 - [`0003-fix-main-widget-close-button-honoring-the-configured-action.md`](../tasks/0003-fix-main-widget-close-button-honoring-the-configured-action.md)

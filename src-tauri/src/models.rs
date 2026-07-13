@@ -30,6 +30,9 @@ pub struct UiSettings {
   pub use_artwork_as_playback_control: bool,
   pub hide_settings_button: bool,
   pub hide_close_button: bool,
+  pub window_surface_opacity: f64,
+  pub artwork_background_opacity: f64,
+  pub artwork_gradient_opacity: f64,
   pub theme_mode: String,
   pub locale: String,
 }
@@ -45,6 +48,9 @@ impl Default for UiSettings {
       use_artwork_as_playback_control: false,
       hide_settings_button: true,
       hide_close_button: true,
+      window_surface_opacity: 100.0,
+      artwork_background_opacity: 100.0,
+      artwork_gradient_opacity: 100.0,
       theme_mode: "dark".to_string(),
       locale: "en".to_string(),
     }
@@ -200,5 +206,20 @@ mod tests {
     assert_eq!(serialized["ui"]["useArtworkAsPlaybackControl"], true);
     assert_eq!(serialized["ui"]["themeMode"], "light");
     assert_eq!(serialized["ui"]["locale"], "ru");
+  }
+
+  #[test]
+  fn legacy_settings_receive_current_transparency_defaults() {
+    let settings: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "themeMode": "dark"
+      }
+    }))
+    .expect("legacy settings should deserialize");
+
+    let serialized = serde_json::to_value(settings).expect("settings should serialize");
+    assert_eq!(serialized["ui"]["windowSurfaceOpacity"], 100.0);
+    assert_eq!(serialized["ui"]["artworkBackgroundOpacity"], 100.0);
+    assert_eq!(serialized["ui"]["artworkGradientOpacity"], 100.0);
   }
 }

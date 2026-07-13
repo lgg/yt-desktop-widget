@@ -140,6 +140,18 @@
         "theme": "Theme mode",
         "themeDescription": "Choose Dark or Light explicitly, or let System follow the Windows theme."
       },
+      "appearance": {
+        "title": "Transparency / Background",
+        "description": "Adjust the window layers while keeping text and controls fully legible.",
+        "windowSurface": "Window surface opacity",
+        "windowSurfaceDescription": "Controls the glass surface behind the widget content without fading controls or text.",
+        "artworkBackground": "Artwork background opacity",
+        "artworkBackgroundDescription": "Controls how strongly the blurred current artwork appears behind the widget.",
+        "gradientOverlay": "Gradient overlay intensity",
+        "gradientOverlayDescription": "Controls the themed gradient that keeps content readable over the artwork.",
+        "reset": "Reset",
+        "resetLabel": "Reset {{label}} to default"
+      },
       "window": {
         "title": "Window / Behavior",
         "description": "Tune the widget’s desktop presence on Windows.",

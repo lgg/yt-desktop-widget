@@ -6,6 +6,13 @@ import { APP_VERSION } from '@/app/defaults';
 import { I18nProvider } from '@/app/i18n';
 import { SettingsWindow } from '@/app/SettingsWindow';
 
+const windowControllerMocks = vi.hoisted(() => ({
+  hideCurrentAppWindow: vi.fn(() => Promise.resolve()),
+  startCurrentAppWindowDragging: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('@/app/windowController', () => windowControllerMocks);
+
 const updateSettings = vi.fn<AppModel['updateSettings']>(() =>
   Promise.resolve(),
 );
@@ -24,6 +31,9 @@ const model = {
       useArtworkAsPlaybackControl: false,
       hideSettingsButton: true,
       hideCloseButton: true,
+      windowSurfaceOpacity: 100,
+      artworkBackgroundOpacity: 100,
+      artworkGradientOpacity: 100,
       themeMode: 'dark',
       locale: 'en',
     },
@@ -123,6 +133,106 @@ describe('SettingsWindow UI display preferences', () => {
     const recipe = updateSettings.mock.calls[0]?.[0];
     expect(recipe).toBeTypeOf('function');
     expect(recipe?.(model.settings).ui).toMatchObject({ themeMode: 'light' });
+  });
+
+  it('starts native dragging from the persistent header after the sections scroll', () => {
+    windowControllerMocks.startCurrentAppWindowDragging.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const sections = document.querySelector<HTMLElement>(
+      '.settings-window__sections',
+    );
+    const dragAnchor = screen
+      .getByRole('heading', { name: 'Settings' })
+      .closest('.settings-window__drag-anchor');
+    expect(sections).not.toBeNull();
+    expect(dragAnchor).not.toBeNull();
+
+    if (sections) {
+      sections.scrollTop = 320;
+      fireEvent.scroll(sections);
+    }
+    fireEvent.mouseDown(dragAnchor as Element, {
+      button: 0,
+      buttons: 1,
+    });
+
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'Hide settings' }), {
+      button: 0,
+      buttons: 1,
+    });
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it('places three live transparency controls before Window / Behavior', () => {
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const appearanceHeading = screen.getByRole('heading', {
+      name: 'Transparency / Background',
+    });
+    const windowHeading = screen.getByRole('heading', {
+      name: 'Window / Behavior',
+    });
+    expect(appearanceHeading.compareDocumentPosition(windowHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    expect(screen.getByLabelText('Window surface opacity')).toHaveValue('100');
+    expect(screen.getByLabelText('Artwork background opacity')).toHaveValue(
+      '100',
+    );
+    expect(screen.getByLabelText('Gradient overlay intensity')).toHaveValue(
+      '100',
+    );
+    expect(document.querySelector('.settings-window')).toHaveStyle({
+      '--window-surface-opacity': '1',
+      '--artwork-background-opacity': '1',
+      '--artwork-gradient-opacity': '1',
+    });
+  });
+
+  it('persists and individually resets a transparency percentage', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Window surface opacity'), {
+      target: { value: '64' },
+    });
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    let recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui).toMatchObject({
+      windowSurfaceOpacity: 64,
+    });
+
+    updateSettings.mockClear();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Reset window surface opacity to default',
+      }),
+    );
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui).toMatchObject({
+      windowSurfaceOpacity: 100,
+    });
   });
 
   it('localizes authorization status without rendering raw native details', () => {

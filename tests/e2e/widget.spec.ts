@@ -433,7 +433,8 @@ test('puts theme first, supports light mode, switches locale, and reports the ce
         colorScheme: window.getComputedStyle(document.documentElement)
           .colorScheme,
         textColor: style.color,
-        backgroundImage: style.backgroundImage,
+        backgroundImage: window.getComputedStyle(element, '::before')
+          .backgroundImage,
       };
     });
   expect(lightThemeStyles.colorScheme).toBe('light');
@@ -446,6 +447,109 @@ test('puts theme first, supports light mode, switches locale, and reports the ce
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
+});
+
+test('keeps the Settings header fixed after scrolling and persists appearance percentages', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 720, height: 760 });
+  await page.goto('/?view=settings&source=simulator');
+
+  const header = page.locator('.settings-window__header');
+  const dragAnchor = page.locator('.settings-window__drag-anchor');
+  const sections = page.locator('.settings-window__sections');
+  const headerBefore = await header.boundingBox();
+  expect(headerBefore).not.toBeNull();
+
+  await sections.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect
+    .poll(() => sections.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+
+  const headerAfter = await header.boundingBox();
+  expect(headerAfter?.y).toBe(headerBefore?.y);
+  expect(headerAfter?.height).toBe(headerBefore?.height);
+  const anchorReceivesPointer = await dragAnchor.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const target = document.elementFromPoint(
+      bounds.left + bounds.width / 2,
+      bounds.top + bounds.height / 2,
+    );
+    return target === element || element.contains(target);
+  });
+  expect(anchorReceivesPointer).toBe(true);
+
+  const appearanceHeading = page.getByRole('heading', {
+    name: 'Transparency / Background',
+  });
+  await appearanceHeading.scrollIntoViewIfNeeded();
+  const surface = page.getByRole('slider', {
+    name: 'Window surface opacity',
+    exact: true,
+  });
+  const artwork = page.getByRole('slider', {
+    name: 'Artwork background opacity',
+    exact: true,
+  });
+  const gradient = page.getByRole('slider', {
+    name: 'Gradient overlay intensity',
+    exact: true,
+  });
+
+  await surface.fill('72');
+  await expect(surface).toHaveValue('72');
+  await artwork.fill('48');
+  await expect(artwork).toHaveValue('48');
+  await gradient.fill('35');
+  await expect(gradient).toHaveValue('35');
+
+  await expect
+    .poll(() =>
+      page.locator('.settings-window').evaluate((element) => {
+        const style = window.getComputedStyle(element);
+        return [
+          style.getPropertyValue('--window-surface-opacity').trim(),
+          style.getPropertyValue('--artwork-background-opacity').trim(),
+          style.getPropertyValue('--artwork-gradient-opacity').trim(),
+        ];
+      }),
+    )
+    .toEqual(['0.72', '0.48', '0.35']);
+
+  await page.reload();
+  await expect(
+    page.getByRole('slider', {
+      name: 'Window surface opacity',
+      exact: true,
+    }),
+  ).toHaveValue('72');
+  await expect(
+    page.getByRole('slider', {
+      name: 'Artwork background opacity',
+      exact: true,
+    }),
+  ).toHaveValue('48');
+  await expect(
+    page.getByRole('slider', {
+      name: 'Gradient overlay intensity',
+      exact: true,
+    }),
+  ).toHaveValue('35');
+
+  await page
+    .getByRole('button', {
+      name: 'Reset artwork background opacity to default',
+    })
+    .click();
+  await expect(
+    page.getByRole('slider', {
+      name: 'Artwork background opacity',
+      exact: true,
+    }),
+  ).toHaveValue('100');
 });
 
 test('hides track details and controls playback from the full artwork', async ({

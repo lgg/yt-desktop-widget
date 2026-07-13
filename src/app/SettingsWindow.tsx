@@ -1,13 +1,22 @@
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  useEffect,
+  useState,
+} from 'react';
 
-import { APP_VERSION } from '@/app/defaults';
+import { getAppearanceStyle } from '@/app/appearance';
+import { APP_VERSION, DEFAULT_SETTINGS } from '@/app/defaults';
 import { getConnectionMessage } from '@/app/connectionMessage';
 import {
   formatCompanionEndpoint,
   parseCompanionEndpoint,
 } from '@/app/endpoint';
 import { useAppModel } from '@/app/AppProvider';
-import { hideCurrentAppWindow } from '@/app/windowController';
+import {
+  hideCurrentAppWindow,
+  startCurrentAppWindowDragging,
+} from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import {
@@ -21,6 +30,74 @@ import {
   SettingsRow,
   Toggle,
 } from '@/components/settings/SettingsSection';
+
+type OpacitySettingKey =
+  | 'windowSurfaceOpacity'
+  | 'artworkBackgroundOpacity'
+  | 'artworkGradientOpacity';
+
+interface OpacityControlProps {
+  id: string;
+  label: string;
+  description: string;
+  value: number;
+  defaultValue: number;
+  resetText: string;
+  resetLabel: string;
+  onChange: (value: number) => void;
+  onReset: () => void;
+}
+
+const OpacityControl = ({
+  id,
+  label,
+  description,
+  value,
+  defaultValue,
+  resetText,
+  resetLabel,
+  onChange,
+  onReset,
+}: OpacityControlProps) => (
+  <div className="opacity-control">
+    <div className="opacity-control__header">
+      <div className="opacity-control__copy">
+        <label className="opacity-control__label" htmlFor={id}>
+          {label}
+        </label>
+        <span id={`${id}-description`} className="opacity-control__description">
+          {description}
+        </span>
+      </div>
+      <div className="opacity-control__value-actions">
+        <output className="opacity-control__value" htmlFor={id}>
+          {value}%
+        </output>
+        <button
+          className="ghost-button opacity-control__reset"
+          type="button"
+          aria-label={resetLabel}
+          data-default-value={defaultValue}
+          onClick={onReset}
+        >
+          {resetText}
+        </button>
+      </div>
+    </div>
+    <input
+      id={id}
+      className="opacity-control__range"
+      type="range"
+      min="0"
+      max="100"
+      step="1"
+      value={value}
+      aria-describedby={`${id}-description`}
+      aria-valuetext={`${value}%`}
+      onChange={(event) => onChange(Number(event.target.value))}
+    />
+  </div>
+);
 
 export const SettingsWindow = () => {
   const {
@@ -90,8 +167,64 @@ export const SettingsWindow = () => {
     void commitEndpoint();
   };
 
+  const handleHeaderMouseDown = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    void startCurrentAppWindowDragging().catch((error) => {
+      console.error('Failed to start dragging the Settings window.', error);
+    });
+  };
+
+  const updateOpacity = (key: OpacitySettingKey, value: number) => {
+    void updateSettings((current) => ({
+      ...current,
+      ui: {
+        ...current.ui,
+        [key]: value,
+      },
+    }));
+  };
+
+  const resetOpacity = (key: OpacitySettingKey) => {
+    updateOpacity(key, DEFAULT_SETTINGS.ui[key]);
+  };
+
+  const renderOpacityControl = (
+    key: OpacitySettingKey,
+    translationKey: 'windowSurface' | 'artworkBackground' | 'gradientOverlay',
+  ) => {
+    const label = t(`settingsWindow.sections.appearance.${translationKey}`);
+    const defaultValue = DEFAULT_SETTINGS.ui[key];
+
+    return (
+      <OpacityControl
+        key={key}
+        id={`appearance-${key}`}
+        label={label}
+        description={t(
+          `settingsWindow.sections.appearance.${translationKey}Description`,
+        )}
+        value={settings.ui[key]}
+        defaultValue={defaultValue}
+        resetText={t('settingsWindow.sections.appearance.reset')}
+        resetLabel={t('settingsWindow.sections.appearance.resetLabel', {
+          label: label.toLocaleLowerCase(settings.ui.locale),
+        })}
+        onChange={(value) => updateOpacity(key, value)}
+        onReset={() => resetOpacity(key)}
+      />
+    );
+  };
+
   return (
-    <main data-tauri-drag-region className="settings-window drag-region">
+    <main
+      data-tauri-drag-region
+      className="settings-window drag-region"
+      style={getAppearanceStyle(settings.ui)}
+    >
       <div className="settings-window__content">
         <ArtworkBackground
           artworkUrl={session.lastKnownPlayback?.coverUrl ?? null}
@@ -99,8 +232,8 @@ export const SettingsWindow = () => {
         />
         <header className="settings-window__header">
           <div
-            data-tauri-drag-region
-            className="settings-window__drag-anchor drag-region"
+            className="settings-window__drag-anchor"
+            onMouseDown={handleHeaderMouseDown}
           >
             <h1>{t('app.settings')}</h1>
           </div>
@@ -415,6 +548,18 @@ export const SettingsWindow = () => {
                 'settingsWindow.sections.ui.hideCloseButtonDescription',
               )}
             />
+          </SettingsSection>
+
+          <SettingsSection
+            title={t('settingsWindow.sections.appearance.title')}
+            description={t('settingsWindow.sections.appearance.description')}
+          >
+            {renderOpacityControl('windowSurfaceOpacity', 'windowSurface')}
+            {renderOpacityControl(
+              'artworkBackgroundOpacity',
+              'artworkBackground',
+            )}
+            {renderOpacityControl('artworkGradientOpacity', 'gradientOverlay')}
           </SettingsSection>
 
           <SettingsSection

@@ -106,6 +106,9 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
     right.ui.useArtworkAsPlaybackControl &&
   left.ui.hideSettingsButton === right.ui.hideSettingsButton &&
   left.ui.hideCloseButton === right.ui.hideCloseButton &&
+  left.ui.windowSurfaceOpacity === right.ui.windowSurfaceOpacity &&
+  left.ui.artworkBackgroundOpacity === right.ui.artworkBackgroundOpacity &&
+  left.ui.artworkGradientOpacity === right.ui.artworkGradientOpacity &&
   left.ui.themeMode === right.ui.themeMode &&
   left.ui.locale === right.ui.locale &&
   left.window.alwaysOnTop === right.window.alwaysOnTop &&

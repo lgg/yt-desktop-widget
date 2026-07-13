@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import { useAppModel } from '@/app/AppProvider';
+import { getAppearanceStyle } from '@/app/appearance';
 import { getConnectionMessage } from '@/app/connectionMessage';
 import { useI18n } from '@/app/i18n';
 import { setMainAppWindowHeight } from '@/app/windowController';
@@ -360,6 +361,7 @@ export const WidgetWindow = () => {
   return (
     <main
       className="widget-window"
+      style={getAppearanceStyle(settings.ui)}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >

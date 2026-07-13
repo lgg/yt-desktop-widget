@@ -1,7 +1,13 @@
-import { act, render, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProvider } from '@/app/AppProvider';
+import { AppProvider, useAppModel } from '@/app/AppProvider';
 import type {
   AppSettings,
   PlaybackSessionState,
@@ -19,6 +25,9 @@ const defaultSettings: AppSettings = {
     useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,
     hideCloseButton: true,
+    windowSurfaceOpacity: 100,
+    artworkBackgroundOpacity: 100,
+    artworkGradientOpacity: 100,
     themeMode: 'dark',
     locale: 'en',
   },
@@ -44,6 +53,7 @@ const initialSession: PlaybackSessionState = {
 };
 
 const appProviderMocks = vi.hoisted(() => ({
+  saveSettings: vi.fn((settings: AppSettings) => Promise.resolve(settings)),
   authChangeHandler: null as
     | ((payload: CompanionAuthEventPayload) => void)
     | null,
@@ -62,7 +72,7 @@ vi.mock('@/utils/runtime', () => ({
 
 vi.mock('@/app/settingsRepository', () => ({
   loadSettings: vi.fn(() => Promise.resolve(defaultSettings)),
-  saveSettings: vi.fn((settings) => Promise.resolve(settings)),
+  saveSettings: appProviderMocks.saveSettings,
 }));
 
 vi.mock('@/integration/companion/realGateway', () => ({
@@ -103,7 +113,34 @@ vi.mock('@/domain/playback/controller', () => ({
   }),
 }));
 
-describe('AppProvider auth change handling', () => {
+const SettingsUpdateProbe = () => {
+  const { ready, settings, updateSettings } = useAppModel();
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void updateSettings((current) => ({
+          ...current,
+          ui: {
+            ...current.ui,
+            windowSurfaceOpacity: 72,
+          },
+        }))
+      }
+    >
+      {ready ? 'ready' : 'loading'}:{settings.ui.windowSurfaceOpacity}
+    </button>
+  );
+};
+
+describe('AppProvider', () => {
+  beforeEach(() => {
+    appProviderMocks.authChangeHandler = null;
+    appProviderMocks.controllerInstances.length = 0;
+    appProviderMocks.saveSettings.mockClear();
+  });
+
   it('reconnects the main real controller when another window changes Companion auth', async () => {
     render(
       <AppProvider windowLabel="main">
@@ -124,6 +161,24 @@ describe('AppProvider auth change handling', () => {
       expect(
         appProviderMocks.controllerInstances[0]?.handleExternalAuthChanged,
       ).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it('persists an appearance-only settings update', async () => {
+    render(
+      <AppProvider windowLabel="main">
+        <SettingsUpdateProbe />
+      </AppProvider>,
+    );
+
+    const updateButton = await screen.findByRole('button', {
+      name: 'ready:100',
+    });
+    fireEvent.click(updateButton);
+
+    await waitFor(() => {
+      expect(updateButton).toHaveTextContent('ready:72');
+      expect(appProviderMocks.saveSettings).toHaveBeenCalledTimes(1);
     });
   });
 });

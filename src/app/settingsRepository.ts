@@ -20,6 +20,11 @@ const asRecord = (value: unknown): UnknownRecord =>
 const booleanOr = (value: unknown, fallback: boolean) =>
   typeof value === 'boolean' ? value : fallback;
 
+const percentageOr = (value: unknown, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(Math.min(100, Math.max(0, value)))
+    : fallback;
+
 const enumOr = <T extends string>(
   value: unknown,
   allowed: readonly T[],
@@ -102,6 +107,18 @@ export const normalizeSettings = (value: unknown): AppSettings => {
       hideCloseButton: booleanOr(
         ui.hideCloseButton,
         DEFAULT_SETTINGS.ui.hideCloseButton,
+      ),
+      windowSurfaceOpacity: percentageOr(
+        ui.windowSurfaceOpacity,
+        DEFAULT_SETTINGS.ui.windowSurfaceOpacity,
+      ),
+      artworkBackgroundOpacity: percentageOr(
+        ui.artworkBackgroundOpacity,
+        DEFAULT_SETTINGS.ui.artworkBackgroundOpacity,
+      ),
+      artworkGradientOpacity: percentageOr(
+        ui.artworkGradientOpacity,
+        DEFAULT_SETTINGS.ui.artworkGradientOpacity,
       ),
       themeMode: enumOr<ThemeMode>(
         ui.themeMode,

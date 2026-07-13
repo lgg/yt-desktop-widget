@@ -11,6 +11,7 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
 - Supports previous, play/pause, next, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
+- Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
 - Display preferences can remove playback controls, the progress row, or the title/artist block from the compact layout, allowing the widget height to shrink.
 - Playback controls can be kept always visible or faded out until hover; the controls keep a stable reserved row so pointer leave cannot resize or jitter the widget.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.

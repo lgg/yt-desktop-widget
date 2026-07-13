@@ -56,6 +56,9 @@ const createConnectedModel = ({
       } as Record<'hideTrackDetails' | 'useArtworkAsPlaybackControl', boolean>),
       hideSettingsButton: true,
       hideCloseButton: true,
+      windowSurfaceOpacity: 100,
+      artworkBackgroundOpacity: 100,
+      artworkGradientOpacity: 100,
       themeMode: 'dark',
       locale: 'en',
     },
@@ -128,6 +131,28 @@ describe('WidgetWindow', () => {
       document.querySelector('.widget-window') as HTMLElement,
     );
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
+  });
+
+  it('applies the persisted appearance percentages to the widget root', () => {
+    const connectedModel = createConnectedModel();
+    Object.assign(connectedModel.settings.ui, {
+      windowSurfaceOpacity: 72,
+      artworkBackgroundOpacity: 48,
+      artworkGradientOpacity: 35,
+    });
+    mockUseAppModel.mockReturnValue(connectedModel);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(document.querySelector('.widget-window')).toHaveStyle({
+      '--window-surface-opacity': '0.72',
+      '--artwork-background-opacity': '0.48',
+      '--artwork-gradient-opacity': '0.35',
+    });
   });
 
   it('keeps paused playback compact without a redundant state card', () => {
@@ -581,6 +606,9 @@ describe('WidgetWindow', () => {
           useArtworkAsPlaybackControl: false,
           hideSettingsButton: true,
           hideCloseButton: true,
+          windowSurfaceOpacity: 100,
+          artworkBackgroundOpacity: 100,
+          artworkGradientOpacity: 100,
           themeMode: 'dark',
           locale: 'en',
         },

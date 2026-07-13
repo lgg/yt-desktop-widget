@@ -57,4 +57,31 @@ describe('settingsRepository browser persistence', () => {
     expect(settings.window.mainPosition).toBeNull();
     expect(settings.window.settingsPosition).toEqual({ x: 20, y: -15 });
   });
+
+  it('defaults, clamps, and repairs persisted transparency percentages', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ui: {
+          windowSurfaceOpacity: -15,
+          artworkBackgroundOpacity: 140,
+          artworkGradientOpacity: '70',
+        },
+      }),
+    );
+
+    const settings = await loadSettings();
+
+    expect(settings.ui.windowSurfaceOpacity).toBe(0);
+    expect(settings.ui.artworkBackgroundOpacity).toBe(100);
+    expect(settings.ui.artworkGradientOpacity).toBe(
+      DEFAULT_SETTINGS.ui.artworkGradientOpacity,
+    );
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ui: {} }));
+    const legacySettings = await loadSettings();
+    expect(legacySettings.ui.windowSurfaceOpacity).toBe(100);
+    expect(legacySettings.ui.artworkBackgroundOpacity).toBe(100);
+    expect(legacySettings.ui.artworkGradientOpacity).toBe(100);
+  });
 });

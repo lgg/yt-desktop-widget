@@ -33,7 +33,11 @@ export const showAppWindow = async (label: AppWindowLabel): Promise<void> => {
   }
 
   if (label === 'settings') {
-    window.open(`${window.location.pathname}?view=settings`, '_blank', 'noopener,noreferrer');
+    window.open(
+      `${window.location.pathname}?view=settings`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   }
 };
 
@@ -50,6 +54,14 @@ export const hideAppWindow = async (label: AppWindowLabel): Promise<void> => {
 
 export const hideCurrentAppWindow = async (): Promise<void> => {
   await hideAppWindow(getCurrentAppWindowLabel());
+};
+
+export const startCurrentAppWindowDragging = async (): Promise<void> => {
+  if (!isTauriRuntime()) {
+    return;
+  }
+
+  await getCurrentWindow().startDragging();
 };
 
 export const setMainAppWindowHeight = async (height: number): Promise<void> => {
@@ -69,7 +81,9 @@ export const exitApp = async (): Promise<void> => {
   window.close();
 };
 
-export const closeWidgetWindow = async (action: CloseButtonAction): Promise<void> => {
+export const closeWidgetWindow = async (
+  action: CloseButtonAction,
+): Promise<void> => {
   try {
     if (action === 'hideToTray') {
       try {

@@ -40,6 +40,9 @@ export interface UiSettings {
   useArtworkAsPlaybackControl: boolean;
   hideSettingsButton: boolean;
   hideCloseButton: boolean;
+  windowSurfaceOpacity: number;
+  artworkBackgroundOpacity: number;
+  artworkGradientOpacity: number;
   themeMode: ThemeMode;
   locale: Locale;
 }
