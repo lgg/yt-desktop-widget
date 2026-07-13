@@ -26,7 +26,7 @@ const model = {
       hidePlaybackControls: false,
       showPlaybackControlsOnHover: true,
       hideProgressBar: false,
-      hideConnectionBadge: false,
+      connectionBadgeVisibility: 'always',
       hideTrackDetails: false,
       useArtworkAsPlaybackControl: false,
       hideSettingsButton: true,
@@ -133,6 +133,39 @@ describe('SettingsWindow UI display preferences', () => {
     const recipe = updateSettings.mock.calls[0]?.[0];
     expect(recipe).toBeTypeOf('function');
     expect(recipe?.(model.settings).ui).toMatchObject({ themeMode: 'light' });
+  });
+
+  it('offers and persists all three connection badge visibility modes', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Connection status badge',
+    });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Always' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'On hover' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Hidden' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hidden' }));
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui).toMatchObject({
+      connectionBadgeVisibility: 'hidden',
+    });
   });
 
   it('starts native dragging from the persistent header after the sections scroll', () => {

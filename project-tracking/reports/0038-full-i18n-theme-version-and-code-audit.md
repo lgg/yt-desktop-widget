@@ -33,7 +33,7 @@ Completed a repository-wide frontend, domain, native, security, dependency, vers
 
 | Area                 | Status         | Notes                                                                                                                                                                    |
 | -------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Backend/native       | Updated        | Secret-safe Companion errors, transactional settings save, light-theme native round-trip test, Clippy cleanup.                                                           |
+| Backend/native       | Updated        | Secret-safe Companion errors, disk-first/cache-safe settings save, light-theme native round-trip test, Clippy cleanup.                                                   |
 | Frontend             | Updated        | Explicit Light mode, complete color tokens, localized connection messages, defensive settings normalization.                                                             |
 | Domain/API contracts | Updated        | Added typed connection-message keys without changing the official Companion protocol.                                                                                    |
 | Tests                | Updated        | Added i18n completeness/static scans, theme/settings tests, controller regressions, dynamic version tests, E2E light-theme coverage, and Rust security/durability tests. |

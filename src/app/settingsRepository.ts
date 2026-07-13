@@ -2,6 +2,7 @@
 import type {
   AppSettings,
   CloseButtonAction,
+  ConnectionBadgeVisibility,
   DataSourceMode,
   Locale,
   ThemeMode,
@@ -58,6 +59,12 @@ export const normalizeSettings = (value: unknown): AppSettings => {
   const windowSettings = asRecord(settings.window);
   const host = typeof api.host === 'string' ? api.host.trim() : '';
   const port = api.port;
+  const legacyConnectionBadgeVisibility: ConnectionBadgeVisibility = booleanOr(
+    ui.hideConnectionBadge,
+    false,
+  )
+    ? 'hover'
+    : DEFAULT_SETTINGS.ui.connectionBadgeVisibility;
 
   return {
     api: {
@@ -88,9 +95,10 @@ export const normalizeSettings = (value: unknown): AppSettings => {
         ui.hideProgressBar,
         DEFAULT_SETTINGS.ui.hideProgressBar,
       ),
-      hideConnectionBadge: booleanOr(
-        ui.hideConnectionBadge,
-        DEFAULT_SETTINGS.ui.hideConnectionBadge,
+      connectionBadgeVisibility: enumOr<ConnectionBadgeVisibility>(
+        ui.connectionBadgeVisibility,
+        ['always', 'hover', 'hidden'],
+        legacyConnectionBadgeVisibility,
       ),
       hideTrackDetails: booleanOr(
         ui.hideTrackDetails,

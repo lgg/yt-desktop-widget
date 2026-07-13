@@ -15,7 +15,11 @@ describe('settingsRepository browser persistence', () => {
       STORAGE_KEY,
       JSON.stringify({
         api: { sourceMode: 'legacy-source' },
-        ui: { locale: 'de', themeMode: 'sepia' },
+        ui: {
+          locale: 'de',
+          themeMode: 'sepia',
+          connectionBadgeVisibility: 'sometimes',
+        },
         window: { closeButtonAction: 'minimize' },
       }),
     );
@@ -25,9 +29,33 @@ describe('settingsRepository browser persistence', () => {
     expect(settings.api.sourceMode).toBe(DEFAULT_SETTINGS.api.sourceMode);
     expect(settings.ui.locale).toBe(DEFAULT_SETTINGS.ui.locale);
     expect(settings.ui.themeMode).toBe(DEFAULT_SETTINGS.ui.themeMode);
+    expect(settings.ui.connectionBadgeVisibility).toBe('always');
     expect(settings.window.closeButtonAction).toBe(
       DEFAULT_SETTINGS.window.closeButtonAction,
     );
+  });
+
+  it('migrates legacy connection badge booleans without losing hover behavior', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ui: { hideConnectionBadge: true } }),
+    );
+    const legacyHover = await loadSettings();
+    expect(legacyHover.ui.connectionBadgeVisibility).toBe('hover');
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ui: { hideConnectionBadge: false } }),
+    );
+    const legacyAlways = await loadSettings();
+    expect(legacyAlways.ui.connectionBadgeVisibility).toBe('always');
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ui: { connectionBadgeVisibility: 'hidden' } }),
+    );
+    const explicitHidden = await loadSettings();
+    expect(explicitHidden.ui.connectionBadgeVisibility).toBe('hidden');
   });
 
   it('repairs malformed primitive values and window positions', async () => {

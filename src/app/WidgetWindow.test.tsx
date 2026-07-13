@@ -8,9 +8,10 @@ import { WidgetWindow } from '@/app/WidgetWindow';
 const mockUseAppModel = vi.fn<() => AppModel>();
 const resolvedAction = () => Promise.resolve();
 const runtimeMock = vi.hoisted(() => ({ isTauri: false }));
-const setMainAppWindowHeightMock = vi.hoisted(() =>
-  vi.fn(() => Promise.resolve()),
-);
+const windowControllerMocks = vi.hoisted(() => ({
+  setMainAppWindowHeight: vi.fn(() => Promise.resolve()),
+  startCurrentAppWindowDragging: vi.fn(() => Promise.resolve()),
+}));
 
 vi.mock('@/app/AppProvider', () => ({
   useAppModel: (): AppModel => mockUseAppModel(),
@@ -22,7 +23,7 @@ vi.mock('@/utils/runtime', () => ({
 
 vi.mock('@/app/windowController', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/app/windowController')>()),
-  setMainAppWindowHeight: setMainAppWindowHeightMock,
+  ...windowControllerMocks,
 }));
 
 const createConnectedModel = ({
@@ -30,7 +31,7 @@ const createConnectedModel = ({
   hidePlaybackControls = false,
   showPlaybackControlsOnHover = true,
   hideProgressBar = false,
-  hideConnectionBadge = false,
+  connectionBadgeVisibility = 'always',
   hideTrackDetails = false,
   useArtworkAsPlaybackControl = false,
 }: {
@@ -38,7 +39,7 @@ const createConnectedModel = ({
   hidePlaybackControls?: boolean;
   showPlaybackControlsOnHover?: boolean;
   hideProgressBar?: boolean;
-  hideConnectionBadge?: boolean;
+  connectionBadgeVisibility?: 'always' | 'hover' | 'hidden';
   hideTrackDetails?: boolean;
   useArtworkAsPlaybackControl?: boolean;
 } = {}): AppModel => ({
@@ -49,11 +50,9 @@ const createConnectedModel = ({
       hidePlaybackControls,
       showPlaybackControlsOnHover,
       hideProgressBar,
-      ...({ hideConnectionBadge } as Record<'hideConnectionBadge', boolean>),
-      ...({
-        hideTrackDetails,
-        useArtworkAsPlaybackControl,
-      } as Record<'hideTrackDetails' | 'useArtworkAsPlaybackControl', boolean>),
+      connectionBadgeVisibility,
+      hideTrackDetails,
+      useArtworkAsPlaybackControl,
       hideSettingsButton: true,
       hideCloseButton: true,
       windowSurfaceOpacity: 100,
@@ -111,7 +110,8 @@ const createConnectedModel = ({
 describe('WidgetWindow', () => {
   afterEach(() => {
     runtimeMock.isTauri = false;
-    setMainAppWindowHeightMock.mockReset();
+    windowControllerMocks.setMainAppWindowHeight.mockReset();
+    windowControllerMocks.startCurrentAppWindowDragging.mockReset();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -258,7 +258,7 @@ describe('WidgetWindow', () => {
 
   it('hides the connection badge until hover without removing its layout anchor', () => {
     mockUseAppModel.mockReturnValue(
-      createConnectedModel({ hideConnectionBadge: true }),
+      createConnectedModel({ connectionBadgeVisibility: 'hover' }),
     );
 
     render(
@@ -273,6 +273,7 @@ describe('WidgetWindow', () => {
     ) as HTMLElement;
     expect(badgeAnchor).toBeInTheDocument();
     expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
+    expect(screen.getByText('Live')).toBeInTheDocument();
 
     fireEvent.pointerEnter(widget);
     expect(badgeAnchor).not.toHaveClass(
@@ -281,6 +282,61 @@ describe('WidgetWindow', () => {
 
     fireEvent.pointerLeave(widget);
     expect(badgeAnchor).toHaveClass('widget-window__connection-badge--hidden');
+  });
+
+  it('fully omits the connection badge even while the widget is hovered', () => {
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({ connectionBadgeVisibility: 'hidden' }),
+    );
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const widget = document.querySelector('.widget-window') as HTMLElement;
+    const badgeAnchor = document.querySelector(
+      '.widget-window__connection-badge',
+    ) as HTMLElement;
+    expect(badgeAnchor).toBeInTheDocument();
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+
+    fireEvent.pointerEnter(widget);
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+  });
+
+  it('starts native dragging from blank lower layout surface only', () => {
+    runtimeMock.isTauri = true;
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({
+        hidePlaybackControls: true,
+        hideProgressBar: true,
+        hideTrackDetails: true,
+        useArtworkAsPlaybackControl: true,
+      }),
+    );
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const layout = document.querySelector('.widget-window__layout');
+    expect(layout).toHaveAttribute('data-tauri-drag-region');
+    fireEvent.mouseDown(layout as Element, { button: 0, buttons: 1 });
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(
+      screen.getByRole('button', { name: 'Pause Night Train Window' }),
+      { button: 0, buttons: 1 },
+    );
+    expect(
+      windowControllerMocks.startCurrentAppWindowDragging,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('keeps enabled playback controls in layout when hover-only mode is disabled', () => {
@@ -443,7 +499,9 @@ describe('WidgetWindow', () => {
     );
 
     await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(440);
+      expect(
+        windowControllerMocks.setMainAppWindowHeight,
+      ).toHaveBeenLastCalledWith(440);
     });
     expect(observeMutations).toHaveBeenCalledWith(expect.any(HTMLElement), {
       childList: true,
@@ -502,7 +560,9 @@ describe('WidgetWindow', () => {
     );
 
     await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(492);
+      expect(
+        windowControllerMocks.setMainAppWindowHeight,
+      ).toHaveBeenLastCalledWith(492);
     });
 
     layoutHeight = 404;
@@ -520,7 +580,9 @@ describe('WidgetWindow', () => {
     );
 
     await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(406);
+      expect(
+        windowControllerMocks.setMainAppWindowHeight,
+      ).toHaveBeenLastCalledWith(406);
     });
   });
 
@@ -574,7 +636,9 @@ describe('WidgetWindow', () => {
     );
 
     await waitFor(() => {
-      expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
+      expect(
+        windowControllerMocks.setMainAppWindowHeight,
+      ).toHaveBeenLastCalledWith(422);
     });
 
     layoutHeight = 490;
@@ -582,14 +646,18 @@ describe('WidgetWindow', () => {
       document.querySelector('.widget-window') as HTMLElement,
     );
     await Promise.resolve();
-    expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
+    expect(
+      windowControllerMocks.setMainAppWindowHeight,
+    ).toHaveBeenLastCalledWith(422);
 
     layoutHeight = 420;
     fireEvent.pointerLeave(
       document.querySelector('.widget-window') as HTMLElement,
     );
     await Promise.resolve();
-    expect(setMainAppWindowHeightMock).toHaveBeenLastCalledWith(422);
+    expect(
+      windowControllerMocks.setMainAppWindowHeight,
+    ).toHaveBeenLastCalledWith(422);
   });
 
   it('renders authorization actions when auth is required', () => {
@@ -601,7 +669,7 @@ describe('WidgetWindow', () => {
           hidePlaybackControls: false,
           showPlaybackControlsOnHover: true,
           hideProgressBar: false,
-          hideConnectionBadge: false,
+          connectionBadgeVisibility: 'always',
           hideTrackDetails: false,
           useArtworkAsPlaybackControl: false,
           hideSettingsButton: true,

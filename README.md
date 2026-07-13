@@ -15,7 +15,7 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Display preferences can remove playback controls, the progress row, or the title/artist block from the compact layout, allowing the widget height to shrink.
 - Playback controls can be kept always visible or faded out until hover; the controls keep a stable reserved row so pointer leave cannot resize or jitter the widget.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
-- The connection-status badge can optionally fade out until hover while keeping its layout footprint reserved.
+- The connection-status badge can stay visible, appear only on hover, or remain fully hidden while preserving a stable drag anchor.
 - Hides to tray instead of quitting by default.
 - Ships with a real Companion client and a separate simulator for local development and tests.
 - Uses matching English and Russian i18n JSON bundles, with English as the default and a persisted language selector in Settings.

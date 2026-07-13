@@ -308,6 +308,10 @@ a,
   padding-bottom: 60px;
 }
 
+.widget-window__layout--progress-only {
+  padding-bottom: 22.5px;
+}
+
 .settings-window__content {
   padding: 28px;
   overflow: hidden;
@@ -372,6 +376,7 @@ a,
 .settings-window__eyebrow,
 .settings-row__label,
 .segmented-control__label,
+.segmented-control__description,
 .code-chip span {
   margin: 0;
   color: var(--text-secondary);
@@ -390,7 +395,7 @@ a,
 }
 
 .widget-window__footer--progress-only {
-  margin-top: 20px;
+  margin-top: 22.5px;
 }
 
 .cover-card {
@@ -1103,7 +1108,8 @@ a,
   transform: translateX(22px);
 }
 
-.toggle-row__description {
+.toggle-row__description,
+.segmented-control__description {
   display: block;
   padding-top: 2px;
   line-height: 1.55;

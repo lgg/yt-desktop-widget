@@ -10,7 +10,10 @@ import { useAppModel } from '@/app/AppProvider';
 import { getAppearanceStyle } from '@/app/appearance';
 import { getConnectionMessage } from '@/app/connectionMessage';
 import { useI18n } from '@/app/i18n';
-import { setMainAppWindowHeight } from '@/app/windowController';
+import {
+  setMainAppWindowHeight,
+  startCurrentAppWindowDragging,
+} from '@/app/windowController';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import { ConnectionBadge } from '@/components/ConnectionBadge';
 import {
@@ -82,7 +85,11 @@ export const WidgetWindow = () => {
     compactArtworkLayout && !controlsEnabled && !progressRendered;
   const progressOnlyLayout =
     compactArtworkLayout && !controlsEnabled && progressRendered;
-  const connectionBadgeVisible = !settings.ui.hideConnectionBadge || hovered;
+  const connectionBadgeRendered =
+    settings.ui.connectionBadgeVisibility !== 'hidden';
+  const connectionBadgeVisible =
+    settings.ui.connectionBadgeVisibility === 'always' ||
+    (settings.ui.connectionBadgeVisibility === 'hover' && hovered);
   const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
   const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
   const canSendCommands =
@@ -171,6 +178,17 @@ export const WidgetWindow = () => {
       event.stopPropagation();
       runWindowAction(action);
     };
+
+  const handleLayoutMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.target !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    void startCurrentAppWindowDragging().catch((error) => {
+      console.error('Failed to start dragging the widget window.', error);
+    });
+  };
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -369,10 +387,14 @@ export const WidgetWindow = () => {
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
         <div
           ref={layoutRef}
+          data-tauri-drag-region
+          onMouseDown={handleLayoutMouseDown}
           className={
             artworkOnlyLayout
-              ? 'widget-window__layout widget-window__layout--artwork-only'
-              : 'widget-window__layout'
+              ? 'widget-window__layout widget-window__layout--artwork-only drag-region'
+              : progressOnlyLayout
+                ? 'widget-window__layout widget-window__layout--progress-only drag-region'
+                : 'widget-window__layout drag-region'
           }
         >
           <header className="widget-window__header">
@@ -385,10 +407,12 @@ export const WidgetWindow = () => {
               }
               aria-hidden={!connectionBadgeVisible}
             >
-              <ConnectionBadge
-                status={session.connection.status}
-                label={getStatusLabel(t, session.connection.status)}
-              />
+              {connectionBadgeRendered ? (
+                <ConnectionBadge
+                  status={session.connection.status}
+                  label={getStatusLabel(t, session.connection.status)}
+                />
+              ) : null}
             </div>
             <div className="widget-window__window-actions no-drag">
               <button

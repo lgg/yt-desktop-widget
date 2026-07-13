@@ -1,5 +1,6 @@
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type Locale = 'en' | 'ru';
+export type ConnectionBadgeVisibility = 'always' | 'hover' | 'hidden';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
 export type CloseButtonAction = 'exit' | 'hideToTray';
 export type ConnectionStatus =
@@ -35,7 +36,7 @@ export interface UiSettings {
   hidePlaybackControls: boolean;
   showPlaybackControlsOnHover: boolean;
   hideProgressBar: boolean;
-  hideConnectionBadge: boolean;
+  connectionBadgeVisibility: ConnectionBadgeVisibility;
   hideTrackDetails: boolean;
   useArtworkAsPlaybackControl: boolean;
   hideSettingsButton: boolean;

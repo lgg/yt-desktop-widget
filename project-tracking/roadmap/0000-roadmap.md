@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 40
+- Total tracked tasks: 41
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 6
-- Completed: 34
+- Completed: 35
 
 ## Current Stabilization Work
 
+- Completed P1: Widget height, drag surface, LIVE badge modes, and full audit - [`0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md`](../tasks/0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md) - equalized compact progress/artwork-only height, restored lower-surface dragging, added explicit always/hover/hidden status modes with migration, and completed a fresh repository-wide audit.
 - Completed P1: Settings drag and transparency controls - [`0040-fix-settings-drag-and-add-transparency-controls.md`](../tasks/0040-fix-settings-drag-and-add-transparency-controls.md) - keeps the Settings header draggable after scrolling and adds persisted surface, artwork-background, and gradient-overlay transparency controls with current visuals as defaults.
 - Completed P1: ytw-l48 - [`0001-stabilize-current-widget-interaction-regressions.md`](../tasks/0001-stabilize-current-widget-interaction-regressions.md) - all child regressions closed after the user's 2026-07-13 portable/live confirmation and task `0036` verification.
 - Completed P1: ytw-l48.1 - [`0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md`](../tasks/0002-resize-the-main-widget-window-to-fit-reconnect-and-error-state-cards.md)
@@ -29,7 +30,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Hover, progress, and status-badge stabilization - [`0035-fix-hover-progress-and-connection-badge.md`](../tasks/0035-fix-hover-progress-and-connection-badge.md) - fixed persisted false settings, made hover visibility layout-stable, corrected Companion elapsed-seconds mapping, and added optional hover-only connection-badge visibility.
 - Completed P1: Version 2.0 display/localization pass - [`0036-add-display-controls-localization-and-central-versioning.md`](../tasks/0036-add-display-controls-localization-and-central-versioning.md) - added track-details hiding, artwork-wide play/pause, English/Russian localization, theme-first ordering, centralized version `2.0.0`, and reconciled the remaining active backlog.
 - Completed P1: Artwork playback icon refinement - [`0037-remove-artwork-playback-icon-background.md`](../tasks/0037-remove-artwork-playback-icon-background.md) - removed the circular glass/tint treatment, enlarged the standalone semi-transparent play/pause glyph to 78 px, and retained contrast with a glyph-only drop shadow.
-- Completed P1: Full i18n/theme/version/code audit - [`0038-full-i18n-theme-version-and-code-audit.md`](../tasks/0038-full-i18n-theme-version-and-code-audit.md) - completed the repository-wide audit, added a real explicit light theme, enforced JSON-localized connection states and settings normalization, hardened secret-safe native errors and transactional settings writes, synchronized version checks, and removed known dependency vulnerabilities.
+- Completed P1: Full i18n/theme/version/code audit - [`0038-full-i18n-theme-version-and-code-audit.md`](../tasks/0038-full-i18n-theme-version-and-code-audit.md) - completed the repository-wide audit, added a real explicit light theme, enforced JSON-localized connection states and settings normalization, hardened secret-safe native errors and disk-first/cache-safe settings writes, synchronized version checks, and removed known dependency vulnerabilities.
 - Completed P1: Balance widget vertical spacing and header alignment - [`0039-balance-widget-vertical-spacing-and-header-alignment.md`](../tasks/0039-balance-widget-vertical-spacing-and-header-alignment.md) - centered the Live badge against window controls, balanced artwork-only top/bottom space, and centered the progress-only row between the artwork and lower edge with measured Playwright geometry.
 
 ## Companion / Audit Work

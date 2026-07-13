@@ -12,7 +12,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     hidePlaybackControls: false,
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
-    hideConnectionBadge: false,
+    connectionBadgeVisibility: 'always',
     hideTrackDetails: false,
     useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,

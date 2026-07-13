@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use tauri::Error as TauriError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +25,11 @@ pub struct UiSettings {
   pub hide_playback_controls: bool,
   pub show_playback_controls_on_hover: bool,
   pub hide_progress_bar: bool,
-  pub hide_connection_badge: bool,
+  #[serde(
+    alias = "hideConnectionBadge",
+    deserialize_with = "deserialize_connection_badge_visibility"
+  )]
+  pub connection_badge_visibility: String,
   pub hide_track_details: bool,
   pub use_artwork_as_playback_control: bool,
   pub hide_settings_button: bool,
@@ -43,7 +47,7 @@ impl Default for UiSettings {
       hide_playback_controls: false,
       show_playback_controls_on_hover: true,
       hide_progress_bar: false,
-      hide_connection_badge: false,
+      connection_badge_visibility: "always".to_string(),
       hide_track_details: false,
       use_artwork_as_playback_control: false,
       hide_settings_button: true,
@@ -55,6 +59,31 @@ impl Default for UiSettings {
       locale: "en".to_string(),
     }
   }
+}
+
+fn deserialize_connection_badge_visibility<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  #[derive(Deserialize)]
+  #[serde(untagged)]
+  enum StoredVisibility {
+    Explicit(String),
+    LegacyHiddenUntilHover(bool),
+  }
+
+  let visibility = StoredVisibility::deserialize(deserializer)?;
+  Ok(match visibility {
+    StoredVisibility::Explicit(value)
+      if matches!(value.as_str(), "always" | "hover" | "hidden") =>
+    {
+      value
+    }
+    StoredVisibility::LegacyHiddenUntilHover(true) => "hover".to_string(),
+    StoredVisibility::Explicit(_) | StoredVisibility::LegacyHiddenUntilHover(false) => {
+      "always".to_string()
+    }
+  })
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -190,7 +219,7 @@ mod tests {
     let settings: AppSettings = serde_json::from_value(json!({
       "ui": {
         "showPlaybackControlsOnHover": false,
-        "hideConnectionBadge": true,
+        "connectionBadgeVisibility": "hidden",
         "hideTrackDetails": true,
         "useArtworkAsPlaybackControl": true,
         "themeMode": "light",
@@ -201,11 +230,29 @@ mod tests {
 
     let serialized = serde_json::to_value(settings).expect("settings should serialize");
     assert_eq!(serialized["ui"]["showPlaybackControlsOnHover"], false);
-    assert_eq!(serialized["ui"]["hideConnectionBadge"], true);
+    assert_eq!(serialized["ui"]["connectionBadgeVisibility"], "hidden");
     assert_eq!(serialized["ui"]["hideTrackDetails"], true);
     assert_eq!(serialized["ui"]["useArtworkAsPlaybackControl"], true);
     assert_eq!(serialized["ui"]["themeMode"], "light");
     assert_eq!(serialized["ui"]["locale"], "ru");
+  }
+
+  #[test]
+  fn migrates_legacy_connection_badge_boolean_to_explicit_visibility() {
+    let legacy_hover: AppSettings = serde_json::from_value(json!({
+      "ui": { "hideConnectionBadge": true }
+    }))
+    .expect("legacy hover setting should deserialize");
+    let legacy_always: AppSettings = serde_json::from_value(json!({
+      "ui": { "hideConnectionBadge": false }
+    }))
+    .expect("legacy always setting should deserialize");
+
+    let hover = serde_json::to_value(legacy_hover).expect("hover should serialize");
+    let always = serde_json::to_value(legacy_always).expect("always should serialize");
+    assert_eq!(hover["ui"]["connectionBadgeVisibility"], "hover");
+    assert_eq!(always["ui"]["connectionBadgeVisibility"], "always");
+    assert!(hover["ui"].get("hideConnectionBadge").is_none());
   }
 
   #[test]

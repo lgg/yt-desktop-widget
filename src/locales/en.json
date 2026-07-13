@@ -131,8 +131,8 @@
         "hideProgressDescription": "Remove elapsed time and the scrubber from the compact layout.",
         "hideTrackDetails": "Hide track title and artist",
         "hideTrackDetailsDescription": "Remove the track details block from the compact layout.",
-        "hideConnectionBadge": "Hide connection status until hover",
-        "hideConnectionBadgeDescription": "Keep the status position reserved and reveal it while hovering over the widget.",
+        "connectionBadgeVisibility": "Connection status badge",
+        "connectionBadgeVisibilityDescription": "Choose whether the LIVE status stays visible, appears only on hover, or remains fully hidden.",
         "hideSettingsButton": "Hide settings button",
         "hideSettingsButtonDescription": "When enabled, the settings button appears only while hovering over the widget.",
         "hideCloseButton": "Hide close button",
@@ -189,6 +189,11 @@
       "dark": "Dark",
       "light": "Light",
       "system": "System"
+    },
+    "connectionBadgeVisibility": {
+      "always": "Always",
+      "hover": "On hover",
+      "hidden": "Hidden"
     },
     "language": {
       "en": "English",

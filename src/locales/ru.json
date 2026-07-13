@@ -131,8 +131,8 @@
         "hideProgressDescription": "Убрать прошедшее время и полосу перемотки из компактной раскладки.",
         "hideTrackDetails": "Скрыть название трека и исполнителя",
         "hideTrackDetailsDescription": "Убрать блок информации о треке из компактной раскладки.",
-        "hideConnectionBadge": "Скрывать статус соединения до наведения",
-        "hideConnectionBadgeDescription": "Сохранять место статуса и показывать его при наведении на виджет.",
+        "connectionBadgeVisibility": "Индикатор статуса соединения",
+        "connectionBadgeVisibilityDescription": "Выберите, показывать ли статус LIVE всегда, только при наведении или полностью скрыть.",
         "hideSettingsButton": "Скрывать кнопку настроек",
         "hideSettingsButtonDescription": "Кнопка настроек появляется только при наведении на виджет.",
         "hideCloseButton": "Скрывать кнопку закрытия",
@@ -189,6 +189,11 @@
       "dark": "Тёмная",
       "light": "Светлая",
       "system": "Системная"
+    },
+    "connectionBadgeVisibility": {
+      "always": "Всегда",
+      "hover": "При наведении",
+      "hidden": "Скрыт"
     },
     "language": {
       "en": "Английский",

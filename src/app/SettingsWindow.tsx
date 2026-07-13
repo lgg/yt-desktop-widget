@@ -500,22 +500,49 @@ export const SettingsWindow = () => {
                 'settingsWindow.sections.ui.hideTrackDetailsDescription',
               )}
             />
-            <Toggle
-              checked={settings.ui.hideConnectionBadge}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideConnectionBadge: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideConnectionBadge')}
-              description={t(
-                'settingsWindow.sections.ui.hideConnectionBadgeDescription',
-              )}
-            />
+            <div className="segmented-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.ui.connectionBadgeVisibility')}
+              </span>
+              <span className="segmented-control__description">
+                {t(
+                  'settingsWindow.sections.ui.connectionBadgeVisibilityDescription',
+                )}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t(
+                  'settingsWindow.sections.ui.connectionBadgeVisibility',
+                )}
+              >
+                {(['always', 'hover', 'hidden'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={
+                      settings.ui.connectionBadgeVisibility === mode
+                    }
+                    className={
+                      settings.ui.connectionBadgeVisibility === mode
+                        ? 'segmented-control__option segmented-control__option--active'
+                        : 'segmented-control__option'
+                    }
+                    onClick={() =>
+                      void updateSettings((current) => ({
+                        ...current,
+                        ui: {
+                          ...current.ui,
+                          connectionBadgeVisibility: mode,
+                        },
+                      }))
+                    }
+                  >
+                    {t(`settingsWindow.connectionBadgeVisibility.${mode}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Toggle
               checked={settings.ui.hideSettingsButton}
               onChange={(nextValue) =>

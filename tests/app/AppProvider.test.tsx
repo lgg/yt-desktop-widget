@@ -20,7 +20,7 @@ const defaultSettings: AppSettings = {
     hidePlaybackControls: false,
     showPlaybackControlsOnHover: true,
     hideProgressBar: false,
-    hideConnectionBadge: false,
+    connectionBadgeVisibility: 'always',
     hideTrackDetails: false,
     useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,
@@ -134,6 +134,28 @@ const SettingsUpdateProbe = () => {
   );
 };
 
+const BadgeModeUpdateProbe = () => {
+  const { ready, settings, updateSettings } = useAppModel();
+  const visibility = settings.ui.connectionBadgeVisibility;
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void updateSettings((current) => ({
+          ...current,
+          ui: {
+            ...current.ui,
+            connectionBadgeVisibility: 'hidden',
+          },
+        }))
+      }
+    >
+      {ready ? 'ready' : 'loading'}:{visibility}
+    </button>
+  );
+};
+
 describe('AppProvider', () => {
   beforeEach(() => {
     appProviderMocks.authChangeHandler = null;
@@ -178,6 +200,24 @@ describe('AppProvider', () => {
 
     await waitFor(() => {
       expect(updateButton).toHaveTextContent('ready:72');
+      expect(appProviderMocks.saveSettings).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('persists a connection badge visibility-only settings update', async () => {
+    render(
+      <AppProvider windowLabel="main">
+        <BadgeModeUpdateProbe />
+      </AppProvider>,
+    );
+
+    const updateButton = await screen.findByRole('button', {
+      name: 'ready:always',
+    });
+    fireEvent.click(updateButton);
+
+    await waitFor(() => {
+      expect(updateButton).toHaveTextContent('ready:hidden');
       expect(appProviderMocks.saveSettings).toHaveBeenCalledTimes(1);
     });
   });

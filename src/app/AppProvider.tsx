@@ -100,7 +100,7 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.ui.showPlaybackControlsOnHover ===
     right.ui.showPlaybackControlsOnHover &&
   left.ui.hideProgressBar === right.ui.hideProgressBar &&
-  left.ui.hideConnectionBadge === right.ui.hideConnectionBadge &&
+  left.ui.connectionBadgeVisibility === right.ui.connectionBadgeVisibility &&
   left.ui.hideTrackDetails === right.ui.hideTrackDetails &&
   left.ui.useArtworkAsPlaybackControl ===
     right.ui.useArtworkAsPlaybackControl &&

@@ -120,16 +120,21 @@ test('persists hover and connection badge preferences without layout shifts', as
   const hoverOnlyToggle = page.getByLabel(
     'Show playback controls only on hover',
   );
-  const badgeToggle = page.getByLabel('Hide connection status until hover');
+  const badgeVisibility = page.getByRole('group', {
+    name: 'Connection status badge',
+  });
+  const onHoverBadge = badgeVisibility.getByRole('button', {
+    name: 'On hover',
+  });
   await expect(hoverOnlyToggle).toBeChecked();
   await hoverOnlyToggle.uncheck();
   await expect(hoverOnlyToggle).not.toBeChecked();
-  await badgeToggle.check();
-  await expect(badgeToggle).toBeChecked();
+  await onHoverBadge.click();
+  await expect(onHoverBadge).toHaveAttribute('aria-pressed', 'true');
 
   await page.reload();
   await expect(hoverOnlyToggle).not.toBeChecked();
-  await expect(badgeToggle).toBeChecked();
+  await expect(onHoverBadge).toHaveAttribute('aria-pressed', 'true');
 
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
@@ -145,6 +150,16 @@ test('persists hover and connection badge preferences without layout shifts', as
     /widget-window__connection-badge--hidden/,
   );
   await expect(layout).toHaveJSProperty('scrollHeight', idleHeight);
+
+  await page.goto('/?view=settings&source=simulator');
+  await page
+    .getByRole('group', { name: 'Connection status badge' })
+    .getByRole('button', { name: 'Hidden' })
+    .click();
+  await page.goto('/?source=simulator');
+  await page.locator('.widget-window').hover();
+  await expect(page.locator('.status-badge')).toHaveCount(0);
+  await expect(page.locator('.widget-window__connection-badge')).toHaveCount(1);
 });
 
 test('advances simulator progress at wall-clock speed', async ({ page }) => {
@@ -297,7 +312,7 @@ test('balances compact widget spacing and header alignment', async ({
               hidePlaybackControls: true,
               hideProgressBar: progressHidden,
               hideTrackDetails: true,
-              hideConnectionBadge: false,
+              connectionBadgeVisibility: 'always',
               hideSettingsButton: false,
               hideCloseButton: false,
             },
@@ -320,9 +335,11 @@ test('balances compact widget spacing and header alignment', async ({
           .evaluate((element) => window.getComputedStyle(element).transform),
       )
       .toBe('matrix(1, 0, 0, 1, 0, 0)');
+
+    return layoutHeight;
   };
 
-  await setCompactSettings(true);
+  const artworkOnlyHeight = await setCompactSettings(true);
 
   const artworkOnlyMetrics = await page.evaluate(() => {
     const content = document.querySelector<HTMLElement>(
@@ -354,6 +371,11 @@ test('balances compact widget spacing and header alignment', async ({
       ),
       artworkTopGap: coverRect.top - contentRect.top,
       artworkBottomGap: contentRect.bottom - coverRect.bottom,
+      lowerSurfaceIsDragRegion:
+        document
+          .elementFromPoint(contentRect.left + 10, contentRect.bottom - 5)
+          ?.closest('.widget-window__layout')
+          ?.hasAttribute('data-tauri-drag-region') ?? false,
       badgeRect: { top: badgeRect.top, height: badgeRect.height },
       settingsRect: { top: settingsRect.top, height: settingsRect.height },
     };
@@ -375,8 +397,9 @@ test('balances compact widget spacing and header alignment', async ({
       ),
     )
     .toBeLessThanOrEqual(2);
+  expect.soft(artworkOnlyMetrics.lowerSurfaceIsDragRegion).toBe(true);
 
-  await setCompactSettings(false);
+  const progressOnlyHeight = await setCompactSettings(false);
 
   const progressOnlyMetrics = await page.evaluate(() => {
     const content = document.querySelector<HTMLElement>(
@@ -405,6 +428,7 @@ test('balances compact widget spacing and header alignment', async ({
       ),
     )
     .toBeLessThanOrEqual(2);
+  expect(progressOnlyHeight).toBe(artworkOnlyHeight);
 });
 
 test('puts theme first, supports light mode, switches locale, and reports the centralized version', async ({
