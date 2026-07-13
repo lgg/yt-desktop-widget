@@ -288,6 +288,10 @@ a,
   padding: 12px 12px 20px;
 }
 
+.widget-window__layout--artwork-only {
+  padding-bottom: 60px;
+}
+
 .settings-window__content {
   padding: 28px;
   overflow: hidden;
@@ -295,9 +299,13 @@ a,
 .widget-window__header,
 .settings-window__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.settings-window__header {
+  align-items: flex-start;
 }
 
 .widget-window__drag-anchor,
@@ -363,6 +371,10 @@ a,
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.widget-window__footer--progress-only {
+  margin-top: 20px;
 }
 
 .cover-card {

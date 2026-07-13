@@ -72,6 +72,15 @@ export const WidgetWindow = () => {
     controlsEnabled && (!settings.ui.showPlaybackControlsOnHover || hovered);
   const progressRendered = !settings.ui.hideProgressBar && !!playback;
   const trackDetailsRendered = !settings.ui.hideTrackDetails && !!playback;
+  const compactArtworkLayout =
+    session.connection.status === 'connected' &&
+    !!playback &&
+    !trackDetailsRendered &&
+    !playback.isAdPlaying;
+  const artworkOnlyLayout =
+    compactArtworkLayout && !controlsEnabled && !progressRendered;
+  const progressOnlyLayout =
+    compactArtworkLayout && !controlsEnabled && progressRendered;
   const connectionBadgeVisible = !settings.ui.hideConnectionBadge || hovered;
   const settingsButtonVisible = !settings.ui.hideSettingsButton || hovered;
   const closeButtonVisible = !settings.ui.hideCloseButton || hovered;
@@ -356,7 +365,14 @@ export const WidgetWindow = () => {
     >
       <div className="widget-window__content">
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
-        <div ref={layoutRef} className="widget-window__layout">
+        <div
+          ref={layoutRef}
+          className={
+            artworkOnlyLayout
+              ? 'widget-window__layout widget-window__layout--artwork-only'
+              : 'widget-window__layout'
+          }
+        >
           <header className="widget-window__header">
             <div
               data-tauri-drag-region
@@ -447,7 +463,13 @@ export const WidgetWindow = () => {
           {renderStateCard()}
 
           {playback && (controlsEnabled || progressRendered) ? (
-            <footer className="widget-window__footer">
+            <footer
+              className={
+                progressOnlyLayout
+                  ? 'widget-window__footer widget-window__footer--progress-only'
+                  : 'widget-window__footer'
+              }
+            >
               {controlsEnabled ? (
                 <TransportControls
                   playbackState={playback.playbackState}

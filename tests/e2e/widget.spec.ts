@@ -281,6 +281,132 @@ test('collapses the simulated widget when display sections are hidden', async ({
   expect(collapsedHeight).toBeLessThan(noProgressHeight);
 });
 
+test('balances compact widget spacing and header alignment', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 336, height: 520 });
+  await page.goto('/?source=simulator');
+
+  const setCompactSettings = async (hideProgressBar: boolean) => {
+    await page.evaluate(
+      ({ storageKey, progressHidden }) => {
+        window.localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            ui: {
+              hidePlaybackControls: true,
+              hideProgressBar: progressHidden,
+              hideTrackDetails: true,
+              hideConnectionBadge: false,
+              hideSettingsButton: false,
+              hideCloseButton: false,
+            },
+          }),
+        );
+      },
+      { storageKey: SETTINGS_STORAGE_KEY, progressHidden: hideProgressBar },
+    );
+    await page.reload();
+
+    const layoutHeight = await page
+      .locator('.widget-window__layout')
+      .evaluate((element) => Math.max(360, element.scrollHeight + 2));
+    await page.setViewportSize({ width: 336, height: layoutHeight });
+    await expect
+      .poll(() =>
+        page
+          .locator('.widget-window__window-action')
+          .first()
+          .evaluate((element) => window.getComputedStyle(element).transform),
+      )
+      .toBe('matrix(1, 0, 0, 1, 0, 0)');
+  };
+
+  await setCompactSettings(true);
+
+  const artworkOnlyMetrics = await page.evaluate(() => {
+    const content = document.querySelector<HTMLElement>(
+      '.widget-window__content',
+    );
+    const cover = document.querySelector<HTMLElement>('.cover-card');
+    const badge = document.querySelector<HTMLElement>('.status-badge');
+    const settingsButton = document.querySelector<HTMLElement>(
+      '.widget-window__window-action',
+    );
+    if (!content || !cover || !badge || !settingsButton) {
+      throw new Error('Compact widget geometry elements are missing.');
+    }
+
+    const contentRect = content.getBoundingClientRect();
+    const coverRect = cover.getBoundingClientRect();
+    const badgeRect = badge.getBoundingClientRect();
+    const settingsRect = settingsButton.getBoundingClientRect();
+    return {
+      headerCenterDelta: Math.abs(
+        badgeRect.top +
+          badgeRect.height / 2 -
+          (settingsRect.top + settingsRect.height / 2),
+      ),
+      artworkHorizontalCenterDelta: Math.abs(
+        coverRect.left +
+          coverRect.width / 2 -
+          (contentRect.left + contentRect.width / 2),
+      ),
+      artworkTopGap: coverRect.top - contentRect.top,
+      artworkBottomGap: contentRect.bottom - coverRect.bottom,
+      badgeRect: { top: badgeRect.top, height: badgeRect.height },
+      settingsRect: { top: settingsRect.top, height: settingsRect.height },
+    };
+  });
+
+  expect
+    .soft(
+      artworkOnlyMetrics.headerCenterDelta,
+      JSON.stringify(artworkOnlyMetrics),
+    )
+    .toBeLessThanOrEqual(1);
+  expect
+    .soft(artworkOnlyMetrics.artworkHorizontalCenterDelta)
+    .toBeLessThanOrEqual(1);
+  expect
+    .soft(
+      Math.abs(
+        artworkOnlyMetrics.artworkTopGap - artworkOnlyMetrics.artworkBottomGap,
+      ),
+    )
+    .toBeLessThanOrEqual(2);
+
+  await setCompactSettings(false);
+
+  const progressOnlyMetrics = await page.evaluate(() => {
+    const content = document.querySelector<HTMLElement>(
+      '.widget-window__content',
+    );
+    const cover = document.querySelector<HTMLElement>('.cover-card');
+    const progress = document.querySelector<HTMLElement>('.progress-row');
+    if (!content || !cover || !progress) {
+      throw new Error('Progress-only widget geometry elements are missing.');
+    }
+
+    const contentRect = content.getBoundingClientRect();
+    const coverRect = cover.getBoundingClientRect();
+    const progressRect = progress.getBoundingClientRect();
+    return {
+      progressTopGap: progressRect.top - coverRect.bottom,
+      progressBottomGap: contentRect.bottom - progressRect.bottom,
+    };
+  });
+
+  expect
+    .soft(
+      Math.abs(
+        progressOnlyMetrics.progressTopGap -
+          progressOnlyMetrics.progressBottomGap,
+      ),
+    )
+    .toBeLessThanOrEqual(2);
+});
+
 test('puts theme first, supports light mode, switches locale, and reports the centralized version', async ({
   page,
 }) => {
