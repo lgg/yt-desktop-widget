@@ -1,6 +1,7 @@
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type Locale = 'en' | 'ru';
 export type ConnectionBadgeVisibility = 'always' | 'hover' | 'hidden';
+export type WidgetSizeMode = 'compact' | 'default' | 'large' | 'custom';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
 export type CloseButtonAction = 'exit' | 'hideToTray';
 export type ConnectionStatus =
@@ -44,6 +45,8 @@ export interface UiSettings {
   windowSurfaceOpacity: number;
   artworkBackgroundOpacity: number;
   artworkGradientOpacity: number;
+  widgetSizeMode: WidgetSizeMode;
+  customWidgetScalePercentage: number;
   themeMode: ThemeMode;
   locale: Locale;
 }

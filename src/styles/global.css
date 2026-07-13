@@ -294,7 +294,15 @@ a,
 }
 
 .widget-window__content {
+  flex: none;
+  width: var(--widget-base-width, 336px);
+  height: var(--widget-base-height, 438px);
   padding: 0;
+}
+
+.widget-window__content--scaled {
+  transform: scale(var(--widget-scale, 1));
+  transform-origin: top left;
 }
 
 .widget-window__layout {
@@ -1203,6 +1211,73 @@ a,
   border-color: var(--segmented-active-stroke);
 }
 
+.widget-size-control .segmented-control__options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.widget-size-control .segmented-control__option {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 10px;
+}
+
+.widget-size-control .segmented-control__option small {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.widget-size-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.widget-size-fields__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.widget-size-fields__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.widget-size-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.widget-size-field__input-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.widget-size-field__input {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 720px) {
   .settings-window__content {
     padding: 20px;
@@ -1234,6 +1309,11 @@ a,
   .opacity-control__value-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .widget-size-control .segmented-control__options,
+  .widget-size-fields__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .toggle-row__description {

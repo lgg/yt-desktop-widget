@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type FocusEvent as ReactFocusEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -12,9 +13,17 @@ import { getAppearanceStyle } from '@/app/appearance';
 import { getConnectionMessage } from '@/app/connectionMessage';
 import { useI18n } from '@/app/i18n';
 import {
-  setMainAppWindowHeight,
+  setMainAppWindowSize,
   startCurrentAppWindowDragging,
 } from '@/app/windowController';
+import {
+  WIDGET_BASE_HEIGHT,
+  WIDGET_BASE_MAX_HEIGHT,
+  WIDGET_BASE_MIN_HEIGHT,
+  WIDGET_BASE_WIDTH,
+  getWidgetScaleFactor,
+  getWidgetWindowSize,
+} from '@/app/widgetSize';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import { ConnectionBadge } from '@/components/ConnectionBadge';
 import {
@@ -67,6 +76,12 @@ const NON_DRAGGABLE_TARGET_SELECTOR = [
   '[role="tab"]',
 ].join(',');
 
+type WidgetWindowStyle = CSSProperties & {
+  '--widget-scale': number;
+  '--widget-base-width': string;
+  '--widget-base-height': string;
+};
+
 export const WidgetWindow = () => {
   const {
     ready,
@@ -83,11 +98,20 @@ export const WidgetWindow = () => {
   const connectionMessage = getConnectionMessage(t, session.connection);
   const [hovered, setHovered] = useState(false);
   const [focusedWithin, setFocusedWithin] = useState(false);
+  const [baseWindowHeight, setBaseWindowHeight] =
+    useState(WIDGET_BASE_HEIGHT);
   const keyboardInteractionRef = useRef(false);
   const widgetRef = useRef<HTMLElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
-  const syncHeightRef = useRef<() => void>(() => undefined);
+  const syncSizeRef = useRef<() => void>(() => undefined);
   const playback = session.playback ?? session.lastKnownPlayback;
+  const widgetScale = getWidgetScaleFactor(settings.ui);
+  const widgetStyle: WidgetWindowStyle = {
+    ...getAppearanceStyle(settings.ui),
+    '--widget-scale': widgetScale,
+    '--widget-base-width': `${WIDGET_BASE_WIDTH}px`,
+    '--widget-base-height': `${baseWindowHeight}px`,
+  };
   const interactionActive = hovered || focusedWithin;
   const controlsEnabled = !settings.ui.hidePlaybackControls && !!playback;
   const controlsVisible =
@@ -159,17 +183,17 @@ export const WidgetWindow = () => {
         }
       : undefined;
 
-  const syncHeightSoon = () => {
-    syncHeightRef.current();
-    window.setTimeout(() => syncHeightRef.current(), 0);
-    window.setTimeout(() => syncHeightRef.current(), 180);
+  const syncSizeSoon = () => {
+    syncSizeRef.current();
+    window.setTimeout(() => syncSizeRef.current(), 0);
+    window.setTimeout(() => syncSizeRef.current(), 180);
   };
 
   const handleReconnect = async () => {
     try {
       await reconnect();
     } finally {
-      syncHeightSoon();
+      syncSizeSoon();
     }
   };
 
@@ -257,10 +281,6 @@ export const WidgetWindow = () => {
   }, []);
 
   useEffect(() => {
-    if (!isTauriRuntime()) {
-      return undefined;
-    }
-
     const layout = layoutRef.current;
     const ResizeObserverCtor = window.ResizeObserver;
     const MutationObserverCtor = window.MutationObserver;
@@ -269,9 +289,11 @@ export const WidgetWindow = () => {
     }
 
     let frameId = 0;
+    const nativeRuntime = isTauriRuntime();
+    let lastWidth = 0;
     let lastHeight = 0;
 
-    const syncHeight = () => {
+    const syncSize = () => {
       window.cancelAnimationFrame(frameId);
       frameId = window.requestAnimationFrame(() => {
         const nextLayout = layoutRef.current;
@@ -279,26 +301,41 @@ export const WidgetWindow = () => {
           return;
         }
 
-        const nextHeight = Math.ceil(nextLayout.scrollHeight + 2);
-        if (Math.abs(nextHeight - lastHeight) < 1) {
+        const measuredBaseHeight = Math.ceil(nextLayout.scrollHeight + 2);
+        const nextBaseHeight = Math.min(
+          WIDGET_BASE_MAX_HEIGHT,
+          Math.max(WIDGET_BASE_MIN_HEIGHT, measuredBaseHeight),
+        );
+        const nextSize = getWidgetWindowSize(nextBaseHeight, settings.ui);
+        setBaseWindowHeight((currentHeight) =>
+          currentHeight === nextBaseHeight ? currentHeight : nextBaseHeight,
+        );
+
+        if (
+          Math.abs(nextSize.width - lastWidth) < 1 &&
+          Math.abs(nextSize.height - lastHeight) < 1
+        ) {
           return;
         }
 
-        lastHeight = nextHeight;
-        void setMainAppWindowHeight(nextHeight);
+        lastWidth = nextSize.width;
+        lastHeight = nextSize.height;
+        if (nativeRuntime) {
+          void setMainAppWindowSize(nextSize.width, nextSize.height);
+        }
       });
     };
 
-    syncHeightRef.current = syncHeight;
-    syncHeight();
+    syncSizeRef.current = syncSize;
+    syncSize();
 
     const observer = new ResizeObserverCtor(() => {
-      syncHeight();
+      syncSize();
     });
     observer.observe(layout);
 
     const mutationObserver = new MutationObserverCtor(() => {
-      syncHeight();
+      syncSize();
     });
     mutationObserver.observe(layout, {
       childList: true,
@@ -311,9 +348,9 @@ export const WidgetWindow = () => {
       observer.disconnect();
       window.cancelAnimationFrame(frameId);
     };
-  }, []);
+  }, [settings.ui, widgetScale]);
   useEffect(() => {
-    syncHeightRef.current();
+    syncSizeRef.current();
   }, [
     session.connection.status,
     session.connection.messageKey,
@@ -323,6 +360,7 @@ export const WidgetWindow = () => {
     settings.ui.hidePlaybackControls,
     settings.ui.hideProgressBar,
     settings.ui.hideTrackDetails,
+    widgetScale,
     ready,
   ]);
   const renderStateCard = () => {
@@ -446,14 +484,20 @@ export const WidgetWindow = () => {
     <main
       ref={widgetRef}
       className="widget-window"
-      style={getAppearanceStyle(settings.ui)}
+      style={widgetStyle}
       onPointerEnter={() => setHovered(true)}
       onPointerMove={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
     >
-      <div className="widget-window__content">
+      <div
+        className={
+          widgetScale === 1
+            ? 'widget-window__content'
+            : 'widget-window__content widget-window__content--scaled'
+        }
+      >
         <ArtworkBackground artworkUrl={playback?.coverUrl ?? null} />
         <div
           ref={layoutRef}

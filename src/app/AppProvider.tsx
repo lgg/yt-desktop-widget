@@ -109,6 +109,9 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.ui.windowSurfaceOpacity === right.ui.windowSurfaceOpacity &&
   left.ui.artworkBackgroundOpacity === right.ui.artworkBackgroundOpacity &&
   left.ui.artworkGradientOpacity === right.ui.artworkGradientOpacity &&
+  left.ui.widgetSizeMode === right.ui.widgetSizeMode &&
+  left.ui.customWidgetScalePercentage ===
+    right.ui.customWidgetScalePercentage &&
   left.ui.themeMode === right.ui.themeMode &&
   left.ui.locale === right.ui.locale &&
   left.window.alwaysOnTop === right.window.alwaysOnTop &&

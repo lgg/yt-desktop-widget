@@ -9,6 +9,19 @@ const appVersion = (
 
 const SETTINGS_STORAGE_KEY = 'ytm-desktop-widget.settings';
 
+const readWidgetSizeMode = async (page: import('@playwright/test').Page) =>
+  page.evaluate((storageKey) => {
+    const stored = window.localStorage.getItem(storageKey);
+    return stored
+      ? (JSON.parse(stored) as {
+          ui?: {
+            widgetSizeMode?: string;
+            customWidgetScalePercentage?: number;
+          };
+        }).ui
+      : undefined;
+  }, SETTINGS_STORAGE_KEY);
+
 test('renders the simulated widget and settings views', async ({ page }) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');
@@ -63,6 +76,101 @@ test('renders the simulated widget and settings views', async ({ page }) => {
   await expect(
     page.getByText('Show playback controls only on hover'),
   ).toBeVisible();
+});
+
+test('scales the full widget with presets and keeps custom dimensions linked', async ({
+  page,
+}) => {
+  const readGeometry = () =>
+    page.evaluate(() => {
+      const rect = (selector: string) =>
+        document.querySelector(selector)?.getBoundingClientRect();
+      const content = rect('.widget-window__content');
+      const cover = rect('.cover-card');
+      const action = rect('.widget-window__window-action');
+      const progress = rect('.progress-row__track');
+      return {
+        scale: getComputedStyle(
+          document.querySelector('.widget-window') as HTMLElement,
+        ).getPropertyValue('--widget-scale'),
+        contentWidth: content?.width ?? 0,
+        coverWidth: cover?.width ?? 0,
+        actionWidth: action?.width ?? 0,
+        progressWidth: progress?.width ?? 0,
+      };
+    });
+
+  await page.setViewportSize({ width: 336, height: 760 });
+  await page.goto('/?source=simulator');
+  await expect(page.getByText('Night Train Window')).toBeVisible();
+  const defaultGeometry = await readGeometry();
+  expect(defaultGeometry.scale.trim()).toBe('1');
+  expect(defaultGeometry.contentWidth).toBeCloseTo(336, 1);
+  expect(defaultGeometry.coverWidth).toBeCloseTo(256, 1);
+
+  await page.setViewportSize({ width: 720, height: 760 });
+  await page.goto('/?view=settings&source=simulator');
+  await page.getByRole('button', { name: 'Large' }).click();
+  await expect
+    .poll(async () => (await readWidgetSizeMode(page))?.widgetSizeMode)
+    .toBe('large');
+
+  await page.setViewportSize({ width: 420, height: 900 });
+  await page.goto('/?source=simulator');
+  await expect(page.getByText('Night Train Window')).toBeVisible();
+  const largeGeometry = await readGeometry();
+  expect(largeGeometry.scale.trim()).toBe('1.25');
+  expect(largeGeometry.contentWidth).toBeCloseTo(420, 1);
+  expect(largeGeometry.coverWidth / defaultGeometry.coverWidth).toBeCloseTo(
+    1.25,
+    2,
+  );
+  expect(largeGeometry.actionWidth / defaultGeometry.actionWidth).toBeCloseTo(
+    1.25,
+    2,
+  );
+  expect(
+    largeGeometry.progressWidth / defaultGeometry.progressWidth,
+  ).toBeCloseTo(1.25, 2);
+
+  await page.setViewportSize({ width: 720, height: 760 });
+  await page.goto('/?view=settings&source=simulator');
+  await page.getByRole('button', { name: 'Custom' }).click();
+  const widthInput = page.getByLabel('Width');
+  const heightInput = page.getByLabel('Height');
+  await expect(widthInput).toHaveValue('336');
+  await expect(heightInput).toHaveValue('438');
+  await widthInput.fill('400');
+  await widthInput.press('Enter');
+  await expect(heightInput).toHaveValue('521');
+  await expect
+    .poll(async () => {
+      const size = await readWidgetSizeMode(page);
+      return {
+        mode: size?.widgetSizeMode,
+        percentage: Math.round(size?.customWidgetScalePercentage ?? 0),
+      };
+    })
+    .toEqual({ mode: 'custom', percentage: 119 });
+
+  await heightInput.fill('600');
+  await heightInput.press('Enter');
+  await expect(widthInput).toHaveValue('460');
+  await expect
+    .poll(async () =>
+      Math.round(
+        (await readWidgetSizeMode(page))?.customWidgetScalePercentage ?? 0,
+      ),
+    )
+    .toBe(137);
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Custom' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByLabel('Height')).toHaveValue('600');
+  await expect(page.getByLabel('Width')).toHaveValue('460');
 });
 
 test('keeps hover-only playback controls stable while changing visibility', async ({

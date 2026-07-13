@@ -94,7 +94,7 @@ Trade-off:
 
 ## 7. Ship one fixed-size widget mode for v1
 
-Status: accepted
+Status: superseded after v1 by [`project-tracking/decisions/0004-use-uniform-widget-scaling-for-size-modes.md`](./project-tracking/decisions/0004-use-uniform-widget-scaling-for-size-modes.md)
 
 Reasoning:
 
@@ -106,6 +106,13 @@ Trade-off:
 
 - no manual resize in v1
 - no alternate compact/expanded modes yet
+
+Post-v1 outcome:
+
+- the approved 336 px layout remains the unchanged Default mode
+- Compact, Large, and linked Custom dimensions uniformly scale the complete widget
+- Custom keeps one canonical percentage so width and height cannot distort the layout
+- free border resizing remains disabled
 
 ## 8. Implement launch-on-startup through the Windows Run registry for v1
 

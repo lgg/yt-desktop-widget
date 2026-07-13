@@ -20,6 +20,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     windowSurfaceOpacity: 100,
     artworkBackgroundOpacity: 100,
     artworkGradientOpacity: 100,
+    widgetSizeMode: 'default',
+    customWidgetScalePercentage: 100,
     themeMode: 'dark',
     locale: 'en',
   },

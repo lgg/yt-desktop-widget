@@ -18,6 +18,13 @@ import {
   startCurrentAppWindowDragging,
 } from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
+import {
+  WIDGET_CUSTOM_MAX_PERCENTAGE,
+  WIDGET_CUSTOM_MIN_PERCENTAGE,
+  getCustomWidgetScaleFromHeight,
+  getCustomWidgetScaleFromWidth,
+  getWidgetReferenceDimensions,
+} from '@/app/widgetSize';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import {
   CloseIcon,
@@ -124,6 +131,15 @@ export const SettingsWindow = () => {
     session.connection.status === 'authenticating'
       ? getConnectionMessage(t, session.connection)
       : null;
+  const widgetDimensions = getWidgetReferenceDimensions(
+    settings.ui.customWidgetScalePercentage,
+  );
+  const minimumWidgetDimensions = getWidgetReferenceDimensions(
+    WIDGET_CUSTOM_MIN_PERCENTAGE,
+  );
+  const maximumWidgetDimensions = getWidgetReferenceDimensions(
+    WIDGET_CUSTOM_MAX_PERCENTAGE,
+  );
 
   useEffect(() => {
     setEndpointDraft(
@@ -165,6 +181,26 @@ export const SettingsWindow = () => {
 
     event.preventDefault();
     void commitEndpoint();
+  };
+
+  const commitCustomWidgetScale = (scalePercentage: number) => {
+    void updateSettings((current) => ({
+      ...current,
+      ui: {
+        ...current.ui,
+        widgetSizeMode: 'custom',
+        customWidgetScalePercentage: scalePercentage,
+      },
+    }));
+  };
+
+  const handleCustomSizeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.blur();
   };
 
   const handleHeaderMouseDown = (event: MouseEvent<HTMLDivElement>) => {
@@ -575,6 +611,131 @@ export const SettingsWindow = () => {
                 'settingsWindow.sections.ui.hideCloseButtonDescription',
               )}
             />
+          </SettingsSection>
+
+          <SettingsSection
+            title={t('settingsWindow.sections.size.title')}
+            description={t('settingsWindow.sections.size.description')}
+          >
+            <div className="segmented-control widget-size-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.size.mode')}
+              </span>
+              <span className="segmented-control__description">
+                {t('settingsWindow.sections.size.modeDescription')}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t('settingsWindow.sections.size.mode')}
+              >
+                {(['compact', 'default', 'large', 'custom'] as const).map(
+                  (mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-label={t(`settingsWindow.widgetSizeMode.${mode}`)}
+                      aria-pressed={settings.ui.widgetSizeMode === mode}
+                      className={
+                        settings.ui.widgetSizeMode === mode
+                          ? 'segmented-control__option segmented-control__option--active'
+                          : 'segmented-control__option'
+                      }
+                      onClick={() =>
+                        void updateSettings((current) => ({
+                          ...current,
+                          ui: {
+                            ...current.ui,
+                            widgetSizeMode: mode,
+                          },
+                        }))
+                      }
+                    >
+                      <span>{t(`settingsWindow.widgetSizeMode.${mode}`)}</span>
+                      {mode !== 'custom' ? (
+                        <small>
+                          {t(`settingsWindow.widgetSizeModeScale.${mode}`)}
+                        </small>
+                      ) : null}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+
+            {settings.ui.widgetSizeMode === 'custom' ? (
+              <div className="widget-size-fields">
+                <p
+                  id="widget-size-proportion-hint"
+                  className="widget-size-fields__hint"
+                >
+                  {t('settingsWindow.sections.size.proportionLocked')}
+                </p>
+                <div className="widget-size-fields__grid">
+                  <label className="widget-size-field" htmlFor="widget-width">
+                    <span>{t('settingsWindow.sections.size.width')}</span>
+                    <span className="widget-size-field__input-wrap">
+                      <input
+                        key={`widget-width-${widgetDimensions.width}`}
+                        id="widget-width"
+                        className="settings-field__input widget-size-field__input"
+                        type="number"
+                        inputMode="numeric"
+                        min={minimumWidgetDimensions.width}
+                        max={maximumWidgetDimensions.width}
+                        step="1"
+                        defaultValue={widgetDimensions.width}
+                        aria-label={t('settingsWindow.sections.size.width')}
+                        aria-describedby="widget-size-proportion-hint"
+                        onBlur={(event) =>
+                          commitCustomWidgetScale(
+                            getCustomWidgetScaleFromWidth(
+                              Number(event.currentTarget.value),
+                            ),
+                          )
+                        }
+                        onKeyDown={handleCustomSizeKeyDown}
+                      />
+                      <span aria-hidden="true">
+                        {t('settingsWindow.sections.size.pixelUnit')}
+                      </span>
+                    </span>
+                  </label>
+                  <label
+                    className="widget-size-field"
+                    htmlFor="widget-height"
+                  >
+                    <span>{t('settingsWindow.sections.size.height')}</span>
+                    <span className="widget-size-field__input-wrap">
+                      <input
+                        key={`widget-height-${widgetDimensions.height}`}
+                        id="widget-height"
+                        className="settings-field__input widget-size-field__input"
+                        type="number"
+                        inputMode="numeric"
+                        min={minimumWidgetDimensions.height}
+                        max={maximumWidgetDimensions.height}
+                        step="1"
+                        defaultValue={widgetDimensions.height}
+                        aria-label={t('settingsWindow.sections.size.height')}
+                        aria-describedby="widget-size-proportion-hint"
+                        onBlur={(event) =>
+                          commitCustomWidgetScale(
+                            getCustomWidgetScaleFromHeight(
+                              Number(event.currentTarget.value),
+                            ),
+                          )
+                        }
+                        onKeyDown={handleCustomSizeKeyDown}
+                      />
+                      <span aria-hidden="true">
+                        {t('settingsWindow.sections.size.pixelUnit')}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            ) : null}
           </SettingsSection>
 
           <SettingsSection

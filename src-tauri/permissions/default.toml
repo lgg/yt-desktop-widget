@@ -8,7 +8,7 @@ commands.allow = [
   "save_settings",
   "show_window",
   "hide_window",
-  "set_main_window_height",
+  "set_main_window_size",
   "close_widget",
   "hide_widget_stack",
   "exit_app",

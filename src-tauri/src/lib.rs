@@ -31,9 +31,12 @@ const WINDOW_VISIBILITY_EVENT: &str = "app-window://visibility";
 const WINDOW_LABELS: [&str; 2] = ["main", "settings"];
 const WINDOW_POSITION_FLUSH_DELAY: Duration = Duration::from_millis(320);
 const WINDOW_FOCUS_LOSS_DELAY: Duration = Duration::from_millis(80);
-const MAIN_WINDOW_WIDTH: f64 = 336.0;
-const MAIN_WINDOW_MIN_HEIGHT: f64 = 360.0;
-const MAIN_WINDOW_MAX_HEIGHT: f64 = 780.0;
+const MAIN_WINDOW_DEFAULT_WIDTH: f64 = 336.0;
+const MAIN_WINDOW_DEFAULT_HEIGHT: f64 = 438.0;
+const MAIN_WINDOW_MIN_WIDTH: f64 = 252.0;
+const MAIN_WINDOW_MAX_WIDTH: f64 = 504.0;
+const MAIN_WINDOW_MIN_HEIGHT: f64 = 270.0;
+const MAIN_WINDOW_MAX_HEIGHT: f64 = 1170.0;
 #[cfg(debug_assertions)]
 const MCP_BRIDGE_BASE_PORT: u16 = 39223;
 
@@ -89,11 +92,25 @@ fn hide_window(app: AppHandle, label: String) -> Result<(), CommandError> {
   hide_window_internal(&app, &label)
 }
 
+fn clamp_main_window_size(width: f64, height: f64) -> (f64, f64) {
+  let width = if width.is_finite() {
+    width.clamp(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MAX_WIDTH).round()
+  } else {
+    MAIN_WINDOW_DEFAULT_WIDTH
+  };
+  let height = if height.is_finite() {
+    height.clamp(MAIN_WINDOW_MIN_HEIGHT, MAIN_WINDOW_MAX_HEIGHT).round()
+  } else {
+    MAIN_WINDOW_DEFAULT_HEIGHT
+  };
+  (width, height)
+}
+
 #[tauri::command]
-fn set_main_window_height(app: AppHandle, height: f64) -> Result<(), CommandError> {
+fn set_main_window_size(app: AppHandle, width: f64, height: f64) -> Result<(), CommandError> {
   let window = app_window(&app, "main")?;
-  let clamped_height = height.clamp(MAIN_WINDOW_MIN_HEIGHT, MAIN_WINDOW_MAX_HEIGHT).round();
-  window.set_size(Size::Logical(LogicalSize::new(MAIN_WINDOW_WIDTH, clamped_height)))?;
+  let (clamped_width, clamped_height) = clamp_main_window_size(width, height);
+  window.set_size(Size::Logical(LogicalSize::new(clamped_width, clamped_height)))?;
   Ok(())
 }
 
@@ -558,7 +575,7 @@ pub fn run() {
       save_settings,
       show_window,
       hide_window,
-      set_main_window_height,
+      set_main_window_size,
       close_widget,
       hide_widget_stack,
       exit_app,
@@ -574,4 +591,17 @@ pub fn run() {
     ])
     .run(tauri::generate_context!())
     .expect("error while running YTM Desktop Widget");
+}
+
+#[cfg(test)]
+mod window_size_tests {
+  use super::clamp_main_window_size;
+
+  #[test]
+  fn clamps_main_window_dimensions_to_supported_scaled_bounds() {
+    assert_eq!(clamp_main_window_size(336.0, 438.0), (336.0, 438.0));
+    assert_eq!(clamp_main_window_size(1.0, 1.0), (252.0, 270.0));
+    assert_eq!(clamp_main_window_size(10_000.0, 10_000.0), (504.0, 1170.0));
+    assert_eq!(clamp_main_window_size(f64::NAN, f64::INFINITY), (336.0, 438.0));
+  }
 }

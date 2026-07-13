@@ -18,7 +18,7 @@ const updateSettings = vi.fn<AppModel['updateSettings']>(() =>
 );
 const resolvedAction = () => Promise.resolve();
 
-const model = {
+const model: AppModel = {
   ready: true,
   settings: {
     api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
@@ -34,6 +34,8 @@ const model = {
       windowSurfaceOpacity: 100,
       artworkBackgroundOpacity: 100,
       artworkGradientOpacity: 100,
+      widgetSizeMode: 'default',
+      customWidgetScalePercentage: 100,
       themeMode: 'dark',
       locale: 'en',
     },
@@ -66,7 +68,7 @@ const model = {
   closeWidget: vi.fn(resolvedAction),
   toggleDebugMockMode: vi.fn(resolvedAction),
   openRepository: vi.fn(resolvedAction),
-} satisfies AppModel;
+};
 
 vi.mock('@/app/AppProvider', () => ({
   useAppModel: (): AppModel => model,
@@ -238,6 +240,97 @@ describe('SettingsWindow UI display preferences', () => {
     });
   });
 
+  it('places a separate Widget Size section before transparency and persists presets', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const sizeHeading = screen.getByRole('heading', { name: 'Widget Size' });
+    const appearanceHeading = screen.getByRole('heading', {
+      name: 'Transparency / Background',
+    });
+    expect(sizeHeading.compareDocumentPosition(appearanceHeading)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    expect(screen.getByRole('button', { name: 'Compact' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Default' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Large' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Large' }));
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui).toMatchObject({
+      widgetSizeMode: 'large',
+      customWidgetScalePercentage: 100,
+    });
+  });
+
+  it('exposes linked width and height inputs in Custom mode', () => {
+    const originalMode = model.settings.ui.widgetSizeMode;
+    const originalScale = model.settings.ui.customWidgetScalePercentage;
+    model.settings.ui.widgetSizeMode = 'custom';
+    model.settings.ui.customWidgetScalePercentage = 100;
+    updateSettings.mockClear();
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(screen.getByRole('button', { name: 'Custom' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      const width = screen.getByLabelText('Width');
+      const height = screen.getByLabelText('Height');
+      expect(width).toHaveValue(336);
+      expect(height).toHaveValue(438);
+      expect(width).toHaveAttribute('min', '252');
+      expect(width).toHaveAttribute('max', '504');
+      expect(height).toHaveAttribute('min', '329');
+      expect(height).toHaveAttribute('max', '657');
+      expect(screen.getByText('Proportions are locked.')).toBeInTheDocument();
+
+      fireEvent.change(width, { target: { value: '400' } });
+      fireEvent.blur(width);
+      let recipe = updateSettings.mock.calls[0]?.[0];
+      expect(recipe?.(model.settings).ui.widgetSizeMode).toBe('custom');
+      expect(
+        recipe?.(model.settings).ui.customWidgetScalePercentage,
+      ).toBeCloseTo(119.047619, 5);
+
+      updateSettings.mockClear();
+      fireEvent.change(height, { target: { value: '600' } });
+      fireEvent.blur(height);
+      recipe = updateSettings.mock.calls[0]?.[0];
+      expect(recipe?.(model.settings).ui.widgetSizeMode).toBe('custom');
+      expect(
+        recipe?.(model.settings).ui.customWidgetScalePercentage,
+      ).toBeCloseTo(136.986301, 5);
+    } finally {
+      model.settings.ui.widgetSizeMode = originalMode;
+      model.settings.ui.customWidgetScalePercentage = originalScale;
+    }
+  });
+
   it('persists and individually resets a transparency percentage', () => {
     updateSettings.mockClear();
     render(
@@ -269,8 +362,7 @@ describe('SettingsWindow UI display preferences', () => {
   });
 
   it('localizes authorization status without rendering raw native details', () => {
-    const connection = model.session
-      .connection as AppModel['session']['connection'];
+    const connection = model.session.connection;
     const originalStatus = connection.status;
     connection.status = 'auth_required';
     connection.detail = 'sensitive native authorization response';

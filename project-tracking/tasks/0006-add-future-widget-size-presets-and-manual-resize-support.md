@@ -2,7 +2,7 @@
 
 ## Status
 
-Deferred
+Completed
 
 ## Source
 
@@ -47,10 +47,10 @@ Out of scope:
 
 ## Acceptance Criteria
 
-- [ ] The original Beads issue state is represented in markdown.
-- [ ] Relevant implementation, documentation, and verification notes are captured or linked.
-- [ ] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
-- [ ] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
+- [x] The original Beads issue state is represented in markdown.
+- [x] Relevant implementation, documentation, and verification notes are captured or linked.
+- [x] If new work is done, update related code, tests, documentation, config, roadmap, task, and report files together.
+- [x] No known mismatch remains between UI, native backend, Companion API assumptions, tests, and docs.
 
 ## Verification Plan
 
@@ -63,7 +63,8 @@ Out of scope:
 
 ## Progress History
 
-- No progress notes were recorded in Beads.
+- 2026-07-14: Concrete implementation started in child task [`0043-add-widget-size-presets-and-custom-dimensions.md`](0043-add-widget-size-presets-and-custom-dimensions.md). The agreed scope adds Compact/Default/Large presets plus linked Custom width and height controls with uniform full-widget scaling. This migrated parent remains Deferred until the child is fully verified.
+- 2026-07-14: Child task `0043` completed. Compact/Default/Large and linked Custom dimensions now uniformly scale the full widget; legacy settings retain the unchanged Default layout. Mouse-driven freeform border resizing remains intentionally excluded because the accepted product behavior uses safe Settings controls and preserves aspect ratio.
 
 ## Dependencies
 
@@ -72,12 +73,13 @@ Out of scope:
 ## Related Markdown Links
 
 - parent-child: ytw-5v6 -> [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md)
+- implementation child: [`0043-add-widget-size-presets-and-custom-dimensions.md`](0043-add-widget-size-presets-and-custom-dimensions.md)
 
 ## Questions and Answers
 
 | Question | Status | Answer / Decision |
 | --- | --- | --- |
-| Are there missing details from the Beads issue? | Open | Use the raw archive in `project-tracking/archive/beads-export-2026-07-05.jsonl` as the source fallback. |
+| Are there missing details from the Beads issue? | Resolved | The raw archive was retained as the source fallback; the concrete user-approved behavior is fully specified and delivered in task `0043`. |
 
 ## Risks
 
@@ -90,3 +92,5 @@ Out of scope:
 
 - Roadmap: [`0000-roadmap.md`](../roadmap/0000-roadmap.md)
 - Raw Beads export: [`beads-export-2026-07-05.jsonl`](../archive/beads-export-2026-07-05.jsonl)
+- Implementation task: [`0043-add-widget-size-presets-and-custom-dimensions.md`](0043-add-widget-size-presets-and-custom-dimensions.md)
+- Implementation report: [`0043-add-widget-size-presets-and-custom-dimensions.md`](../reports/0043-add-widget-size-presets-and-custom-dimensions.md)

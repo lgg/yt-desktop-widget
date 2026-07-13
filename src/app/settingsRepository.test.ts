@@ -112,4 +112,37 @@ describe('settingsRepository browser persistence', () => {
     expect(legacySettings.ui.artworkBackgroundOpacity).toBe(100);
     expect(legacySettings.ui.artworkGradientOpacity).toBe(100);
   });
+
+  it('defaults, validates, and clamps widget size preferences', async () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ui: {} }));
+    const legacySettings = await loadSettings();
+    expect(legacySettings.ui.widgetSizeMode).toBe('default');
+    expect(legacySettings.ui.customWidgetScalePercentage).toBe(100);
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ui: {
+          widgetSizeMode: 'wide',
+          customWidgetScalePercentage: 999,
+        },
+      }),
+    );
+    const invalidSettings = await loadSettings();
+    expect(invalidSettings.ui.widgetSizeMode).toBe('default');
+    expect(invalidSettings.ui.customWidgetScalePercentage).toBe(150);
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ui: {
+          widgetSizeMode: 'custom',
+          customWidgetScalePercentage: 72,
+        },
+      }),
+    );
+    const undersizedSettings = await loadSettings();
+    expect(undersizedSettings.ui.widgetSizeMode).toBe('custom');
+    expect(undersizedSettings.ui.customWidgetScalePercentage).toBe(75);
+  });
 });

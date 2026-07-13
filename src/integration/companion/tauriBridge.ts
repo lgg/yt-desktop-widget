@@ -38,7 +38,8 @@ export const tauriBridge = {
     }),
   showWindow: (label: string) => invoke<void>('show_window', { label }),
   hideWindow: (label: string) => invoke<void>('hide_window', { label }),
-  setMainWindowHeight: (height: number) => invoke<void>('set_main_window_height', { height }),
+  setMainWindowSize: (width: number, height: number) =>
+    invoke<void>('set_main_window_size', { width, height }),
   hideWidgetStack: () => invoke<void>('hide_widget_stack'),
   exitApp: () => invoke<void>('exit_app'),
   openRepository: () => invoke<void>('open_repository'),

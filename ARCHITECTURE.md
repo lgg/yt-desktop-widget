@@ -153,6 +153,7 @@ Persistence model:
 - browser preview: `localStorage`
 - auth token: OS keyring through Rust, not in frontend storage
 - locale: persisted as part of UI settings; English is the backward-compatible default
+- widget size: persisted as a named mode plus one canonical Custom percentage; custom width and height are derived views of that percentage
 
 ## Version model
 
@@ -168,7 +169,9 @@ Persistence model:
 
 - frameless
 - transparent
-- fixed-size v1 layout
+- canonical 336 px cover-driven layout with Compact, unchanged Default, Large, and linked Custom uniform scaling
+- intrinsic content height is measured before the selected scale is applied to both the content layer and native window
+- free border resize remains disabled; sizing is controlled through Settings
 - always-on-top capable
 - draggable on free surface
 - hidden to tray on close
@@ -194,8 +197,8 @@ Performance-sensitive choices in the current implementation:
 
 The current structure is intentionally ready for:
 
-- future window size presets
-- future manual resize support
+- future alternate responsive/reflowing window layouts beyond the current proportional size modes
+- optional free border resize if a later task defines safe persistence and aspect-ratio behavior
 - additional locale JSON bundles beyond the current English/Russian pair
 - future macOS window behavior work
 - richer diagnostics and logging around Companion reconnects

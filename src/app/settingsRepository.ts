@@ -6,8 +6,14 @@ import type {
   DataSourceMode,
   Locale,
   ThemeMode,
+  WidgetSizeMode,
   WindowPosition,
 } from '@/domain/playback/types';
+import {
+  WIDGET_CUSTOM_MAX_PERCENTAGE,
+  WIDGET_CUSTOM_MIN_PERCENTAGE,
+  WIDGET_SIZE_MODES,
+} from '@/app/widgetSize';
 import { tauriBridge } from '@/integration/companion/tauriBridge';
 import { isTauriRuntime } from '@/utils/runtime';
 
@@ -24,6 +30,16 @@ const booleanOr = (value: unknown, fallback: boolean) =>
 const percentageOr = (value: unknown, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value)
     ? Math.round(Math.min(100, Math.max(0, value)))
+    : fallback;
+
+const rangedNumberOr = (
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+) =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(max, Math.max(min, value))
     : fallback;
 
 const enumOr = <T extends string>(
@@ -127,6 +143,17 @@ export const normalizeSettings = (value: unknown): AppSettings => {
       artworkGradientOpacity: percentageOr(
         ui.artworkGradientOpacity,
         DEFAULT_SETTINGS.ui.artworkGradientOpacity,
+      ),
+      widgetSizeMode: enumOr<WidgetSizeMode>(
+        ui.widgetSizeMode,
+        WIDGET_SIZE_MODES,
+        DEFAULT_SETTINGS.ui.widgetSizeMode,
+      ),
+      customWidgetScalePercentage: rangedNumberOr(
+        ui.customWidgetScalePercentage,
+        DEFAULT_SETTINGS.ui.customWidgetScalePercentage,
+        WIDGET_CUSTOM_MIN_PERCENTAGE,
+        WIDGET_CUSTOM_MAX_PERCENTAGE,
       ),
       themeMode: enumOr<ThemeMode>(
         ui.themeMode,

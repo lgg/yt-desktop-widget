@@ -12,6 +12,7 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Supports previous, play/pause, next, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
+- Provides Compact (85%), unchanged Default (100%), Large (125%), and linked Custom widget sizing; artwork, text, controls, spacing, progress UI, background, and intrinsic window height scale together.
 - Display preferences can remove playback controls, the progress row, or the title/artist block from the compact layout, allowing the widget height to shrink.
 - Playback controls can be kept always visible or faded out until pointer hover or keyboard focus; the controls keep a stable reserved row so visibility changes cannot resize or jitter the widget.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
@@ -236,8 +237,7 @@ Future live regression passes should still include uncommon upstream states such
 
 ## Known limitations and intentional deferrals
 
-- Single widget size and layout only
-- No manual resize yet
+- Widget sizing is intentionally proportional and controlled from Settings; free non-proportional border dragging remains disabled.
 - Windows-only delivery focus
 - English and Russian are the only bundled locales
 - No macOS packaging work yet

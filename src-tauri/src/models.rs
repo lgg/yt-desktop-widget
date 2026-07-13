@@ -37,6 +37,10 @@ pub struct UiSettings {
   pub window_surface_opacity: f64,
   pub artwork_background_opacity: f64,
   pub artwork_gradient_opacity: f64,
+  #[serde(deserialize_with = "deserialize_widget_size_mode")]
+  pub widget_size_mode: String,
+  #[serde(deserialize_with = "deserialize_custom_widget_scale_percentage")]
+  pub custom_widget_scale_percentage: f64,
   pub theme_mode: String,
   pub locale: String,
 }
@@ -55,6 +59,8 @@ impl Default for UiSettings {
       window_surface_opacity: 100.0,
       artwork_background_opacity: 100.0,
       artwork_gradient_opacity: 100.0,
+      widget_size_mode: "default".to_string(),
+      custom_widget_scale_percentage: 100.0,
       theme_mode: "dark".to_string(),
       locale: "en".to_string(),
     }
@@ -269,4 +275,67 @@ mod tests {
     assert_eq!(serialized["ui"]["artworkBackgroundOpacity"], 100.0);
     assert_eq!(serialized["ui"]["artworkGradientOpacity"], 100.0);
   }
+
+  #[test]
+  fn preserves_widget_size_preferences_and_migrates_legacy_defaults() {
+    let custom: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "widgetSizeMode": "custom",
+        "customWidgetScalePercentage": 119.047619
+      }
+    }))
+    .expect("custom widget size should deserialize");
+    let legacy: AppSettings = serde_json::from_value(json!({
+      "ui": { "themeMode": "dark" }
+    }))
+    .expect("legacy widget size should deserialize");
+
+    let custom = serde_json::to_value(custom).expect("custom settings should serialize");
+    let legacy = serde_json::to_value(legacy).expect("legacy settings should serialize");
+    assert_eq!(custom["ui"]["widgetSizeMode"], "custom");
+    assert_eq!(custom["ui"]["customWidgetScalePercentage"], 119.047619);
+    assert_eq!(legacy["ui"]["widgetSizeMode"], "default");
+    assert_eq!(legacy["ui"]["customWidgetScalePercentage"], 100.0);
+  }
+
+  #[test]
+  fn repairs_invalid_native_widget_size_preferences() {
+    let settings: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "widgetSizeMode": "stretched",
+        "customWidgetScalePercentage": 999.0
+      }
+    }))
+    .expect("invalid widget size should be repairable");
+
+    let serialized = serde_json::to_value(settings).expect("settings should serialize");
+    assert_eq!(serialized["ui"]["widgetSizeMode"], "default");
+    assert_eq!(serialized["ui"]["customWidgetScalePercentage"], 150.0);
+  }
+}
+
+fn deserialize_widget_size_mode<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let value = String::deserialize(deserializer)?;
+  Ok(
+    if matches!(value.as_str(), "compact" | "default" | "large" | "custom") {
+      value
+    } else {
+      "default".to_string()
+    },
+  )
+}
+
+fn deserialize_custom_widget_scale_percentage<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+  D: Deserializer<'de>,
+{
+  let value = f64::deserialize(deserializer)?;
+  Ok(if value.is_finite() {
+    value.clamp(75.0, 150.0)
+  } else {
+    100.0
+  })
 }

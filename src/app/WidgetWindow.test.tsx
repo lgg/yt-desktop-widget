@@ -9,7 +9,7 @@ const mockUseAppModel = vi.fn<() => AppModel>();
 const resolvedAction = () => Promise.resolve();
 const runtimeMock = vi.hoisted(() => ({ isTauri: false }));
 const windowControllerMocks = vi.hoisted(() => ({
-  setMainAppWindowHeight: vi.fn(() => Promise.resolve()),
+  setMainAppWindowSize: vi.fn(() => Promise.resolve()),
   startCurrentAppWindowDragging: vi.fn(() => Promise.resolve()),
 }));
 
@@ -34,6 +34,8 @@ const createConnectedModel = ({
   connectionBadgeVisibility = 'always',
   hideTrackDetails = false,
   useArtworkAsPlaybackControl = false,
+  widgetSizeMode = 'default',
+  customWidgetScalePercentage = 100,
 }: {
   playbackState?: 'playing' | 'paused';
   hidePlaybackControls?: boolean;
@@ -42,6 +44,8 @@ const createConnectedModel = ({
   connectionBadgeVisibility?: 'always' | 'hover' | 'hidden';
   hideTrackDetails?: boolean;
   useArtworkAsPlaybackControl?: boolean;
+  widgetSizeMode?: 'compact' | 'default' | 'large' | 'custom';
+  customWidgetScalePercentage?: number;
 } = {}): AppModel => ({
   ready: true,
   settings: {
@@ -58,6 +62,8 @@ const createConnectedModel = ({
       windowSurfaceOpacity: 100,
       artworkBackgroundOpacity: 100,
       artworkGradientOpacity: 100,
+      widgetSizeMode,
+      customWidgetScalePercentage,
       themeMode: 'dark',
       locale: 'en',
     },
@@ -110,7 +116,7 @@ const createConnectedModel = ({
 describe('WidgetWindow', () => {
   afterEach(() => {
     runtimeMock.isTauri = false;
-    windowControllerMocks.setMainAppWindowHeight.mockReset();
+    windowControllerMocks.setMainAppWindowSize.mockReset();
     windowControllerMocks.startCurrentAppWindowDragging.mockReset();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -153,6 +159,39 @@ describe('WidgetWindow', () => {
       '--artwork-background-opacity': '0.48',
       '--artwork-gradient-opacity': '0.35',
     });
+  });
+
+  it('keeps Default at scale one and applies one uniform custom scale variable', () => {
+    mockUseAppModel.mockReturnValue(createConnectedModel());
+    const { rerender } = render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+    expect(document.querySelector('.widget-window')).toHaveStyle({
+      '--widget-scale': '1',
+    });
+    expect(document.querySelector('.widget-window__content')).not.toHaveClass(
+      'widget-window__content--scaled',
+    );
+
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({
+        widgetSizeMode: 'custom',
+        customWidgetScalePercentage: 137,
+      }),
+    );
+    rerender(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+    expect(document.querySelector('.widget-window')).toHaveStyle({
+      '--widget-scale': '1.37',
+    });
+    expect(document.querySelector('.widget-window__content')).toHaveClass(
+      'widget-window__content--scaled',
+    );
   });
 
   it('keeps paused playback compact without a redundant state card', () => {
@@ -600,8 +639,8 @@ describe('WidgetWindow', () => {
 
     await waitFor(() => {
       expect(
-        windowControllerMocks.setMainAppWindowHeight,
-      ).toHaveBeenLastCalledWith(440);
+        windowControllerMocks.setMainAppWindowSize,
+      ).toHaveBeenLastCalledWith(336, 440);
     });
     expect(observeMutations).toHaveBeenCalledWith(expect.any(HTMLElement), {
       childList: true,
@@ -661,8 +700,8 @@ describe('WidgetWindow', () => {
 
     await waitFor(() => {
       expect(
-        windowControllerMocks.setMainAppWindowHeight,
-      ).toHaveBeenLastCalledWith(492);
+        windowControllerMocks.setMainAppWindowSize,
+      ).toHaveBeenLastCalledWith(336, 492);
     });
 
     layoutHeight = 404;
@@ -681,8 +720,8 @@ describe('WidgetWindow', () => {
 
     await waitFor(() => {
       expect(
-        windowControllerMocks.setMainAppWindowHeight,
-      ).toHaveBeenLastCalledWith(406);
+        windowControllerMocks.setMainAppWindowSize,
+      ).toHaveBeenLastCalledWith(336, 406);
     });
   });
 
@@ -737,8 +776,8 @@ describe('WidgetWindow', () => {
 
     await waitFor(() => {
       expect(
-        windowControllerMocks.setMainAppWindowHeight,
-      ).toHaveBeenLastCalledWith(422);
+        windowControllerMocks.setMainAppWindowSize,
+      ).toHaveBeenLastCalledWith(336, 422);
     });
 
     layoutHeight = 490;
@@ -747,8 +786,8 @@ describe('WidgetWindow', () => {
     );
     await Promise.resolve();
     expect(
-      windowControllerMocks.setMainAppWindowHeight,
-    ).toHaveBeenLastCalledWith(422);
+      windowControllerMocks.setMainAppWindowSize,
+    ).toHaveBeenLastCalledWith(336, 422);
 
     layoutHeight = 420;
     fireEvent.pointerLeave(
@@ -756,8 +795,8 @@ describe('WidgetWindow', () => {
     );
     await Promise.resolve();
     expect(
-      windowControllerMocks.setMainAppWindowHeight,
-    ).toHaveBeenLastCalledWith(422);
+      windowControllerMocks.setMainAppWindowSize,
+    ).toHaveBeenLastCalledWith(336, 422);
   });
 
   it('renders authorization actions when auth is required', () => {
@@ -777,6 +816,8 @@ describe('WidgetWindow', () => {
           windowSurfaceOpacity: 100,
           artworkBackgroundOpacity: 100,
           artworkGradientOpacity: 100,
+          widgetSizeMode: 'default',
+          customWidgetScalePercentage: 100,
           themeMode: 'dark',
           locale: 'en',
         },

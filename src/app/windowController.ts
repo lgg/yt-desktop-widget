@@ -64,12 +64,15 @@ export const startCurrentAppWindowDragging = async (): Promise<void> => {
   await getCurrentWindow().startDragging();
 };
 
-export const setMainAppWindowHeight = async (height: number): Promise<void> => {
+export const setMainAppWindowSize = async (
+  width: number,
+  height: number,
+): Promise<void> => {
   if (!isTauriRuntime()) {
     return;
   }
 
-  await tauriBridge.setMainWindowHeight(height);
+  await tauriBridge.setMainWindowSize(width, height);
 };
 
 export const exitApp = async (): Promise<void> => {
