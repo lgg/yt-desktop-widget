@@ -8,12 +8,12 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 36
+- Total tracked tasks: 37
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 6
-- Completed: 30
+- Completed: 31
 
 ## Current Stabilization Work
 
@@ -27,6 +27,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Completed P1: Playback controls hover mode - [`0034-fix-playback-controls-hover-mode.md`](../tasks/0034-fix-playback-controls-hover-mode.md) - introduced the separate hover-only setting and transform-free buttons; its height-collapse behavior was superseded by task `0035` after live feedback exposed pointer-boundary jitter.
 - Completed P1: Hover, progress, and status-badge stabilization - [`0035-fix-hover-progress-and-connection-badge.md`](../tasks/0035-fix-hover-progress-and-connection-badge.md) - fixed persisted false settings, made hover visibility layout-stable, corrected Companion elapsed-seconds mapping, and added optional hover-only connection-badge visibility.
 - Completed P1: Version 2.0 display/localization pass - [`0036-add-display-controls-localization-and-central-versioning.md`](../tasks/0036-add-display-controls-localization-and-central-versioning.md) - added track-details hiding, artwork-wide play/pause, English/Russian localization, theme-first ordering, centralized version `2.0.0`, and reconciled the remaining active backlog.
+- Completed P1: Artwork playback icon refinement - [`0037-remove-artwork-playback-icon-background.md`](../tasks/0037-remove-artwork-playback-icon-background.md) - removed the circular glass/tint treatment, enlarged the standalone semi-transparent play/pause glyph to 78 px, and retained contrast with a glyph-only drop shadow.
 
 ## Companion / Audit Work
 

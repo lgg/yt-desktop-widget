@@ -329,6 +329,43 @@ test('hides track details and controls playback from the full artwork', async ({
     name: 'Pause Night Train Window',
   });
   const indicator = page.locator('.cover-card__playback-indicator');
+  const indicatorVisuals = await indicator.evaluate((overlay) => {
+    const icon = overlay.querySelector<HTMLElement>(
+      '.cover-card__playback-icon',
+    );
+    const svg = icon?.querySelector<SVGElement>('svg');
+    if (!icon || !svg) {
+      throw new Error('Artwork playback icon is missing.');
+    }
+
+    const overlayStyle = window.getComputedStyle(overlay);
+    const iconStyle = window.getComputedStyle(icon);
+    const svgStyle = window.getComputedStyle(svg);
+    return {
+      overlayBackground: overlayStyle.backgroundColor,
+      iconBackground: iconStyle.backgroundColor,
+      iconBorderWidth: iconStyle.borderWidth,
+      iconBorderRadius: iconStyle.borderRadius,
+      iconBoxShadow: iconStyle.boxShadow,
+      iconBackdropFilter: iconStyle.backdropFilter,
+      iconColor: iconStyle.color,
+      svgWidth: svgStyle.width,
+      svgHeight: svgStyle.height,
+      svgFilter: svgStyle.filter,
+    };
+  });
+  expect(indicatorVisuals).toEqual({
+    overlayBackground: 'rgba(0, 0, 0, 0)',
+    iconBackground: 'rgba(0, 0, 0, 0)',
+    iconBorderWidth: '0px',
+    iconBorderRadius: '0px',
+    iconBoxShadow: 'none',
+    iconBackdropFilter: 'none',
+    iconColor: 'rgba(255, 255, 255, 0.72)',
+    svgWidth: '78px',
+    svgHeight: '78px',
+    svgFilter: 'drop-shadow(rgba(0, 0, 0, 0.82) 0px 2px 8px)',
+  });
   await expect(page.getByText('Night Train Window')).toHaveCount(0);
   await expect(pauseArtwork).toBeVisible();
   await expect(indicator).not.toHaveClass(
