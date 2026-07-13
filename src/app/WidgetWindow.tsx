@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import { useAppModel } from '@/app/AppProvider';
+import { getConnectionMessage } from '@/app/connectionMessage';
 import { useI18n } from '@/app/i18n';
 import { setMainAppWindowHeight } from '@/app/windowController';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
@@ -61,6 +62,7 @@ export const WidgetWindow = () => {
     closeWidget,
   } = useAppModel();
   const { t } = useI18n();
+  const connectionMessage = getConnectionMessage(t, session.connection);
   const [hovered, setHovered] = useState(false);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const syncHeightRef = useRef<() => void>(() => undefined);
@@ -78,7 +80,7 @@ export const WidgetWindow = () => {
   const titleLine = playback?.title ?? t('widget.states.disconnected.title');
   const artistLine = playback
     ? formatArtistLine(playback.artists)
-    : session.connection.detail;
+    : (connectionMessage ?? '');
   const coverState =
     session.connection.status === 'discovering'
       ? {
@@ -220,7 +222,7 @@ export const WidgetWindow = () => {
     syncHeightRef.current();
   }, [
     session.connection.status,
-    session.connection.detail,
+    session.connection.messageKey,
     session.connection.authCode,
     playback?.id,
     playback?.playbackState,
@@ -284,9 +286,7 @@ export const WidgetWindow = () => {
       case 'disconnected':
         return (
           <WidgetStateCard
-            body={
-              session.connection.detail ?? t('widget.states.disconnected.body')
-            }
+            body={connectionMessage ?? t('widget.states.disconnected.body')}
             compact
             actions={
               <button
@@ -302,9 +302,7 @@ export const WidgetWindow = () => {
       case 'reconnecting':
         return (
           <WidgetStateCard
-            body={
-              session.connection.detail ?? t('widget.states.reconnecting.body')
-            }
+            body={connectionMessage ?? t('widget.states.reconnecting.body')}
             compact
             actions={
               <button
@@ -320,7 +318,7 @@ export const WidgetWindow = () => {
       case 'error':
         return (
           <WidgetStateCard
-            body={session.connection.detail ?? t('widget.states.error.body')}
+            body={connectionMessage ?? t('widget.states.error.body')}
             compact
             actions={
               <button

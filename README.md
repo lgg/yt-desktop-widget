@@ -155,7 +155,8 @@ For the near-term testing cycle, rebuilds are intentionally portable-only.
 
 The root `package.json` is the only version value edited manually. The UI imports it directly, Tauri resolves its version from that file, and the Companion client reports Cargo's package version. After changing the root version, run `npm run version:sync`; `npm run verify` includes `version:check` so drift cannot pass normal validation.
 
-The current application version is `2.0.0`.
+Read the current application version from the root `package.json`. The Settings
+window and native build metadata consume the same centralized value.
 
 ## Build outputs
 

@@ -18,6 +18,20 @@
     "disconnected": "Waiting",
     "error": "Attention"
   },
+  "connectionMessages": {
+    "authCodeReady": "Approve the matching Companion prompt in YTMDesktop. The widget will finish pairing automatically.",
+    "authFailed": "Pairing was not completed. Generate a new code, then press Allow in YTMDesktop.",
+    "authRequired": "Companion authorization is required before the widget can connect.",
+    "storedAuthRejected": "YTMDesktop rejected the stored Companion authorization. Reconnect to retry, or clear authorization before pairing again.",
+    "credentialNotPersisted": "YTMDesktop approved pairing, but secure credential storage did not retain the token. Resolve the storage problem and generate a new code.",
+    "credentialStorage": "Secure credential storage is unavailable. Check Windows Credential Manager and try again.",
+    "authorizationDisabled": "Authorization requests are disabled in YTMDesktop. Enable Companion authorization requests and try again.",
+    "notRunning": "Waiting for YTMDesktop to start its Companion Server.",
+    "apiUnavailable": "Companion API is unavailable right now.",
+    "socketError": "The realtime connection was interrupted. Retrying shortly.",
+    "socketClosed": "The Companion connection closed. Retrying shortly.",
+    "unexpected": "The Companion connection returned an unexpected error. Try reconnecting."
+  },
   "widget": {
     "transport": {
       "previous": "Previous",
@@ -124,7 +138,7 @@
         "hideCloseButton": "Hide close button",
         "hideCloseButtonDescription": "When enabled, the close button appears only while hovering over the widget.",
         "theme": "Theme mode",
-        "themeDescription": "Dark keeps the glass surface moody; System follows the Windows theme."
+        "themeDescription": "Choose Dark or Light explicitly, or let System follow the Windows theme."
       },
       "window": {
         "title": "Window / Behavior",
@@ -161,6 +175,7 @@
     },
     "theme": {
       "dark": "Dark",
+      "light": "Light",
       "system": "System"
     },
     "language": {

@@ -100,6 +100,7 @@ describe('PlaybackController auth flow', () => {
       expect(snapshot.connection.hasStoredAuth).toBe(false);
       expect(snapshot.connection.authCode).toBeNull();
       expect(snapshot.connection.detail).toContain('credential storage');
+      expect(snapshot.connection.messageKey).toBe('credentialNotPersisted');
     });
   });
 
@@ -122,6 +123,9 @@ describe('PlaybackController auth flow', () => {
       expect(controller.getSnapshot().connection.hasStoredAuth).toBe(true);
       expect(controller.getSnapshot().connection.detail).toContain(
         'rejected the stored Companion authorization',
+      );
+      expect(controller.getSnapshot().connection.messageKey).toBe(
+        'storedAuthRejected',
       );
     });
   });
@@ -165,7 +169,9 @@ describe('PlaybackController auth flow', () => {
 
   it('requires a new pairing code when Companion approval fails', async () => {
     const gateway = createGateway(
-      vi.fn(() => Promise.reject(new Error('Pairing was denied or timed out.'))),
+      vi.fn(() =>
+        Promise.reject(new Error('Pairing was denied or timed out.')),
+      ),
     );
     const controller = new PlaybackController(gateway);
 
@@ -175,7 +181,10 @@ describe('PlaybackController auth flow', () => {
       const snapshot = controller.getSnapshot();
       expect(snapshot.connection.status).toBe('error');
       expect(snapshot.connection.authCode).toBeNull();
-      expect(snapshot.connection.detail).toBe('Pairing was denied or timed out.');
+      expect(snapshot.connection.detail).toBe(
+        'Pairing was denied or timed out.',
+      );
+      expect(snapshot.connection.messageKey).toBe('authFailed');
     });
   });
 

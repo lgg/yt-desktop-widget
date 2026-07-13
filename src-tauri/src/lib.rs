@@ -508,22 +508,22 @@ fn handle_window_event(window: &Window, event: &WindowEvent) {
     WindowEvent::CloseRequested { api, .. } if matches!(label.as_str(), "main" | "settings") => {
       if !state.quitting.load(Ordering::SeqCst) {
         api.prevent_close();
-        flush_window_positions(&app);
-        let _ = hide_window_internal(&app, &label);
+        flush_window_positions(app);
+        let _ = hide_window_internal(app, &label);
       }
     }
     WindowEvent::Focused(true) if matches!(label.as_str(), "main" | "settings") => {
       cancel_window_focus_loss(&state);
       let app_was_inactive = !state.app_has_focused_window.swap(true, Ordering::SeqCst);
       if label == "main" && app_was_inactive {
-        restore_visible_aux_windows(&app);
+        restore_visible_aux_windows(app);
       }
     }
     WindowEvent::Focused(false) if matches!(label.as_str(), "main" | "settings") => {
-      schedule_window_focus_loss(&app)
+      schedule_window_focus_loss(app)
     }
     WindowEvent::Moved(position) if matches!(label.as_str(), "main" | "settings") => {
-      cache_window_position(&app, &label, *position)
+      cache_window_position(app, &label, *position)
     }
     _ => {}
   }

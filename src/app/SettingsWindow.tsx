@@ -1,6 +1,7 @@
 import { type KeyboardEvent, useEffect, useState } from 'react';
 
 import { APP_VERSION } from '@/app/defaults';
+import { getConnectionMessage } from '@/app/connectionMessage';
 import {
   formatCompanionEndpoint,
   parseCompanionEndpoint,
@@ -44,7 +45,7 @@ export const SettingsWindow = () => {
   const authStatusDetail =
     session.connection.status === 'auth_required' ||
     session.connection.status === 'authenticating'
-      ? session.connection.detail
+      ? getConnectionMessage(t, session.connection)
       : null;
 
   useEffect(() => {
@@ -227,7 +228,7 @@ export const SettingsWindow = () => {
                 role="group"
                 aria-label={t('settingsWindow.sections.ui.theme')}
               >
-                {(['dark', 'system'] as const).map((mode) => (
+                {(['dark', 'light', 'system'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"

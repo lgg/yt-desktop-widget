@@ -16,7 +16,11 @@ import {
   showAppWindow,
   type AppWindowLabel,
 } from '@/app/windowController';
-import { loadSettings, saveSettings } from '@/app/settingsRepository';
+import {
+  loadSettings,
+  normalizeSettings,
+  saveSettings,
+} from '@/app/settingsRepository';
 import { PlaybackController } from '@/domain/playback/controller';
 import { createInitialConnectionState } from '@/domain/playback/connectionMachine';
 import type {
@@ -213,15 +217,19 @@ export const AppProvider = ({
 
     void tauriBridge
       .listenToSettingsChanges((nextSettings) => {
-        if (!active || areSettingsEqual(settingsRef.current, nextSettings)) {
+        const normalizedSettings = normalizeSettings(nextSettings);
+        if (
+          !active ||
+          areSettingsEqual(settingsRef.current, normalizedSettings)
+        ) {
           return;
         }
 
-        settingsRef.current = nextSettings;
-        if (nextSettings.api.sourceMode !== 'simulator') {
-          previousSourceModeRef.current = nextSettings.api.sourceMode;
+        settingsRef.current = normalizedSettings;
+        if (normalizedSettings.api.sourceMode !== 'simulator') {
+          previousSourceModeRef.current = normalizedSettings.api.sourceMode;
         }
-        setSettings(nextSettings);
+        setSettings(normalizedSettings);
       })
       .then((nextUnlisten) => {
         if (!active) {

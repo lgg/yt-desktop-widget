@@ -628,4 +628,31 @@ describe('WidgetWindow', () => {
       screen.getByRole('button', { name: 'Confirm in YTMDesktop' }),
     ).toBeInTheDocument();
   });
+
+  it('localizes a connection problem without rendering raw native details', () => {
+    const disconnectedModel = createConnectedModel();
+    disconnectedModel.settings.ui.locale = 'ru';
+    disconnectedModel.session.playback = null;
+    disconnectedModel.session.lastKnownPlayback = null;
+    disconnectedModel.session.connection = {
+      ...disconnectedModel.session.connection,
+      status: 'error',
+      detail: 'sensitive native response body',
+    };
+    Object.assign(disconnectedModel.session.connection, {
+      messageKey: 'apiUnavailable',
+    });
+    mockUseAppModel.mockReturnValue(disconnectedModel);
+
+    render(
+      <I18nProvider locale="ru">
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByText('Companion API сейчас недоступен.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('sensitive native response body')).toBeNull();
+  });
 });

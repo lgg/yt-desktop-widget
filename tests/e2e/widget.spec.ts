@@ -1,4 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+const appVersion = (
+  JSON.parse(
+    readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+  ) as { version: string }
+).version;
 
 const SETTINGS_STORAGE_KEY = 'ytm-desktop-widget.settings';
 
@@ -274,7 +281,7 @@ test('collapses the simulated widget when display sections are hidden', async ({
   expect(collapsedHeight).toBeLessThan(noProgressHeight);
 });
 
-test('puts theme first, switches locale, and reports version 2.0.0', async ({
+test('puts theme first, supports light mode, switches locale, and reports the centralized version', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 720, height: 760 });
@@ -288,11 +295,28 @@ test('puts theme first, switches locale, and reports version 2.0.0', async ({
     .getByText('Language', { exact: true })
     .boundingBox();
   expect(themeTop?.y).toBeLessThan(languageTop?.y ?? 0);
-  await expect(page.getByText('Version: 2.0.0')).toBeVisible();
+  await expect(page.getByText(`Version: ${appVersion}`)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Light' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  const lightThemeStyles = await page
+    .locator('.settings-window__content')
+    .evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return {
+        colorScheme: window.getComputedStyle(document.documentElement)
+          .colorScheme,
+        textColor: style.color,
+        backgroundImage: style.backgroundImage,
+      };
+    });
+  expect(lightThemeStyles.colorScheme).toBe('light');
+  expect(lightThemeStyles.textColor).toBe('rgba(27, 30, 40, 0.94)');
+  expect(lightThemeStyles.backgroundImage).not.toContain('rgba(10, 13, 22');
 
   await page.getByRole('button', { name: 'Russian' }).click();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();
-  await expect(page.getByText('Версия: 2.0.0')).toBeVisible();
+  await expect(page.getByText(`Версия: ${appVersion}`)).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Настройки' })).toBeVisible();

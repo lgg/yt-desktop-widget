@@ -11,11 +11,13 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 const resolveTheme = (themeMode: ThemeMode): 'dark' | 'light' => {
-  if (themeMode === 'dark') {
-    return 'dark';
+  if (themeMode !== 'system') {
+    return themeMode;
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 };
 
 export const ThemeProvider = ({
@@ -40,7 +42,9 @@ export const ThemeProvider = ({
   }, [mode]);
 
   return (
-    <ThemeContext.Provider value={{ effectiveTheme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ effectiveTheme }}>
+      {children}
+    </ThemeContext.Provider>
   );
 };
 

@@ -31,8 +31,9 @@ impl SettingsStore {
   }
 
   pub fn save(&self, settings: &AppSettings) -> Result<(), CommandError> {
+    self.write_to_disk(settings)?;
     *self.cache.lock().expect("settings cache poisoned") = settings.clone();
-    self.flush()
+    Ok(())
   }
 
   pub fn flush(&self) -> Result<(), CommandError> {
@@ -66,5 +67,34 @@ impl SettingsStore {
       .map_err(|error| CommandError::unknown(error.to_string()))?;
     std::fs::write(&self.path, content)?;
     Ok(())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::SettingsStore;
+  use crate::models::AppSettings;
+  use std::sync::Mutex;
+
+  #[test]
+  fn failed_disk_write_does_not_replace_the_cached_settings() {
+    let unwritable_file = std::env::temp_dir().join(format!(
+      "ytm-desktop-widget-settings-write-failure-{}",
+      std::process::id()
+    ));
+    std::fs::create_dir_all(&unwritable_file).expect("create write-failure directory");
+
+    let original = AppSettings::default();
+    let store = SettingsStore {
+      path: unwritable_file.clone(),
+      cache: Mutex::new(original.clone()),
+    };
+    let mut updated = original;
+    updated.ui.theme_mode = "light".to_string();
+
+    assert!(store.save(&updated).is_err());
+    assert_eq!(store.load().ui.theme_mode, "dark");
+
+    std::fs::remove_dir_all(unwritable_file).expect("remove write-failure directory");
   }
 }

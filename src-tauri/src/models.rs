@@ -79,22 +79,12 @@ impl Default for WindowSettings {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
   pub api: ConnectionSettings,
   pub ui: UiSettings,
   pub window: WindowSettings,
-}
-
-impl Default for AppSettings {
-  fn default() -> Self {
-    Self {
-      api: ConnectionSettings::default(),
-      ui: UiSettings::default(),
-      window: WindowSettings::default(),
-    }
-  }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -197,6 +187,7 @@ mod tests {
         "hideConnectionBadge": true,
         "hideTrackDetails": true,
         "useArtworkAsPlaybackControl": true,
+        "themeMode": "light",
         "locale": "ru"
       }
     }))
@@ -207,6 +198,7 @@ mod tests {
     assert_eq!(serialized["ui"]["hideConnectionBadge"], true);
     assert_eq!(serialized["ui"]["hideTrackDetails"], true);
     assert_eq!(serialized["ui"]["useArtworkAsPlaybackControl"], true);
+    assert_eq!(serialized["ui"]["themeMode"], "light");
     assert_eq!(serialized["ui"]["locale"], "ru");
   }
 }

@@ -1,4 +1,8 @@
-import type { ConnectionState, DiscoveryInfo } from '@/domain/playback/types';
+import type {
+  ConnectionMessageKey,
+  ConnectionState,
+  DiscoveryInfo,
+} from '@/domain/playback/types';
 
 export type ConnectionEvent =
   | {
@@ -12,12 +16,24 @@ export type ConnectionEvent =
   | {
       type: 'auth_required';
       detail?: string | undefined;
+      messageKey?: ConnectionMessageKey | undefined;
       authCode?: string | null | undefined;
       hasStoredAuth?: boolean | undefined;
     }
   | { type: 'authenticating'; authCode: string }
-  | { type: 'retry_scheduled'; retryAttempt: number; retryAt: number; detail: string }
-  | { type: 'error'; message: string; clearAuthCode?: boolean }
+  | {
+      type: 'retry_scheduled';
+      retryAttempt: number;
+      retryAt: number;
+      detail: string;
+      messageKey?: ConnectionMessageKey | undefined;
+    }
+  | {
+      type: 'error';
+      message: string;
+      messageKey?: ConnectionMessageKey | undefined;
+      clearAuthCode?: boolean;
+    }
   | { type: 'clear_auth' };
 
 export const createInitialConnectionState = (): ConnectionState => ({
@@ -39,9 +55,11 @@ export const reduceConnectionState = (
         status: event.reconnecting ? 'reconnecting' : 'discovering',
         hasStoredAuth: event.hasStoredAuth,
         detail: undefined,
+        messageKey: undefined,
         lastError: undefined,
         retryAt: null,
-        authCode: event.authCode === undefined ? state.authCode : event.authCode,
+        authCode:
+          event.authCode === undefined ? state.authCode : event.authCode,
       };
     case 'availability':
       return {
@@ -55,6 +73,7 @@ export const reduceConnectionState = (
         ...state,
         status: 'connected',
         detail: undefined,
+        messageKey: undefined,
         lastError: undefined,
         retryAttempt: 0,
         retryAt: null,
@@ -66,6 +85,7 @@ export const reduceConnectionState = (
         ...state,
         status: 'auth_required',
         detail: event.detail,
+        messageKey: event.messageKey,
         authCode: event.authCode ?? state.authCode ?? null,
         hasStoredAuth: event.hasStoredAuth ?? state.hasStoredAuth,
         retryAt: null,
@@ -76,6 +96,7 @@ export const reduceConnectionState = (
         status: 'authenticating',
         authCode: event.authCode,
         detail: undefined,
+        messageKey: undefined,
         lastError: undefined,
       };
     case 'retry_scheduled':
@@ -83,6 +104,7 @@ export const reduceConnectionState = (
         ...state,
         status: state.discovery?.available ? 'reconnecting' : 'disconnected',
         detail: event.detail,
+        messageKey: event.messageKey,
         retryAttempt: event.retryAttempt,
         retryAt: event.retryAt,
       };
@@ -91,6 +113,7 @@ export const reduceConnectionState = (
         ...state,
         status: 'error',
         detail: event.message,
+        messageKey: event.messageKey,
         lastError: event.message,
         authCode: event.clearAuthCode ? null : state.authCode,
         retryAt: null,
@@ -102,6 +125,7 @@ export const reduceConnectionState = (
         hasStoredAuth: false,
         authCode: null,
         detail: undefined,
+        messageKey: undefined,
         retryAt: null,
       };
     default:

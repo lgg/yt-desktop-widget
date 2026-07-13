@@ -5,6 +5,7 @@ import {
 import { mapCompanionState } from '@/domain/playback/mapping';
 import type {
   CompanionGateway,
+  ConnectionMessageKey,
   ConnectionState,
   DiscoveryInfo,
   GatewayConnection,
@@ -49,13 +50,47 @@ const getAuthFailureDetail = (error: unknown): string => {
   return message === 'Unexpected error' ? AUTH_FAILED_DETAIL : message;
 };
 
-const getDelayForAttempt = (reason: GatewayDisconnectReason, attempt: number) => {
+const getErrorMessageKey = (
+  error: unknown,
+  fallback: ConnectionMessageKey = 'unexpected',
+): ConnectionMessageKey => {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+
+  switch (code) {
+    case 'authorization_disabled':
+      return 'authorizationDisabled';
+    case 'credential_storage':
+      return 'credentialStorage';
+    case 'not_running':
+      return 'notRunning';
+    case 'api_unavailable':
+      return 'apiUnavailable';
+    case 'network':
+      return 'socketError';
+    case 'auth_required':
+      return 'authRequired';
+    default:
+      return fallback;
+  }
+};
+
+const getDelayForAttempt = (
+  reason: GatewayDisconnectReason,
+  attempt: number,
+) => {
   const delays =
     reason === 'socket_closed' || reason === 'socket_error'
       ? SOCKET_RECONNECT_DELAYS
       : DISCOVERY_RECONNECT_DELAYS;
 
-  return delays[Math.min(attempt, delays.length - 1)] ?? delays[delays.length - 1] ?? 15000;
+  return (
+    delays[Math.min(attempt, delays.length - 1)] ??
+    delays[delays.length - 1] ??
+    15000
+  );
 };
 
 const getRetryDetail = (reason: GatewayDisconnectReason, detail?: string) => {
@@ -73,6 +108,22 @@ const getRetryDetail = (reason: GatewayDisconnectReason, detail?: string) => {
     case 'socket_closed':
     default:
       return 'Connection lost. Retrying shortly.';
+  }
+};
+
+const getRetryMessageKey = (
+  reason: GatewayDisconnectReason,
+): ConnectionMessageKey => {
+  switch (reason) {
+    case 'not_running':
+      return 'notRunning';
+    case 'api_unavailable':
+      return 'apiUnavailable';
+    case 'socket_error':
+      return 'socketError';
+    case 'socket_closed':
+    default:
+      return 'socketClosed';
   }
 };
 
@@ -95,13 +146,19 @@ const areDiscoveriesEqual = (
     left.usingBrowserBridge === right.usingBrowserBridge &&
     left.detail === right.detail &&
     left.apiVersions.length === right.apiVersions.length &&
-    left.apiVersions.every((version, index) => version === right.apiVersions[index])
+    left.apiVersions.every(
+      (version, index) => version === right.apiVersions[index],
+    )
   );
 };
 
-const areConnectionStatesEqual = (left: ConnectionState, right: ConnectionState): boolean =>
+const areConnectionStatesEqual = (
+  left: ConnectionState,
+  right: ConnectionState,
+): boolean =>
   left.status === right.status &&
   left.detail === right.detail &&
+  left.messageKey === right.messageKey &&
   left.authCode === right.authCode &&
   left.hasStoredAuth === right.hasStoredAuth &&
   left.retryAttempt === right.retryAttempt &&
@@ -110,7 +167,8 @@ const areConnectionStatesEqual = (left: ConnectionState, right: ConnectionState)
   areDiscoveriesEqual(left.discovery, right.discovery);
 
 const areStringArraysEqual = (left: string[], right: string[]): boolean =>
-  left.length === right.length && left.every((value, index) => value === right[index]);
+  left.length === right.length &&
+  left.every((value, index) => value === right[index]);
 
 const hasPlaybackPresentationChanged = (
   previous: PlaybackSnapshot,
@@ -166,7 +224,9 @@ export class PlaybackController {
     lastKnownPlayback: null,
   };
 
-  private readonly subscribers = new Set<(state: PlaybackSessionState) => void>();
+  private readonly subscribers = new Set<
+    (state: PlaybackSessionState) => void
+  >();
   private connection: GatewayConnection | null = null;
   private reconnectTimer: number | null = null;
   private disposed = false;
@@ -209,7 +269,9 @@ export class PlaybackController {
     this.authCode = null;
     this.authCompletionCode = null;
     this.authCompletionPromise = null;
-    this.patchConnection((state) => reduceConnectionState(state, { type: 'clear_auth' }));
+    this.patchConnection((state) =>
+      reduceConnectionState(state, { type: 'clear_auth' }),
+    );
   }
 
   async requestAuthCode() {
@@ -221,6 +283,7 @@ export class PlaybackController {
           type: 'auth_required',
           authCode: code,
           detail: AUTH_CODE_READY_DETAIL,
+          messageKey: 'authCodeReady',
           hasStoredAuth: false,
         }),
       );
@@ -234,6 +297,7 @@ export class PlaybackController {
         reduceConnectionState(state, {
           type: 'error',
           message: getAuthFailureDetail(error),
+          messageKey: getErrorMessageKey(error, 'authFailed'),
         }),
       );
     }
@@ -254,7 +318,9 @@ export class PlaybackController {
     this.authCode = null;
     this.authCompletionCode = null;
     this.authCompletionPromise = null;
-    this.patchConnection((state) => reduceConnectionState(state, { type: 'clear_auth' }));
+    this.patchConnection((state) =>
+      reduceConnectionState(state, { type: 'clear_auth' }),
+    );
   }
 
   async sendCommand(command: PlaybackCommand) {
@@ -264,7 +330,9 @@ export class PlaybackController {
   async dispose(options: DisposeOptions = {}) {
     this.disposed = true;
     this.clearReconnectTimer();
-    await this.disconnectInternal({ closeBackend: options.disconnectGateway ?? true });
+    await this.disconnectInternal({
+      closeBackend: options.disconnectGateway ?? true,
+    });
     this.subscribers.clear();
   }
 
@@ -311,6 +379,7 @@ export class PlaybackController {
           reduceConnectionState(state, {
             type: 'error',
             message: getAuthFailureDetail(error),
+            messageKey: getErrorMessageKey(error, 'authFailed'),
             clearAuthCode: true,
           }),
         );
@@ -335,7 +404,9 @@ export class PlaybackController {
   }
 
   private patchConnection(
-    recipe: (state: PlaybackSessionState['connection']) => PlaybackSessionState['connection'],
+    recipe: (
+      state: PlaybackSessionState['connection'],
+    ) => PlaybackSessionState['connection'],
   ) {
     const nextConnection = recipe(this.state.connection);
     if (areConnectionStatesEqual(this.state.connection, nextConnection)) {
@@ -363,7 +434,10 @@ export class PlaybackController {
     this.emit();
   }
 
-  private async beginConnect(reconnecting: boolean, options: BeginConnectOptions = {}) {
+  private async beginConnect(
+    reconnecting: boolean,
+    options: BeginConnectOptions = {},
+  ) {
     if (this.disposed) {
       return;
     }
@@ -377,6 +451,7 @@ export class PlaybackController {
         reduceConnectionState(state, {
           type: 'error',
           message: toErrorMessage(error),
+          messageKey: getErrorMessageKey(error),
           clearAuthCode: options.requireStoredAuth === true,
         }),
       );
@@ -413,6 +488,7 @@ export class PlaybackController {
             reduceConnectionState(state, {
               type: 'error',
               message: CREDENTIAL_NOT_PERSISTED_DETAIL,
+              messageKey: 'credentialNotPersisted',
             }),
           );
           return;
@@ -421,6 +497,7 @@ export class PlaybackController {
         this.patchConnection((state) =>
           reduceConnectionState(state, {
             type: 'auth_required',
+            messageKey: 'authRequired',
             hasStoredAuth: false,
           }),
         );
@@ -439,7 +516,11 @@ export class PlaybackController {
         },
         onError: (detail) => {
           this.patchConnection((state) =>
-            reduceConnectionState(state, { type: 'error', message: detail }),
+            reduceConnectionState(state, {
+              type: 'error',
+              message: detail,
+              messageKey: 'unexpected',
+            }),
           );
         },
         onDisconnected: (reason, detail) => {
@@ -468,6 +549,7 @@ export class PlaybackController {
           reduceConnectionState(state, {
             type: 'error',
             message: gatewayError.message,
+            messageKey: 'authorizationDisabled',
           }),
         );
         return;
@@ -479,6 +561,7 @@ export class PlaybackController {
             reduceConnectionState(state, {
               type: 'error',
               message: STORED_AUTH_REJECTED_DETAIL,
+              messageKey: 'storedAuthRejected',
             }),
           );
           return;
@@ -488,15 +571,21 @@ export class PlaybackController {
           reduceConnectionState(state, {
             type: 'auth_required',
             detail: gatewayError.message,
+            messageKey: 'authRequired',
             hasStoredAuth: false,
           }),
         );
         return;
       }
 
-      if (gatewayError?.code === 'not_running' || gatewayError?.code === 'api_unavailable') {
+      if (
+        gatewayError?.code === 'not_running' ||
+        gatewayError?.code === 'api_unavailable'
+      ) {
         this.scheduleReconnect(
-          gatewayError.code === 'not_running' ? 'not_running' : 'api_unavailable',
+          gatewayError.code === 'not_running'
+            ? 'not_running'
+            : 'api_unavailable',
           gatewayError.message,
         );
         return;
@@ -513,7 +602,10 @@ export class PlaybackController {
 
     this.clearReconnectTimer();
     const nextAttempt = this.state.connection.retryAttempt + 1;
-    const delay = getDelayForAttempt(reason, this.state.connection.retryAttempt);
+    const delay = getDelayForAttempt(
+      reason,
+      this.state.connection.retryAttempt,
+    );
     const retryAt = Date.now() + delay;
 
     this.patchConnection((state) =>
@@ -522,6 +614,7 @@ export class PlaybackController {
         retryAttempt: nextAttempt,
         retryAt,
         detail: getRetryDetail(reason, detail),
+        messageKey: getRetryMessageKey(reason),
       }),
     );
 

@@ -1,4 +1,4 @@
-export type ThemeMode = 'dark' | 'system';
+export type ThemeMode = 'dark' | 'light' | 'system';
 export type Locale = 'en' | 'ru';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
 export type CloseButtonAction = 'exit' | 'hideToTray';
@@ -10,6 +10,19 @@ export type ConnectionStatus =
   | 'connected'
   | 'reconnecting'
   | 'error';
+export type ConnectionMessageKey =
+  | 'authCodeReady'
+  | 'authFailed'
+  | 'authRequired'
+  | 'storedAuthRejected'
+  | 'credentialNotPersisted'
+  | 'credentialStorage'
+  | 'authorizationDisabled'
+  | 'notRunning'
+  | 'apiUnavailable'
+  | 'socketError'
+  | 'socketClosed'
+  | 'unexpected';
 export type PlaybackState = 'unknown' | 'paused' | 'playing' | 'buffering';
 
 export interface ConnectionSettings {
@@ -127,6 +140,7 @@ export interface PlaybackSnapshot {
 export interface ConnectionState {
   status: ConnectionStatus;
   detail?: string | undefined;
+  messageKey?: ConnectionMessageKey | undefined;
   authCode?: string | null | undefined;
   hasStoredAuth: boolean;
   discovery?: DiscoveryInfo | undefined;

@@ -66,7 +66,7 @@ impl CompanionManager {
     let url = format!("{}/metadata", base_url(settings));
     match self.client.get(url).send().await {
       Ok(response) if response.status().is_success() => {
-        let body = response.json::<Value>().await.unwrap_or_else(|_| Value::Null);
+        let body = response.json::<Value>().await.unwrap_or(Value::Null);
         let api_versions = body
           .get("apiVersions")
           .and_then(Value::as_array)
@@ -401,10 +401,7 @@ async fn request_auth_code_with_client(
 
   let body = parse_json_response(response, "auth code request").await?;
   let code = extract_token_like_value(&body, &["code"]).ok_or_else(|| {
-    CompanionError::Unknown(format!(
-      "Companion Server did not return an auth code. Response: {}",
-      summarize_json(&body)
-    ))
+    CompanionError::Unknown("Companion Server did not return an auth code.".to_string())
   })?;
 
   Ok(AuthCodeResponse { code })
@@ -425,10 +422,7 @@ async fn complete_auth_with_client(
   let body = parse_json_response(response, "auth token request").await?;
 
   extract_token_like_value(&body, &["token", "authorization", "accessToken"]).ok_or_else(|| {
-    CompanionError::Unknown(format!(
-      "Companion Server did not return an auth token. Response: {}",
-      summarize_json(&body)
-    ))
+    CompanionError::Unknown("Companion Server did not return an auth token.".to_string())
   })
 }
 
@@ -529,10 +523,9 @@ async fn parse_json_response(
   validate_status_with_body(status, &body)?;
   serde_json::from_str::<Value>(&body).map_err(|error| {
     CompanionError::Unknown(format!(
-      "Companion {} returned invalid JSON: {}. Response: {}",
+      "Companion {} returned invalid JSON: {}",
       context,
-      error,
-      summarize_response_body(&body)
+      error
     ))
   })
 }
@@ -547,29 +540,10 @@ fn validate_status_with_body(status: StatusCode, body: &str) -> Result<(), Compa
     status if status.is_success() => Ok(()),
     StatusCode::SERVICE_UNAVAILABLE => Err(CompanionError::ApiUnavailable),
     status => Err(CompanionError::Unknown(format!(
-      "Companion API returned HTTP {}. Response: {}",
-      status,
-      summarize_response_body(body)
+      "Companion API returned HTTP {}.",
+      status
     ))),
   }
-}
-
-fn summarize_response_body(body: &str) -> String {
-  let trimmed = body.trim();
-  if trimmed.is_empty() {
-    return "<empty>".to_string();
-  }
-
-  let summary: String = trimmed.chars().take(240).collect();
-  if trimmed.chars().count() > 240 {
-    format!("{}...", summary)
-  } else {
-    summary
-  }
-}
-
-fn summarize_json(value: &Value) -> String {
-  summarize_response_body(&value.to_string())
 }
 
 fn keyring_account(settings: &ConnectionSettings) -> String {
@@ -633,6 +607,17 @@ fn payload_to_string(payload: Payload) -> String {
     Payload::String(text) => text,
     Payload::Binary(bytes) => format!("{} bytes", bytes.len()),
   }
+}
+
+fn is_authorization_disabled_body(body: &str) -> bool {
+  let Ok(value) = serde_json::from_str::<Value>(body) else {
+    return false;
+  };
+
+  value
+    .get("code")
+    .and_then(Value::as_str)
+    .is_some_and(|code| code == "AUTHORIZATION_DISABLED")
 }
 
 #[cfg(test)]
@@ -857,15 +842,17 @@ mod tests {
 
     assert!(matches!(error, CompanionError::AuthorizationDisabled));
   }
-}
 
-fn is_authorization_disabled_body(body: &str) -> bool {
-  let Ok(value) = serde_json::from_str::<Value>(body) else {
-    return false;
-  };
+  #[test]
+  fn does_not_include_companion_response_bodies_in_errors() {
+    let secret_marker = "super-secret-companion-token";
 
-  value
-    .get("code")
-    .and_then(Value::as_str)
-    .is_some_and(|code| code == "AUTHORIZATION_DISABLED")
+    let error = validate_status_with_body(
+      StatusCode::BAD_REQUEST,
+      &format!(r#"{{"token":"{}"}}"#, secret_marker),
+    )
+    .expect_err("non-success status should return an error");
+
+    assert!(!error.to_string().contains(secret_marker));
+  }
 }
