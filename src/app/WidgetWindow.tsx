@@ -12,6 +12,7 @@ import { useAppModel } from '@/app/AppProvider';
 import { getAppearanceStyle } from '@/app/appearance';
 import { getConnectionMessage } from '@/app/connectionMessage';
 import { useI18n } from '@/app/i18n';
+import { getWidgetBlockVisibilityState } from '@/app/widgetLayout';
 import {
   setMainAppWindowSize,
   startCurrentAppWindowDragging,
@@ -28,15 +29,19 @@ import { ArtworkBackground } from '@/components/ArtworkBackground';
 import { ConnectionBadge } from '@/components/ConnectionBadge';
 import {
   CloseIcon,
+  MutedIcon,
   PauseIcon,
   PlayIcon,
   SettingsIcon,
   SparkIcon,
+  VolumeIcon,
 } from '@/components/icons';
 import { CoverCard } from '@/components/widget/CoverCard';
 import { ProgressScrubber } from '@/components/widget/ProgressScrubber';
+import { RatingControls } from '@/components/widget/RatingControls';
 import { TransportControls } from '@/components/widget/TransportControls';
 import { WidgetStateCard } from '@/components/widget/WidgetStateCard';
+import type { WidgetBlockId } from '@/domain/playback/types';
 import { isTauriRuntime } from '@/utils/runtime';
 import { formatArtistLine } from '@/utils/time';
 
@@ -113,26 +118,46 @@ export const WidgetWindow = () => {
     '--widget-base-height': `${baseWindowHeight}px`,
   };
   const interactionActive = hovered || focusedWithin;
-  const controlsEnabled = !settings.ui.hidePlaybackControls && !!playback;
-  const controlsVisible =
-    controlsEnabled &&
-    (!settings.ui.showPlaybackControlsOnHover || interactionActive);
-  const progressRendered = !settings.ui.hideProgressBar && !!playback;
-  const trackDetailsRendered = !settings.ui.hideTrackDetails && !!playback;
+  const controlsState = getWidgetBlockVisibilityState(
+    settings.ui.playbackControlsVisibility,
+    interactionActive,
+  );
+  const progressState = getWidgetBlockVisibilityState(
+    settings.ui.progressBarVisibility,
+    interactionActive,
+  );
+  const trackDetailsState = getWidgetBlockVisibilityState(
+    settings.ui.trackDetailsVisibility,
+    interactionActive,
+  );
+  const ratingState = getWidgetBlockVisibilityState(
+    settings.ui.likeDislikeVisibility,
+    interactionActive,
+  );
   const compactArtworkLayout =
     session.connection.status === 'connected' &&
     !!playback &&
-    !trackDetailsRendered &&
+    !trackDetailsState.rendered &&
     !playback.isAdPlaying;
   const artworkOnlyLayout =
-    compactArtworkLayout && !controlsEnabled && !progressRendered;
+    compactArtworkLayout &&
+    !controlsState.rendered &&
+    !ratingState.rendered &&
+    !progressState.rendered;
   const progressOnlyLayout =
-    compactArtworkLayout && !controlsEnabled && progressRendered;
+    compactArtworkLayout &&
+    !controlsState.rendered &&
+    !ratingState.rendered &&
+    progressState.rendered;
   const connectionBadgeRendered =
     settings.ui.connectionBadgeVisibility !== 'hidden';
   const connectionBadgeVisible =
     settings.ui.connectionBadgeVisibility === 'always' ||
     (settings.ui.connectionBadgeVisibility === 'hover' && interactionActive);
+  const muteButtonRendered = settings.ui.muteButtonVisibility !== 'hidden';
+  const muteButtonVisible =
+    settings.ui.muteButtonVisibility === 'always' ||
+    (settings.ui.muteButtonVisibility === 'hover' && interactionActive);
   const settingsButtonVisible =
     !settings.ui.hideSettingsButton || interactionActive;
   const closeButtonVisible = !settings.ui.hideCloseButton || interactionActive;
@@ -357,9 +382,11 @@ export const WidgetWindow = () => {
     session.connection.authCode,
     playback?.id,
     playback?.playbackState,
-    settings.ui.hidePlaybackControls,
-    settings.ui.hideProgressBar,
-    settings.ui.hideTrackDetails,
+    settings.ui.playbackControlsVisibility,
+    settings.ui.progressBarVisibility,
+    settings.ui.trackDetailsVisibility,
+    settings.ui.likeDislikeVisibility,
+    settings.ui.widgetBlockOrder,
     widgetScale,
     ready,
   ]);
@@ -480,6 +507,207 @@ export const WidgetWindow = () => {
     }
   };
 
+  const renderWidgetBlock = (blockId: WidgetBlockId) => {
+    switch (blockId) {
+      case 'header':
+        return (
+          <header
+            key={blockId}
+            className="widget-window__header widget-block widget-block--header"
+            data-widget-block={blockId}
+          >
+            <div
+              className={
+                connectionBadgeVisible
+                  ? 'widget-window__drag-anchor widget-window__connection-badge'
+                  : 'widget-window__drag-anchor widget-window__connection-badge widget-window__connection-badge--hidden'
+              }
+              aria-hidden={!connectionBadgeVisible}
+            >
+              {connectionBadgeRendered ? (
+                <ConnectionBadge
+                  status={session.connection.status}
+                  label={getStatusLabel(t, session.connection.status)}
+                />
+              ) : null}
+            </div>
+            <div className="widget-window__window-actions no-drag">
+              {muteButtonRendered && playback ? (
+                <button
+                  className={
+                    muteButtonVisible
+                      ? 'icon-button widget-window__window-action widget-window__window-action--visible'
+                      : 'icon-button widget-window__window-action'
+                  }
+                  type="button"
+                  disabled={!canSendCommands || !muteButtonVisible}
+                  aria-hidden={!muteButtonVisible}
+                  aria-label={
+                    playback.isMuted
+                      ? t('widget.actions.unmute')
+                      : t('widget.actions.mute')
+                  }
+                  onClick={() =>
+                    void sendCommand({
+                      type: playback.isMuted ? 'unmute' : 'mute',
+                    })
+                  }
+                >
+                  {playback.isMuted ? <MutedIcon /> : <VolumeIcon />}
+                </button>
+              ) : null}
+              <button
+                className={
+                  settingsButtonVisible
+                    ? 'icon-button widget-window__window-action widget-window__window-action--visible'
+                    : 'icon-button widget-window__window-action'
+                }
+                type="button"
+                aria-label={t('widget.actions.openSettings')}
+                onClick={buildWindowActionClick(openSettings)}
+                onKeyDown={buildWindowActionKeyDown(openSettings)}
+              >
+                <SettingsIcon />
+              </button>
+              <button
+                className={
+                  closeButtonVisible
+                    ? 'icon-button widget-window__window-action widget-window__window-action--visible'
+                    : 'icon-button widget-window__window-action'
+                }
+                type="button"
+                aria-label={t('widget.actions.closeWidget')}
+                onClick={buildWindowActionClick(closeWidget)}
+                onKeyDown={buildWindowActionKeyDown(closeWidget)}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </header>
+        );
+      case 'artwork':
+        return (
+          <section
+            key={blockId}
+            className="widget-block widget-block--artwork"
+            data-widget-block={blockId}
+          >
+            <CoverCard
+              artworkUrl={playback?.coverUrl ?? null}
+              title={titleLine}
+              action={artworkAction}
+            >
+              {coverState ? (
+                <div className="cover-card__state">
+                  <span className="cover-card__state-eyebrow">
+                    {coverState.eyebrow}
+                  </span>
+                  <h2 className="cover-card__state-title">
+                    {coverState.title}
+                  </h2>
+                </div>
+              ) : null}
+            </CoverCard>
+            {!coverState && playback?.isAdPlaying ? (
+              <div className="inline-pill">
+                <SparkIcon />
+                <span>{t('widget.adPlaying')}</span>
+              </div>
+            ) : null}
+          </section>
+        );
+      case 'trackDetails':
+        if (!playback || !trackDetailsState.rendered || coverState) {
+          return null;
+        }
+        return (
+          <div
+            key={blockId}
+            className={
+              trackDetailsState.visible
+                ? 'widget-block widget-block--track-details'
+                : 'widget-block widget-block--track-details widget-block--hidden'
+            }
+            data-widget-block={blockId}
+            aria-hidden={!trackDetailsState.visible}
+          >
+            <div className="widget-window__meta">
+              <h1>{ready ? titleLine : t('app.loading')}</h1>
+              <p>{artistLine}</p>
+            </div>
+          </div>
+        );
+      case 'likeDislike':
+        if (!playback || !ratingState.rendered) {
+          return null;
+        }
+        return (
+          <div
+            key={blockId}
+            className="widget-block widget-block--rating"
+            data-widget-block={blockId}
+          >
+            <RatingControls
+              likeStatus={playback.likeStatus}
+              disabled={!canSendCommands}
+              visible={ratingState.visible}
+              onToggleLike={() =>
+                void sendCommand({ type: 'toggleLike' })
+              }
+              onToggleDislike={() =>
+                void sendCommand({ type: 'toggleDislike' })
+              }
+            />
+          </div>
+        );
+      case 'playbackControls':
+        if (!playback || !controlsState.rendered) {
+          return null;
+        }
+        return (
+          <div
+            key={blockId}
+            className="widget-block widget-block--playback-controls"
+            data-widget-block={blockId}
+          >
+            <TransportControls
+              playbackState={playback.playbackState}
+              disabled={!canSendCommands}
+              visible={controlsState.visible}
+              onPrevious={() => void sendCommand({ type: 'previous' })}
+              onPlayPause={() => void sendCommand({ type: 'playPause' })}
+              onNext={() => void sendCommand({ type: 'next' })}
+            />
+          </div>
+        );
+      case 'progress':
+        if (!playback || !progressState.rendered) {
+          return null;
+        }
+        return (
+          <div
+            key={blockId}
+            className={
+              progressOnlyLayout
+                ? 'widget-block widget-block--progress widget-block--progress-only'
+                : 'widget-block widget-block--progress'
+            }
+            data-widget-block={blockId}
+            aria-hidden={!progressState.visible}
+          >
+            <ProgressScrubber
+              playback={playback}
+              disabled={!canSendCommands || !playback.canSeek}
+              visible={progressState.visible}
+              onSeek={(seconds) => sendCommand({ type: 'seekTo', seconds })}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <main
       ref={widgetRef}
@@ -510,82 +738,7 @@ export const WidgetWindow = () => {
                 : 'widget-window__layout'
           }
         >
-          <header className="widget-window__header">
-            <div
-              className={
-                connectionBadgeVisible
-                  ? 'widget-window__drag-anchor widget-window__connection-badge'
-                  : 'widget-window__drag-anchor widget-window__connection-badge widget-window__connection-badge--hidden'
-              }
-              aria-hidden={!connectionBadgeVisible}
-            >
-              {connectionBadgeRendered ? (
-                <ConnectionBadge
-                  status={session.connection.status}
-                  label={getStatusLabel(t, session.connection.status)}
-                />
-              ) : null}
-            </div>
-            <div className="widget-window__window-actions no-drag">
-              <button
-                className={
-                  settingsButtonVisible
-                    ? 'icon-button widget-window__window-action widget-window__window-action--visible'
-                    : 'icon-button widget-window__window-action'
-                }
-                type="button"
-                aria-label={t('widget.actions.openSettings')}
-                onClick={buildWindowActionClick(openSettings)}
-                onKeyDown={buildWindowActionKeyDown(openSettings)}
-              >
-                <SettingsIcon />
-              </button>
-              <button
-                className={
-                  closeButtonVisible
-                    ? 'icon-button widget-window__window-action widget-window__window-action--visible'
-                    : 'icon-button widget-window__window-action'
-                }
-                type="button"
-                aria-label={t('widget.actions.closeWidget')}
-                onClick={buildWindowActionClick(closeWidget)}
-                onKeyDown={buildWindowActionKeyDown(closeWidget)}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-          </header>
-
-          <section className="widget-window__hero">
-            <CoverCard
-              artworkUrl={playback?.coverUrl ?? null}
-              title={titleLine}
-              action={artworkAction}
-            >
-              {coverState ? (
-                <div className="cover-card__state">
-                  <span className="cover-card__state-eyebrow">
-                    {coverState.eyebrow}
-                  </span>
-                  <h2 className="cover-card__state-title">
-                    {coverState.title}
-                  </h2>
-                </div>
-              ) : null}
-            </CoverCard>
-            {!coverState && trackDetailsRendered ? (
-              <div className="widget-window__meta">
-                <h1>{ready ? titleLine : t('app.loading')}</h1>
-                <p>{artistLine}</p>
-              </div>
-            ) : null}
-            {!coverState && playback?.isAdPlaying ? (
-              <div className="inline-pill">
-                <SparkIcon />
-                <span>{t('widget.adPlaying')}</span>
-              </div>
-            ) : null}
-          </section>
+          {settings.ui.widgetBlockOrder.map(renderWidgetBlock)}
 
           {session.connection.authCode &&
           session.connection.status === 'auth_required' ? (
@@ -597,34 +750,6 @@ export const WidgetWindow = () => {
 
           {renderStateCard()}
 
-          {playback && (controlsEnabled || progressRendered) ? (
-            <footer
-              className={
-                progressOnlyLayout
-                  ? 'widget-window__footer widget-window__footer--progress-only'
-                  : 'widget-window__footer'
-              }
-            >
-              {controlsEnabled ? (
-                <TransportControls
-                  playbackState={playback.playbackState}
-                  disabled={!canSendCommands}
-                  visible={controlsVisible}
-                  onPrevious={() => void sendCommand({ type: 'previous' })}
-                  onPlayPause={() => void sendCommand({ type: 'playPause' })}
-                  onNext={() => void sendCommand({ type: 'next' })}
-                />
-              ) : null}
-              {progressRendered ? (
-                <ProgressScrubber
-                  playback={playback}
-                  disabled={!canSendCommands || !playback.canSeek}
-                  visible
-                  onSeek={(seconds) => sendCommand({ type: 'seekTo', seconds })}
-                />
-              ) : null}
-            </footer>
-          ) : null}
         </div>
       </div>
     </main>

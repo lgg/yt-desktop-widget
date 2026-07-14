@@ -76,8 +76,8 @@ describe('settingsRepository browser persistence', () => {
 
     expect(settings.api.host).toBe(DEFAULT_SETTINGS.api.host);
     expect(settings.api.port).toBe(DEFAULT_SETTINGS.api.port);
-    expect(settings.ui.hideProgressBar).toBe(
-      DEFAULT_SETTINGS.ui.hideProgressBar,
+    expect(settings.ui.progressBarVisibility).toBe(
+      DEFAULT_SETTINGS.ui.progressBarVisibility,
     );
     expect(settings.window.alwaysOnTop).toBe(
       DEFAULT_SETTINGS.window.alwaysOnTop,
@@ -144,5 +144,74 @@ describe('settingsRepository browser persistence', () => {
     const undersizedSettings = await loadSettings();
     expect(undersizedSettings.ui.widgetSizeMode).toBe('custom');
     expect(undersizedSettings.ui.customWidgetScalePercentage).toBe(75);
+  });
+
+  it('migrates legacy display booleans to explicit block visibility without changing v2 behavior', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ui: {
+          hidePlaybackControls: false,
+          showPlaybackControlsOnHover: true,
+          hideProgressBar: false,
+          hideTrackDetails: true,
+        },
+      }),
+    );
+
+    const settings = await loadSettings();
+
+    expect(settings.ui.playbackControlsVisibility).toBe('hoverReserved');
+    expect(settings.ui.progressBarVisibility).toBe('always');
+    expect(settings.ui.trackDetailsVisibility).toBe('hidden');
+    expect(settings.ui.likeDislikeVisibility).toBe('hidden');
+    expect(settings.ui.muteButtonVisibility).toBe('hidden');
+    expect(settings.ui.widgetBlockOrder).toEqual([
+      'header',
+      'artwork',
+      'trackDetails',
+      'likeDislike',
+      'playbackControls',
+      'progress',
+    ]);
+  });
+
+  it('repairs explicit visibility, block order, and collapsed-section preferences', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ui: {
+          playbackControlsVisibility: 'hoverDynamic',
+          progressBarVisibility: 'unsupported',
+          trackDetailsVisibility: 'hoverReserved',
+          likeDislikeVisibility: 'always',
+          muteButtonVisibility: 'hover',
+          widgetBlockOrder: [
+            'progress',
+            'header',
+            'progress',
+            'unknown',
+          ],
+          collapsedSettingsSections: ['ui', 'api', 'ui', 'unknown'],
+        },
+      }),
+    );
+
+    const settings = await loadSettings();
+
+    expect(settings.ui.playbackControlsVisibility).toBe('hoverDynamic');
+    expect(settings.ui.progressBarVisibility).toBe('always');
+    expect(settings.ui.trackDetailsVisibility).toBe('hoverReserved');
+    expect(settings.ui.likeDislikeVisibility).toBe('always');
+    expect(settings.ui.muteButtonVisibility).toBe('hover');
+    expect(settings.ui.widgetBlockOrder).toEqual([
+      'progress',
+      'header',
+      'artwork',
+      'trackDetails',
+      'likeDislike',
+      'playbackControls',
+    ]);
+    expect(settings.ui.collapsedSettingsSections).toEqual(['ui', 'api']);
   });
 });

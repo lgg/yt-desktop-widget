@@ -1,34 +1,76 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 
 import { GlassPanel } from '@/components/GlassPanel';
+import { ChevronDownIcon } from '@/components/icons';
 
 interface SettingsSectionProps extends PropsWithChildren {
   title: string;
   description?: string;
   actions?: ReactNode;
+  sectionId?: string;
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+  expandLabel?: string;
+  collapseLabel?: string;
 }
 
 export const SettingsSection = ({
   title,
   description,
   actions,
+  sectionId,
+  collapsed = false,
+  onCollapsedChange,
+  expandLabel,
+  collapseLabel,
   children,
-}: SettingsSectionProps) => (
-  <GlassPanel className="settings-section no-drag">
-    <div className="settings-section__header">
-      <div>
-        <h2 className="settings-section__title">{title}</h2>
-        {description ? (
-          <p className="settings-section__description">{description}</p>
+}: SettingsSectionProps) => {
+  const bodyId = sectionId ? `settings-section-${sectionId}-body` : undefined;
+  const collapsible = Boolean(onCollapsedChange && bodyId);
+
+  return (
+    <GlassPanel className="settings-section no-drag">
+      <div className="settings-section__header">
+        <div className="settings-section__copy">
+          <h2 className="settings-section__title">
+            {collapsible ? (
+              <button
+                className="settings-section__collapse-toggle"
+                type="button"
+                aria-expanded={!collapsed}
+                aria-controls={bodyId}
+                aria-label={collapsed ? expandLabel : collapseLabel}
+                onClick={() => onCollapsedChange?.(!collapsed)}
+              >
+                <span>{title}</span>
+                <ChevronDownIcon
+                  className={
+                    collapsed
+                      ? 'settings-section__collapse-icon settings-section__collapse-icon--collapsed'
+                      : 'settings-section__collapse-icon'
+                  }
+                />
+              </button>
+            ) : (
+              title
+            )}
+          </h2>
+          {description ? (
+            <p className="settings-section__description">{description}</p>
+          ) : null}
+        </div>
+        {actions ? (
+          <div className="settings-section__actions">{actions}</div>
         ) : null}
       </div>
-      {actions ? (
-        <div className="settings-section__actions">{actions}</div>
+      {!collapsed ? (
+        <div id={bodyId} className="settings-section__body">
+          {children}
+        </div>
       ) : null}
-    </div>
-    <div className="settings-section__body">{children}</div>
-  </GlassPanel>
-);
+    </GlassPanel>
+  );
+};
 
 interface SettingsRowProps extends PropsWithChildren {
   className?: string;

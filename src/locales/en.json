@@ -46,6 +46,10 @@
     "progress": {
       "seekPosition": "Seek position"
     },
+    "rating": {
+      "like": "Like",
+      "dislike": "Dislike"
+    },
     "states": {
       "discovering": {
         "eyebrow": "Companion",
@@ -97,7 +101,9 @@
     },
     "actions": {
       "openSettings": "Open settings",
-      "closeWidget": "Close widget"
+      "closeWidget": "Close widget",
+      "mute": "Mute",
+      "unmute": "Unmute"
     },
     "adPlaying": "Advertisement"
   },
@@ -105,6 +111,8 @@
     "title": "Widget Settings",
     "subtitle": "Refine the connection, display, and window behavior without leaving the now-playing surface.",
     "sections": {
+      "expand": "Expand {{section}}",
+      "collapse": "Collapse {{section}}",
       "api": {
         "title": "API / Connection",
         "description": "Manage Companion API availability, pairing state, and recovery actions.",
@@ -121,24 +129,27 @@
         "title": "UI / Display",
         "description": "Control how much UI stays visible when the widget is idle.",
         "language": "Language",
-        "hideControls": "Hide playback controls",
-        "hideControlsDescription": "Remove transport buttons from the compact layout.",
-        "showControlsOnHover": "Show playback controls only on hover",
-        "showControlsOnHoverDescription": "When enabled, controls stay in place and appear only while hovering over the widget.",
         "artworkPlaybackControl": "Use artwork as play/pause control",
         "artworkPlaybackControlDescription": "Make the full artwork clickable and reveal the current play or pause action while hovering over the widget.",
-        "hideProgress": "Hide progress bar",
-        "hideProgressDescription": "Remove elapsed time and the scrubber from the compact layout.",
-        "hideTrackDetails": "Hide track title and artist",
-        "hideTrackDetailsDescription": "Remove the track details block from the compact layout.",
         "connectionBadgeVisibility": "Connection status badge",
         "connectionBadgeVisibilityDescription": "Choose whether the LIVE status stays visible, appears only on hover, or remains fully hidden.",
+        "muteButtonVisibility": "Mute button",
+        "muteButtonVisibilityDescription": "Show a mute shortcut without changing or storing the volume level. Unmute restores the level owned by YTMDesktop.",
         "hideSettingsButton": "Hide settings button",
         "hideSettingsButtonDescription": "When enabled, the settings button appears only while hovering over the widget.",
         "hideCloseButton": "Hide close button",
         "hideCloseButtonDescription": "When enabled, the close button appears only while hovering over the widget.",
         "theme": "Theme mode",
         "themeDescription": "Choose Dark or Light explicitly, or let System follow the Windows theme."
+      },
+      "layout": {
+        "title": "Widget Layout",
+        "description": "Choose when content blocks appear and arrange their vertical order.",
+        "visibilityDescription": "Select whether this block is always visible, revealed on hover with or without reserved space, or removed.",
+        "order": "Widget block order",
+        "orderDescription": "Move complete blocks without changing the controls inside them.",
+        "moveUp": "Move {{block}} up",
+        "moveDown": "Move {{block}} down"
       },
       "size": {
         "title": "Widget Size",
@@ -204,6 +215,20 @@
       "always": "Always",
       "hover": "On hover",
       "hidden": "Hidden"
+    },
+    "blockVisibility": {
+      "always": "Always",
+      "hoverReserved": "On hover — keep space",
+      "hoverDynamic": "On hover — resize widget",
+      "hidden": "Hidden"
+    },
+    "widgetBlocks": {
+      "header": "Header controls",
+      "artwork": "Artwork",
+      "trackDetails": "Track title and artist",
+      "likeDislike": "Like / Dislike buttons",
+      "playbackControls": "Playback controls",
+      "progress": "Progress bar"
     },
     "widgetSizeMode": {
       "compact": "Compact",

@@ -1,6 +1,6 @@
 [package]
 name = "ytm-desktop-widget"
-version = "2.0.0"
+version = "3.0.0"
 description = "Premium Windows companion widget for YTMDesktop"
 authors = ["Codex"]
 edition = "2021"

@@ -96,12 +96,23 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.api.host === right.api.host &&
   left.api.port === right.api.port &&
   left.api.sourceMode === right.api.sourceMode &&
-  left.ui.hidePlaybackControls === right.ui.hidePlaybackControls &&
-  left.ui.showPlaybackControlsOnHover ===
-    right.ui.showPlaybackControlsOnHover &&
-  left.ui.hideProgressBar === right.ui.hideProgressBar &&
+  left.ui.playbackControlsVisibility ===
+    right.ui.playbackControlsVisibility &&
+  left.ui.progressBarVisibility === right.ui.progressBarVisibility &&
+  left.ui.trackDetailsVisibility === right.ui.trackDetailsVisibility &&
+  left.ui.likeDislikeVisibility === right.ui.likeDislikeVisibility &&
   left.ui.connectionBadgeVisibility === right.ui.connectionBadgeVisibility &&
-  left.ui.hideTrackDetails === right.ui.hideTrackDetails &&
+  left.ui.muteButtonVisibility === right.ui.muteButtonVisibility &&
+  left.ui.widgetBlockOrder.length === right.ui.widgetBlockOrder.length &&
+  left.ui.widgetBlockOrder.every(
+    (blockId, index) => blockId === right.ui.widgetBlockOrder[index],
+  ) &&
+  left.ui.collapsedSettingsSections.length ===
+    right.ui.collapsedSettingsSections.length &&
+  left.ui.collapsedSettingsSections.every(
+    (sectionId, index) =>
+      sectionId === right.ui.collapsedSettingsSections[index],
+  ) &&
   left.ui.useArtworkAsPlaybackControl ===
     right.ui.useArtworkAsPlaybackControl &&
   left.ui.hideSettingsButton === right.ui.hideSettingsButton &&

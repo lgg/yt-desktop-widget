@@ -73,8 +73,9 @@ test('renders the simulated widget and settings views', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(page.getByText('API / Connection')).toBeVisible();
   await expect(page.getByText('UI / Display')).toBeVisible();
+  await expect(page.getByText('Widget Layout')).toBeVisible();
   await expect(
-    page.getByText('Show playback controls only on hover'),
+    page.getByRole('group', { name: 'Playback controls' }),
   ).toBeVisible();
 });
 
@@ -273,6 +274,66 @@ test('keeps hover-only playback controls stable while changing visibility', asyn
   }
 });
 
+test('keeps reserved progress space stable and changes dynamic block height', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 336, height: 620 });
+  await page.goto('/?source=simulator');
+  await page.evaluate((storageKey) => {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ui: {
+          playbackControlsVisibility: 'hidden',
+          trackDetailsVisibility: 'hidden',
+          progressBarVisibility: 'hoverReserved',
+        },
+      }),
+    );
+  }, SETTINGS_STORAGE_KEY);
+  await page.reload();
+  await page.mouse.move(2_000, 2_000);
+
+  const widget = page.locator('.widget-window');
+  const layout = page.locator('.widget-window__layout');
+  const progress = page.locator('.progress-row');
+  const reservedHeight = await layout.evaluate((element) => element.scrollHeight);
+  await expect(progress).toHaveCSS('opacity', '0');
+  await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(
+    0,
+  );
+  await widget.hover();
+  await expect(progress).toHaveCSS('opacity', '1');
+  await expect(page.getByRole('slider', { name: 'Seek position' })).toBeVisible();
+  await expect(layout).toHaveJSProperty('scrollHeight', reservedHeight);
+
+  await page.evaluate((storageKey) => {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ui: {
+          playbackControlsVisibility: 'hidden',
+          trackDetailsVisibility: 'hoverDynamic',
+          progressBarVisibility: 'hidden',
+        },
+      }),
+    );
+  }, SETTINGS_STORAGE_KEY);
+  await page.reload();
+  await page.mouse.move(2_000, 2_000);
+  const compactHeight = await layout.evaluate((element) => element.scrollHeight);
+  await expect(page.locator('[data-widget-block="trackDetails"]')).toHaveCount(
+    0,
+  );
+  await widget.hover();
+  await expect(
+    page.locator('[data-widget-block="trackDetails"]'),
+  ).toBeVisible();
+  await expect
+    .poll(() => layout.evaluate((element) => element.scrollHeight))
+    .toBeGreaterThan(compactHeight);
+});
+
 test('reveals hover-hidden window actions when they receive keyboard focus', async ({
   page,
 }) => {
@@ -318,23 +379,31 @@ test('persists hover and connection badge preferences without layout shifts', as
   await page.setViewportSize({ width: 720, height: 760 });
   await page.goto('/?view=settings&source=simulator');
 
-  const hoverOnlyToggle = page.getByLabel(
-    'Show playback controls only on hover',
-  );
+  const playbackVisibility = page.getByRole('group', {
+    name: 'Playback controls',
+  });
+  const hoverReserved = playbackVisibility.getByRole('button', {
+    name: 'On hover — keep space',
+  });
+  const alwaysVisible = playbackVisibility.getByRole('button', {
+    name: 'Always',
+  });
   const badgeVisibility = page.getByRole('group', {
     name: 'Connection status badge',
   });
   const onHoverBadge = badgeVisibility.getByRole('button', {
     name: 'On hover',
   });
-  await expect(hoverOnlyToggle).toBeChecked();
-  await hoverOnlyToggle.uncheck();
-  await expect(hoverOnlyToggle).not.toBeChecked();
+  await expect(hoverReserved).toHaveAttribute('aria-pressed', 'true');
+  await alwaysVisible.click();
+  await expect(alwaysVisible).toHaveAttribute('aria-pressed', 'true');
+  await hoverReserved.click();
+  await expect(hoverReserved).toHaveAttribute('aria-pressed', 'true');
   await onHoverBadge.click();
   await expect(onHoverBadge).toHaveAttribute('aria-pressed', 'true');
 
   await page.reload();
-  await expect(hoverOnlyToggle).not.toBeChecked();
+  await expect(hoverReserved).toHaveAttribute('aria-pressed', 'true');
   await expect(onHoverBadge).toHaveAttribute('aria-pressed', 'true');
 
   await page.setViewportSize({ width: 336, height: 520 });
@@ -342,14 +411,17 @@ test('persists hover and connection badge preferences without layout shifts', as
   await page.mouse.move(2_000, 2_000);
   const badge = page.locator('.widget-window__connection-badge');
   const layout = page.locator('.widget-window__layout');
+  const controls = page.locator('.transport-controls');
   const idleHeight = await layout.evaluate((element) => element.scrollHeight);
   await expect(badge).toHaveClass(/widget-window__connection-badge--hidden/);
-  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+  await expect(controls).toHaveClass(/transport-controls--hidden/);
+  await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
 
   await page.locator('.widget-window').hover();
   await expect(badge).not.toHaveClass(
     /widget-window__connection-badge--hidden/,
   );
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   await expect(layout).toHaveJSProperty('scrollHeight', idleHeight);
 
   await page.goto('/?view=settings&source=simulator');
@@ -361,6 +433,52 @@ test('persists hover and connection badge preferences without layout shifts', as
   await page.locator('.widget-window').hover();
   await expect(page.locator('.status-badge')).toHaveCount(0);
   await expect(page.locator('.widget-window__connection-badge')).toHaveCount(1);
+});
+
+test('persists v3 block controls and sends mute and rating actions', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 720, height: 820 });
+  await page.goto('/?view=settings&source=simulator');
+
+  const muteVisibility = page.getByRole('group', { name: 'Mute button' });
+  await muteVisibility.getByRole('button', { name: 'Always' }).click();
+  const ratingVisibility = page.getByRole('group', {
+    name: 'Like / Dislike buttons',
+  });
+  await ratingVisibility.getByRole('button', { name: 'Always' }).click();
+  await page.getByRole('button', { name: 'Move Progress bar up' }).click();
+  await page.getByRole('button', { name: 'Collapse API / Connection' }).click();
+  await expect(page.getByLabel('Companion endpoint')).toHaveCount(0);
+
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Expand API / Connection' }),
+  ).toHaveAttribute('aria-expanded', 'false');
+
+  await page.setViewportSize({ width: 336, height: 620 });
+  await page.goto('/?source=simulator');
+  await page.locator('.widget-window').hover();
+
+  const renderedOrder = await page
+    .locator('[data-widget-block]')
+    .evaluateAll((blocks) =>
+      blocks.map((block) => block.getAttribute('data-widget-block')),
+    );
+  expect(renderedOrder).toEqual([
+    'header',
+    'artwork',
+    'trackDetails',
+    'likeDislike',
+    'progress',
+    'playbackControls',
+  ]);
+
+  await page.getByRole('button', { name: 'Mute' }).click();
+  await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible();
+  const like = page.getByRole('button', { name: 'Like', exact: true });
+  await like.click();
+  await expect(like).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('advances simulator progress at wall-clock speed', async ({ page }) => {
@@ -386,9 +504,8 @@ test('keeps playback controls mounted when hover-only controls are disabled', as
       storageKey,
       JSON.stringify({
         ui: {
-          hidePlaybackControls: false,
-          showPlaybackControlsOnHover: false,
-          hideProgressBar: false,
+          playbackControlsVisibility: 'always',
+          progressBarVisibility: 'always',
         },
       }),
     );
@@ -431,8 +548,8 @@ test('collapses the simulated widget when display sections are hidden', async ({
       storageKey,
       JSON.stringify({
         ui: {
-          hidePlaybackControls: true,
-          hideProgressBar: false,
+          playbackControlsVisibility: 'hidden',
+          progressBarVisibility: 'always',
         },
       }),
     );
@@ -454,8 +571,8 @@ test('collapses the simulated widget when display sections are hidden', async ({
       storageKey,
       JSON.stringify({
         ui: {
-          hidePlaybackControls: false,
-          hideProgressBar: true,
+          playbackControlsVisibility: 'hoverReserved',
+          progressBarVisibility: 'hidden',
         },
       }),
     );
@@ -477,8 +594,8 @@ test('collapses the simulated widget when display sections are hidden', async ({
       storageKey,
       JSON.stringify({
         ui: {
-          hidePlaybackControls: true,
-          hideProgressBar: true,
+          playbackControlsVisibility: 'hidden',
+          progressBarVisibility: 'hidden',
         },
       }),
     );
@@ -510,9 +627,9 @@ test('balances compact widget spacing and header alignment', async ({
           storageKey,
           JSON.stringify({
             ui: {
-              hidePlaybackControls: true,
-              hideProgressBar: progressHidden,
-              hideTrackDetails: true,
+              playbackControlsVisibility: 'hidden',
+              progressBarVisibility: progressHidden ? 'hidden' : 'always',
+              trackDetailsVisibility: 'hidden',
               connectionBadgeVisibility: 'always',
               hideSettingsButton: false,
               hideCloseButton: false,
@@ -791,7 +908,7 @@ test('hides track details and controls playback from the full artwork', async ({
       storageKey,
       JSON.stringify({
         ui: {
-          hideTrackDetails: true,
+          trackDetailsVisibility: 'hidden',
           useArtworkAsPlaybackControl: true,
         },
       }),

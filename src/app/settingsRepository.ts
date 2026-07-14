@@ -6,9 +6,15 @@ import type {
   DataSourceMode,
   Locale,
   ThemeMode,
+  WidgetBlockVisibility,
   WidgetSizeMode,
   WindowPosition,
 } from '@/domain/playback/types';
+import {
+  WIDGET_BLOCK_VISIBILITY_MODES,
+  normalizeCollapsedSettingsSections,
+  normalizeWidgetBlockOrder,
+} from '@/app/widgetLayout';
 import {
   WIDGET_CUSTOM_MAX_PERCENTAGE,
   WIDGET_CUSTOM_MIN_PERCENTAGE,
@@ -81,6 +87,26 @@ export const normalizeSettings = (value: unknown): AppSettings => {
   )
     ? 'hover'
     : DEFAULT_SETTINGS.ui.connectionBadgeVisibility;
+  const legacyPlaybackControlsVisibility: WidgetBlockVisibility = booleanOr(
+    ui.hidePlaybackControls,
+    false,
+  )
+    ? 'hidden'
+    : booleanOr(ui.showPlaybackControlsOnHover, true)
+      ? 'hoverReserved'
+      : 'always';
+  const legacyProgressBarVisibility: WidgetBlockVisibility = booleanOr(
+    ui.hideProgressBar,
+    false,
+  )
+    ? 'hidden'
+    : 'always';
+  const legacyTrackDetailsVisibility: WidgetBlockVisibility = booleanOr(
+    ui.hideTrackDetails,
+    false,
+  )
+    ? 'hidden'
+    : 'always';
 
   return {
     api: {
@@ -99,26 +125,39 @@ export const normalizeSettings = (value: unknown): AppSettings => {
       ),
     },
     ui: {
-      hidePlaybackControls: booleanOr(
-        ui.hidePlaybackControls,
-        DEFAULT_SETTINGS.ui.hidePlaybackControls,
+      playbackControlsVisibility: enumOr<WidgetBlockVisibility>(
+        ui.playbackControlsVisibility,
+        WIDGET_BLOCK_VISIBILITY_MODES,
+        legacyPlaybackControlsVisibility,
       ),
-      showPlaybackControlsOnHover: booleanOr(
-        ui.showPlaybackControlsOnHover,
-        DEFAULT_SETTINGS.ui.showPlaybackControlsOnHover,
+      progressBarVisibility: enumOr<WidgetBlockVisibility>(
+        ui.progressBarVisibility,
+        WIDGET_BLOCK_VISIBILITY_MODES,
+        legacyProgressBarVisibility,
       ),
-      hideProgressBar: booleanOr(
-        ui.hideProgressBar,
-        DEFAULT_SETTINGS.ui.hideProgressBar,
+      trackDetailsVisibility: enumOr<WidgetBlockVisibility>(
+        ui.trackDetailsVisibility,
+        WIDGET_BLOCK_VISIBILITY_MODES,
+        legacyTrackDetailsVisibility,
+      ),
+      likeDislikeVisibility: enumOr<WidgetBlockVisibility>(
+        ui.likeDislikeVisibility,
+        WIDGET_BLOCK_VISIBILITY_MODES,
+        DEFAULT_SETTINGS.ui.likeDislikeVisibility,
       ),
       connectionBadgeVisibility: enumOr<ConnectionBadgeVisibility>(
         ui.connectionBadgeVisibility,
         ['always', 'hover', 'hidden'],
         legacyConnectionBadgeVisibility,
       ),
-      hideTrackDetails: booleanOr(
-        ui.hideTrackDetails,
-        DEFAULT_SETTINGS.ui.hideTrackDetails,
+      muteButtonVisibility: enumOr<ConnectionBadgeVisibility>(
+        ui.muteButtonVisibility,
+        ['always', 'hover', 'hidden'],
+        DEFAULT_SETTINGS.ui.muteButtonVisibility,
+      ),
+      widgetBlockOrder: normalizeWidgetBlockOrder(ui.widgetBlockOrder),
+      collapsedSettingsSections: normalizeCollapsedSettingsSections(
+        ui.collapsedSettingsSections,
       ),
       useArtworkAsPlaybackControl: booleanOr(
         ui.useArtworkAsPlaybackControl,

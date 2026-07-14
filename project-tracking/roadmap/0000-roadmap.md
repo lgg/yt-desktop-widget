@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 43
+- Total tracked tasks: 44
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 5
-- Completed: 38
+- Completed: 39
 
 ## Current Stabilization Work
 
+- Completed P1: Version 3 customizable blocks and playback actions - [`0044-add-v3-customizable-widget-blocks-and-playback-actions.md`](../tasks/0044-add-v3-customizable-widget-blocks-and-playback-actions.md) - adds mute and Like/Dislike controls, explicit four-mode visibility, persisted block ordering, collapsible Settings sections, centralized `3.0.0`, and a full audit while preserving the v2 migration default.
 - Completed P3: Widget size presets and custom dimensions - [`0043-add-widget-size-presets-and-custom-dimensions.md`](../tasks/0043-add-widget-size-presets-and-custom-dimensions.md) - preserves the current 336 x 438 layout as Default, adds Compact/Large presets and linked Custom width/height controls, uniformly scales the full widget plus its intrinsic window height, and closes migrated parent task [`0006`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md).
 - Completed P1: Fix stuck hover and control jitter - [`0042-fix-stuck-hover-and-control-jitter.md`](../tasks/0042-fix-stuck-hover-and-control-jitter.md) - removed conflicting native drag regions from the hover boundary, stabilized pointer/focus/blur visibility and button geometry, added reduced-motion handling, and completed a fresh frontend/native/dependency audit.
 - Completed P1: Widget height, drag surface, LIVE badge modes, and full audit - [`0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md`](../tasks/0041-equalize-widget-height-enable-surface-drag-and-add-live-badge-modes.md) - equalized compact progress/artwork-only height, restored lower-surface dragging, added explicit always/hover/hidden status modes with migration, and completed a fresh repository-wide audit.

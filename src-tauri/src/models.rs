@@ -19,27 +19,24 @@ impl Default for ConnectionSettings {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UiSettings {
-  pub hide_playback_controls: bool,
-  pub show_playback_controls_on_hover: bool,
-  pub hide_progress_bar: bool,
-  #[serde(
-    alias = "hideConnectionBadge",
-    deserialize_with = "deserialize_connection_badge_visibility"
-  )]
+  pub playback_controls_visibility: String,
+  pub progress_bar_visibility: String,
+  pub track_details_visibility: String,
+  pub like_dislike_visibility: String,
   pub connection_badge_visibility: String,
-  pub hide_track_details: bool,
+  pub mute_button_visibility: String,
+  pub widget_block_order: Vec<String>,
+  pub collapsed_settings_sections: Vec<String>,
   pub use_artwork_as_playback_control: bool,
   pub hide_settings_button: bool,
   pub hide_close_button: bool,
   pub window_surface_opacity: f64,
   pub artwork_background_opacity: f64,
   pub artwork_gradient_opacity: f64,
-  #[serde(deserialize_with = "deserialize_widget_size_mode")]
   pub widget_size_mode: String,
-  #[serde(deserialize_with = "deserialize_custom_widget_scale_percentage")]
   pub custom_widget_scale_percentage: f64,
   pub theme_mode: String,
   pub locale: String,
@@ -48,11 +45,17 @@ pub struct UiSettings {
 impl Default for UiSettings {
   fn default() -> Self {
     Self {
-      hide_playback_controls: false,
-      show_playback_controls_on_hover: true,
-      hide_progress_bar: false,
+      playback_controls_visibility: "hoverReserved".to_string(),
+      progress_bar_visibility: "always".to_string(),
+      track_details_visibility: "always".to_string(),
+      like_dislike_visibility: "hidden".to_string(),
       connection_badge_visibility: "always".to_string(),
-      hide_track_details: false,
+      mute_button_visibility: "hidden".to_string(),
+      widget_block_order: widget_block_ids()
+        .iter()
+        .map(|value| (*value).to_string())
+        .collect(),
+      collapsed_settings_sections: Vec::new(),
       use_artwork_as_playback_control: false,
       hide_settings_button: true,
       hide_close_button: true,
@@ -66,30 +69,238 @@ impl Default for UiSettings {
     }
   }
 }
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+struct StoredUiSettings {
+  playback_controls_visibility: Option<String>,
+  progress_bar_visibility: Option<String>,
+  track_details_visibility: Option<String>,
+  like_dislike_visibility: Option<String>,
+  connection_badge_visibility: Option<serde_json::Value>,
+  #[serde(rename = "hideConnectionBadge")]
+  hide_connection_badge: Option<bool>,
+  mute_button_visibility: Option<String>,
+  widget_block_order: Option<Vec<serde_json::Value>>,
+  collapsed_settings_sections: Option<Vec<serde_json::Value>>,
+  hide_playback_controls: Option<bool>,
+  show_playback_controls_on_hover: Option<bool>,
+  hide_progress_bar: Option<bool>,
+  hide_track_details: Option<bool>,
+  use_artwork_as_playback_control: Option<bool>,
+  hide_settings_button: Option<bool>,
+  hide_close_button: Option<bool>,
+  window_surface_opacity: Option<f64>,
+  artwork_background_opacity: Option<f64>,
+  artwork_gradient_opacity: Option<f64>,
+  widget_size_mode: Option<String>,
+  custom_widget_scale_percentage: Option<f64>,
+  theme_mode: Option<String>,
+  locale: Option<String>,
+}
+impl<'de> Deserialize<'de> for UiSettings {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let stored = StoredUiSettings::deserialize(deserializer)?;
+    let defaults = Self::default();
+    let legacy_playback_visibility = if stored.hide_playback_controls.unwrap_or(false) {
+      "hidden"
+    } else if stored.show_playback_controls_on_hover.unwrap_or(true) {
+      "hoverReserved"
+    } else {
+      "always"
+    };
+    let legacy_progress_visibility = if stored.hide_progress_bar.unwrap_or(false) {
+      "hidden"
+    } else {
+      "always"
+    };
+    let legacy_track_visibility = if stored.hide_track_details.unwrap_or(false) {
+      "hidden"
+    } else {
+      "always"
+    };
 
-fn deserialize_connection_badge_visibility<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  #[derive(Deserialize)]
-  #[serde(untagged)]
-  enum StoredVisibility {
-    Explicit(String),
-    LegacyHiddenUntilHover(bool),
+    Ok(Self {
+      playback_controls_visibility: normalize_widget_block_visibility(
+        stored.playback_controls_visibility,
+        legacy_playback_visibility,
+      ),
+      progress_bar_visibility: normalize_widget_block_visibility(
+        stored.progress_bar_visibility,
+        legacy_progress_visibility,
+      ),
+      track_details_visibility: normalize_widget_block_visibility(
+        stored.track_details_visibility,
+        legacy_track_visibility,
+      ),
+      like_dislike_visibility: normalize_widget_block_visibility(
+        stored.like_dislike_visibility,
+        &defaults.like_dislike_visibility,
+      ),
+      connection_badge_visibility: normalize_header_visibility_value(
+        stored.connection_badge_visibility,
+        stored.hide_connection_badge,
+        &defaults.connection_badge_visibility,
+      ),
+      mute_button_visibility: normalize_header_visibility_string(
+        stored.mute_button_visibility,
+        &defaults.mute_button_visibility,
+      ),
+      widget_block_order: normalize_widget_block_order(stored.widget_block_order),
+      collapsed_settings_sections: normalize_settings_section_ids(
+        stored.collapsed_settings_sections,
+      ),
+      use_artwork_as_playback_control: stored
+        .use_artwork_as_playback_control
+        .unwrap_or(defaults.use_artwork_as_playback_control),
+      hide_settings_button: stored
+        .hide_settings_button
+        .unwrap_or(defaults.hide_settings_button),
+      hide_close_button: stored
+        .hide_close_button
+        .unwrap_or(defaults.hide_close_button),
+      window_surface_opacity: normalize_percentage(
+        stored.window_surface_opacity,
+        defaults.window_surface_opacity,
+      ),
+      artwork_background_opacity: normalize_percentage(
+        stored.artwork_background_opacity,
+        defaults.artwork_background_opacity,
+      ),
+      artwork_gradient_opacity: normalize_percentage(
+        stored.artwork_gradient_opacity,
+        defaults.artwork_gradient_opacity,
+      ),
+      widget_size_mode: normalize_widget_size_mode(
+        stored.widget_size_mode,
+        &defaults.widget_size_mode,
+      ),
+      custom_widget_scale_percentage: normalize_custom_widget_scale_percentage(
+        stored.custom_widget_scale_percentage,
+        defaults.custom_widget_scale_percentage,
+      ),
+      theme_mode: normalize_string_enum(
+        stored.theme_mode,
+        &["dark", "light", "system"],
+        &defaults.theme_mode,
+      ),
+      locale: normalize_string_enum(stored.locale, &["en", "ru"], &defaults.locale),
+    })
   }
+}
+fn widget_block_ids() -> &'static [&'static str] {
+  &[
+    "header",
+    "artwork",
+    "trackDetails",
+    "likeDislike",
+    "playbackControls",
+    "progress",
+  ]
+}
 
-  let visibility = StoredVisibility::deserialize(deserializer)?;
-  Ok(match visibility {
-    StoredVisibility::Explicit(value)
-      if matches!(value.as_str(), "always" | "hover" | "hidden") =>
-    {
-      value
+fn settings_section_ids() -> &'static [&'static str] {
+  &[
+    "api",
+    "ui",
+    "layout",
+    "size",
+    "appearance",
+    "window",
+    "dev",
+    "about",
+  ]
+}
+
+fn normalize_string_enum(value: Option<String>, allowed: &[&str], fallback: &str) -> String {
+  value
+    .filter(|candidate| allowed.contains(&candidate.as_str()))
+    .unwrap_or_else(|| fallback.to_string())
+}
+
+fn normalize_widget_block_visibility(value: Option<String>, fallback: &str) -> String {
+  normalize_string_enum(
+    value,
+    &["always", "hoverReserved", "hoverDynamic", "hidden"],
+    fallback,
+  )
+}
+
+fn normalize_header_visibility_string(value: Option<String>, fallback: &str) -> String {
+  normalize_string_enum(value, &["always", "hover", "hidden"], fallback)
+}
+
+fn normalize_header_visibility_value(
+  value: Option<serde_json::Value>,
+  legacy_hidden: Option<bool>,
+  fallback: &str,
+) -> String {
+  match value {
+    Some(serde_json::Value::String(candidate)) => {
+      normalize_header_visibility_string(Some(candidate), fallback)
     }
-    StoredVisibility::LegacyHiddenUntilHover(true) => "hover".to_string(),
-    StoredVisibility::Explicit(_) | StoredVisibility::LegacyHiddenUntilHover(false) => {
-      "always".to_string()
+    Some(serde_json::Value::Bool(hidden)) => {
+      if hidden {
+        "hover".to_string()
+      } else {
+        "always".to_string()
+      }
     }
-  })
+    _ if legacy_hidden.unwrap_or(false) => "hover".to_string(),
+    _ => fallback.to_string(),
+  }
+}
+
+fn normalize_id_list(
+  value: Option<Vec<serde_json::Value>>,
+  allowed: &[&str],
+  append_missing: bool,
+) -> Vec<String> {
+  let mut normalized = Vec::new();
+  for candidate in value.unwrap_or_default() {
+    let Some(candidate) = candidate.as_str() else {
+      continue;
+    };
+    if allowed.contains(&candidate) && !normalized.iter().any(|item| item == candidate) {
+      normalized.push(candidate.to_string());
+    }
+  }
+  if append_missing {
+    for candidate in allowed {
+      if !normalized.iter().any(|item| item == candidate) {
+        normalized.push((*candidate).to_string());
+      }
+    }
+  }
+  normalized
+}
+
+fn normalize_widget_block_order(value: Option<Vec<serde_json::Value>>) -> Vec<String> {
+  normalize_id_list(value, widget_block_ids(), true)
+}
+
+fn normalize_settings_section_ids(value: Option<Vec<serde_json::Value>>) -> Vec<String> {
+  normalize_id_list(value, settings_section_ids(), false)
+}
+
+fn normalize_percentage(value: Option<f64>, fallback: f64) -> f64 {
+  value
+    .filter(|candidate| candidate.is_finite())
+    .map(|candidate| candidate.clamp(0.0, 100.0).round())
+    .unwrap_or(fallback)
+}
+
+fn normalize_widget_size_mode(value: Option<String>, fallback: &str) -> String {
+  normalize_string_enum(value, &["compact", "default", "large", "custom"], fallback)
+}
+
+fn normalize_custom_widget_scale_percentage(value: Option<f64>, fallback: f64) -> f64 {
+  value
+    .filter(|candidate| candidate.is_finite())
+    .map(|candidate| candidate.clamp(75.0, 150.0))
+    .unwrap_or(fallback)
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -153,14 +364,23 @@ pub enum PlaybackCommand {
   Pause,
   Next,
   Previous,
+  Mute,
+  Unmute,
+  ToggleLike,
+  ToggleDislike,
   SeekTo { seconds: f64 },
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum CompanionEvent {
-  State { state: serde_json::Value },
-  Status { status: String, detail: Option<String> },
+  State {
+    state: serde_json::Value,
+  },
+  Status {
+    status: String,
+    detail: Option<String>,
+  },
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -221,12 +441,14 @@ mod tests {
   use serde_json::json;
 
   #[test]
-  fn preserves_hover_and_connection_badge_preferences_through_native_settings() {
+  fn preserves_v3_display_preferences_through_native_settings() {
     let settings: AppSettings = serde_json::from_value(json!({
       "ui": {
-        "showPlaybackControlsOnHover": false,
+        "playbackControlsVisibility": "always",
         "connectionBadgeVisibility": "hidden",
-        "hideTrackDetails": true,
+        "trackDetailsVisibility": "hidden",
+        "likeDislikeVisibility": "hoverDynamic",
+        "muteButtonVisibility": "hover",
         "useArtworkAsPlaybackControl": true,
         "themeMode": "light",
         "locale": "ru"
@@ -235,9 +457,11 @@ mod tests {
     .expect("settings should deserialize");
 
     let serialized = serde_json::to_value(settings).expect("settings should serialize");
-    assert_eq!(serialized["ui"]["showPlaybackControlsOnHover"], false);
+    assert_eq!(serialized["ui"]["playbackControlsVisibility"], "always");
     assert_eq!(serialized["ui"]["connectionBadgeVisibility"], "hidden");
-    assert_eq!(serialized["ui"]["hideTrackDetails"], true);
+    assert_eq!(serialized["ui"]["trackDetailsVisibility"], "hidden");
+    assert_eq!(serialized["ui"]["likeDislikeVisibility"], "hoverDynamic");
+    assert_eq!(serialized["ui"]["muteButtonVisibility"], "hover");
     assert_eq!(serialized["ui"]["useArtworkAsPlaybackControl"], true);
     assert_eq!(serialized["ui"]["themeMode"], "light");
     assert_eq!(serialized["ui"]["locale"], "ru");
@@ -312,30 +536,74 @@ mod tests {
     assert_eq!(serialized["ui"]["widgetSizeMode"], "default");
     assert_eq!(serialized["ui"]["customWidgetScalePercentage"], 150.0);
   }
-}
 
-fn deserialize_widget_size_mode<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let value = String::deserialize(deserializer)?;
-  Ok(
-    if matches!(value.as_str(), "compact" | "default" | "large" | "custom") {
-      value
-    } else {
-      "default".to_string()
-    },
-  )
-}
+  #[test]
+  fn migrates_legacy_widget_visibility_to_v3_modes() {
+    let settings: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "hidePlaybackControls": false,
+        "showPlaybackControlsOnHover": true,
+        "hideProgressBar": true,
+        "hideTrackDetails": false
+      }
+    }))
+    .expect("legacy display settings should deserialize");
 
-fn deserialize_custom_widget_scale_percentage<'de, D>(deserializer: D) -> Result<f64, D::Error>
-where
-  D: Deserializer<'de>,
-{
-  let value = f64::deserialize(deserializer)?;
-  Ok(if value.is_finite() {
-    value.clamp(75.0, 150.0)
-  } else {
-    100.0
-  })
+    let serialized = serde_json::to_value(settings).expect("settings should serialize");
+    assert_eq!(
+      serialized["ui"]["playbackControlsVisibility"],
+      "hoverReserved"
+    );
+    assert_eq!(serialized["ui"]["progressBarVisibility"], "hidden");
+    assert_eq!(serialized["ui"]["trackDetailsVisibility"], "always");
+    assert_eq!(serialized["ui"]["likeDislikeVisibility"], "hidden");
+    assert_eq!(serialized["ui"]["muteButtonVisibility"], "hidden");
+    assert!(serialized["ui"].get("hidePlaybackControls").is_none());
+    assert!(serialized["ui"]
+      .get("showPlaybackControlsOnHover")
+      .is_none());
+    assert!(serialized["ui"].get("hideProgressBar").is_none());
+    assert!(serialized["ui"].get("hideTrackDetails").is_none());
+  }
+
+  #[test]
+  fn normalizes_v3_widget_order_and_collapsed_settings_sections() {
+    let settings: AppSettings = serde_json::from_value(json!({
+      "ui": {
+        "playbackControlsVisibility": "hoverDynamic",
+        "progressBarVisibility": "invalid",
+        "trackDetailsVisibility": "hoverReserved",
+        "likeDislikeVisibility": "always",
+        "muteButtonVisibility": "hover",
+        "widgetBlockOrder": ["progress", "header", "progress", "unknown"],
+        "collapsedSettingsSections": ["ui", "api", "ui", "unknown"]
+      }
+    }))
+    .expect("v3 settings should deserialize");
+
+    let serialized = serde_json::to_value(settings).expect("settings should serialize");
+    assert_eq!(
+      serialized["ui"]["playbackControlsVisibility"],
+      "hoverDynamic"
+    );
+    assert_eq!(serialized["ui"]["progressBarVisibility"], "always");
+    assert_eq!(serialized["ui"]["trackDetailsVisibility"], "hoverReserved");
+    assert_eq!(serialized["ui"]["likeDislikeVisibility"], "always");
+    assert_eq!(serialized["ui"]["muteButtonVisibility"], "hover");
+    assert_eq!(
+      serialized["ui"]["widgetBlockOrder"],
+      json!([
+        "progress",
+        "header",
+        "artwork",
+        "trackDetails",
+        "likeDislike",
+        "playbackControls"
+      ])
+    );
+    assert_eq!(
+      serialized["ui"]["collapsedSettingsSections"],
+      json!(["ui", "api"])
+    );
+  }
 }
