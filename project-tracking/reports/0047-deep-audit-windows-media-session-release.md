@@ -16,6 +16,7 @@ All automated frontend, native, dependency, E2E, version, and portable build gat
 - Added WMS-specific English/Russian empty, discovery, reconnect, disconnected, and error copy; locale parity remains enforced automatically.
 - Repaired the Windows E2E runner so `npm run test:e2e` owns and stops its exact preview PID and returns normally after 15 deterministic serial scenarios.
 - Updated README, architecture, roadmap/task/report, and time tracking without changing packaging policy or adding permissions, telemetry, persistence, or network exposure.
+- Committed the verified audit as `62dd9be`, published `codex/0045-windows-media-session-source`, and merged it into `master` as `76d0603`.
 
 ## Time Tracking
 
@@ -69,6 +70,7 @@ All automated frontend, native, dependency, E2E, version, and portable build gat
 | EXE metadata/hash                               | Passed               | FileVersion/ProductVersion `3.1.0`; size 15,945,216 bytes; SHA-256 `D028B9DF270042C2ADEC9B28A1FA77F448C6EB667A53D976299E0187DEB026CF`.                                                                                                         |
 | Version/diff/docs review                        | Passed               | Root `3.1.0` remains synchronized; `git diff --check` clean; README/architecture/tracking agree.                                                                                                                                               |
 | Live WMS broker probe                           | Environment-blocked  | Ignored test was run manually and the sandbox could not initialize the interactive Windows Media Session broker. The generic failure contained no raw HRESULT/system/media data.                                                               |
+| Git delivery                                    | Passed               | Audit commit `62dd9be` by `lgg <lgg@users.noreply.github.com>` was pushed on the pass branch and merged into `master` as `76d0603`.                                                                                                            |
 
 ## Not Verified
 
@@ -100,6 +102,5 @@ All automated frontend, native, dependency, E2E, version, and portable build gat
 
 ## Next Steps
 
-- Commit and push the pass branch, merge into `master`, push `master`, then mark the Git delivery acceptance item complete.
 - Perform the normal interactive multi-player WMS smoke when convenient.
 - Keep local history/favorites/export under deferred task `0046` with explicit consent, retention, and deletion design.

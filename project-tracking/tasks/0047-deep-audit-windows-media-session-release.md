@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation Complete - Git delivery pending
+Complete
 
 ## Context
 
@@ -69,7 +69,7 @@ Out of scope:
 - [x] Every confirmed defect has a root-cause note, RED regression, minimal fix, and GREEN evidence.
 - [x] `npm run verify`, Rust tests/check, E2E, dependency/security checks, portable build, EXE version metadata, and diff checks pass or limitations are precisely documented.
 - [x] Task/report/roadmap/time-log values agree and Definition of Done is reconciled.
-- [ ] Local work is committed by `lgg`, pushed, merged into `master`, and `master` pushed, unless an external tool/remote blocker is documented.
+- [x] Local work is committed by `lgg`, pushed, merged into `master`, and `master` pushed, unless an external tool/remote blocker is documented.
 - [x] No mismatch remains between frontend, native backend, Companion/WMS assumptions, tests, docs, and release/config.
 
 ## Verification Plan
@@ -114,7 +114,7 @@ Out of scope:
 | WinRT values are incomplete, stale, large, or rejected.       | High   | Clamp/bound, tolerate absence, test pure conversion/error helpers, use capabilities and generic errors.                   |
 | Deep audit creates unrelated refactors.                       | Medium | Require a reproduced/source-proven defect and RED test before each behavioral change.                                     |
 | Dependency or live-WMS checks remain network/session blocked. | Medium | Record exact command/error and distinguish implementation evidence from environment limitations.                          |
-| Push/merge approval remains unavailable.                      | Medium | Preserve clean local commits and report exact branch/SHA/commands without bypassing sandbox policy.                       |
+| Remote delivery could diverge from the verified local state.  | Medium | Published the audit branch and merged its exact commits into `master`; recorded both SHAs below.                          |
 
 ## Links
 
@@ -125,4 +125,4 @@ Out of scope:
 - Deferred history task: [`0046-add-opt-in-local-playback-history-favorites-and-export.md`](0046-add-opt-in-local-playback-history-favorites-and-export.md)
 - Related report: [`0047-deep-audit-windows-media-session-release.md`](../reports/0047-deep-audit-windows-media-session-release.md)
 - Time log: [`time-log.md`](../time-log.md)
-- PR/commit: branch `codex/0045-windows-media-session-source`; baseline commit `7775ce8`
+- Git delivery: branch `codex/0045-windows-media-session-source`; baseline `7775ce8`; audit commit `62dd9be`; merge commit `76d0603`
