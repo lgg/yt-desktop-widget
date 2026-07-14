@@ -82,7 +82,7 @@ export const createWindowsMediaGateway = (): CompanionGateway => ({
       }
 
       if (payload.status === 'socket_closed') {
-        handlers.onDisconnected('socket_closed', payload.detail);
+        handlers.onDisconnected('socket_closed', payload.detail ?? undefined);
         return;
       }
 

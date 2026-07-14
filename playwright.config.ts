@@ -1,19 +1,27 @@
 import { defineConfig } from '@playwright/test';
 
+const externalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
+
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   use: {
     baseURL: 'http://127.0.0.1:34174',
     trace: 'on-first-retry',
   },
-  webServer: {
-    command: 'npm run build && npm run preview:e2e',
-    url: 'http://127.0.0.1:34174',
-    reuseExistingServer: false,
-    env: {
-      VITE_YTM_DATA_SOURCE: 'simulator',
-    },
-  },
+  ...(externalServer
+    ? {}
+    : {
+        webServer: {
+          command:
+            'node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 34174',
+          url: 'http://127.0.0.1:34174',
+          reuseExistingServer: false,
+          env: {
+            VITE_YTM_DATA_SOURCE: 'simulator',
+          },
+        },
+      }),
 });

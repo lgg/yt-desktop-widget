@@ -13,7 +13,7 @@ export type CompanionEventPayload =
   | {
       kind: 'status';
       status: 'socket_open' | 'socket_closed' | 'socket_error';
-      detail?: string;
+      detail?: string | null;
     };
 
 export type WindowsMediaEventPayload = CompanionEventPayload;
@@ -33,7 +33,8 @@ export interface BackendCommandError {
 
 export const tauriBridge = {
   loadSettings: () => invoke<AppSettings>('load_settings'),
-  saveSettings: (settings: AppSettings) => invoke<AppSettings>('save_settings', { settings }),
+  saveSettings: (settings: AppSettings) =>
+    invoke<AppSettings>('save_settings', { settings }),
   listenToSettingsChanges: (handler: (settings: AppSettings) => void) =>
     listen<AppSettings>('app-settings://changed', (event) => {
       handler(event.payload);
@@ -49,16 +50,22 @@ export const tauriBridge = {
   companionDiscover: () => invoke<DiscoveryInfo>('companion_discover'),
   companionConnect: () => invoke<CompanionConnectResponse>('companion_connect'),
   companionDisconnect: () => invoke<void>('companion_disconnect'),
-  companionRequestAuthCode: () => invoke<{ code: string }>('companion_request_auth_code'),
-  companionCompleteAuth: (code: string) => invoke<void>('companion_complete_auth', { code }),
+  companionRequestAuthCode: () =>
+    invoke<{ code: string }>('companion_request_auth_code'),
+  companionCompleteAuth: (code: string) =>
+    invoke<void>('companion_complete_auth', { code }),
   companionClearAuth: () => invoke<void>('companion_clear_auth'),
   companionSendCommand: (command: PlaybackCommand) =>
     invoke<void>('companion_send_command', { command }),
-  listenToCompanionEvents: (handler: (payload: CompanionEventPayload) => void) =>
+  listenToCompanionEvents: (
+    handler: (payload: CompanionEventPayload) => void,
+  ) =>
     listen<CompanionEventPayload>('companion://event', (event) => {
       handler(event.payload);
     }),
-  listenToCompanionAuthChanges: (handler: (payload: CompanionAuthEventPayload) => void) =>
+  listenToCompanionAuthChanges: (
+    handler: (payload: CompanionAuthEventPayload) => void,
+  ) =>
     listen<CompanionAuthEventPayload>('companion://auth-changed', (event) => {
       handler(event.payload);
     }),

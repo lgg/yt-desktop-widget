@@ -83,6 +83,8 @@ Version 3.1.0 can follow the current system-preferred session returned by Window
 
 - Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
 - Not provided by this Windows contract: application volume/mute and service-specific Like/Dislike. Those controls remain safely disabled/no-op in this mode even if their display preference is enabled.
+- Timeline positions are normalized against the session start and clamped to the published seek range, so non-zero-origin sessions cannot make the progress clock run fast or seek outside the player contract.
+- External text and artwork are bounded in memory; oversized or active/non-raster artwork payloads are rejected, and an accepted artwork payload is sent only when resolving a new track rather than on every polling tick.
 - No playback metadata or artwork is persisted, logged, or transmitted by WMS mode in 3.1.0.
 - Local WMS history, local favorites, copy/export, retention, and deletion are deferred to the separately designed, default-off roadmap task `0046`.
 
@@ -169,7 +171,7 @@ For the near-term testing cycle, rebuilds are intentionally portable-only.
 - `npm run build:portable` - portable Tauri release build without bundling
 - `npm run lint` - ESLint
 - `npm test` - Vitest
-- `npm run test:e2e` - Playwright simulator smoke test
+- `npm run test:e2e` - deterministic serial Playwright simulator suite; its Windows wrapper owns and always stops the temporary Vite preview process
 - `npm run version:sync` - synchronize Cargo/lock metadata from the root `package.json` version
 - `npm run version:check` - fail if any required version copy or Tauri version source is out of sync
 - `npm run verify` - version consistency + lint + tests + web build

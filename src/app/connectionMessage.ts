@@ -1,6 +1,7 @@
 import type {
   ConnectionMessageKey,
   ConnectionState,
+  PlaybackSource,
 } from '@/domain/playback/types';
 
 type Translate = (key: string) => string;
@@ -8,7 +9,25 @@ type Translate = (key: string) => string;
 const translateConnectionMessage = (
   t: Translate,
   key: ConnectionMessageKey,
+  playbackSource: PlaybackSource,
 ): string => {
+  if (playbackSource === 'windowsMediaSession') {
+    switch (key) {
+      case 'notRunning':
+        return t('windowsMediaConnectionMessages.notRunning');
+      case 'apiUnavailable':
+        return t('windowsMediaConnectionMessages.apiUnavailable');
+      case 'socketError':
+        return t('windowsMediaConnectionMessages.socketError');
+      case 'socketClosed':
+        return t('windowsMediaConnectionMessages.socketClosed');
+      case 'unexpected':
+        return t('windowsMediaConnectionMessages.unexpected');
+      default:
+        break;
+    }
+  }
+
   switch (key) {
     case 'authCodeReady':
       return t('connectionMessages.authCodeReady');
@@ -40,7 +59,8 @@ const translateConnectionMessage = (
 export const getConnectionMessage = (
   t: Translate,
   connection: ConnectionState,
+  playbackSource: PlaybackSource = 'companion',
 ): string | null =>
   connection.messageKey
-    ? translateConnectionMessage(t, connection.messageKey)
+    ? translateConnectionMessage(t, connection.messageKey, playbackSource)
     : null;

@@ -382,6 +382,26 @@ describe('WidgetWindow', () => {
     });
   });
 
+  it('uses Windows Media Session copy when no compatible player is active', () => {
+    const model = createConnectedModel();
+    model.settings.api.playbackSource = 'windowsMediaSession';
+    model.settings.api.sourceMode = 'real';
+    model.resolvedSourceMode = 'real';
+    model.session.playback = null;
+
+    mockUseAppModel.mockReturnValue(model);
+    render(
+      <I18nProvider locale="en">
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByText('Start playback in a compatible Windows media app.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/YTMDesktop/i)).not.toBeInTheDocument();
+  });
+
   it('keeps visible rating and mute controls safely disabled when the source lacks capabilities', () => {
     const model = createConnectedModel({
       likeDislikeVisibility: 'always',
@@ -991,18 +1011,20 @@ describe('WidgetWindow', () => {
       document.querySelector('.widget-window') as HTMLElement,
     );
     await Promise.resolve();
-    expect(
-      windowControllerMocks.setMainAppWindowSize,
-    ).toHaveBeenLastCalledWith(336, 422);
+    expect(windowControllerMocks.setMainAppWindowSize).toHaveBeenLastCalledWith(
+      336,
+      422,
+    );
 
     layoutHeight = 420;
     fireEvent.pointerLeave(
       document.querySelector('.widget-window') as HTMLElement,
     );
     await Promise.resolve();
-    expect(
-      windowControllerMocks.setMainAppWindowSize,
-    ).toHaveBeenLastCalledWith(336, 422);
+    expect(windowControllerMocks.setMainAppWindowSize).toHaveBeenLastCalledWith(
+      336,
+      422,
+    );
   });
 
   it('renders authorization actions when auth is required', () => {

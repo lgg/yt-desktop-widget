@@ -146,7 +146,14 @@ export const SettingsWindow = () => {
   const authStatusDetail =
     session.connection.status === 'auth_required' ||
     session.connection.status === 'authenticating'
-      ? getConnectionMessage(t, session.connection)
+      ? getConnectionMessage(
+          t,
+          session.connection,
+          resolvedSourceMode === 'real' &&
+            settings.api.playbackSource === 'windowsMediaSession'
+            ? 'windowsMediaSession'
+            : 'companion',
+        )
       : null;
   const widgetDimensions = getWidgetReferenceDimensions(
     settings.ui.customWidgetScalePercentage,

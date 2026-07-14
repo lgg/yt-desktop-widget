@@ -148,11 +148,13 @@ Design rules:
 
 1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
 2. The Rust adapter requests `GlobalSystemMediaTransportControlsSessionManager` and follows its current system-preferred session.
-3. While connected, a bounded polling task reads changed metadata, timeline, playback state, artwork, and published transport capabilities.
+3. While connected, one shared bounded polling task reads changed metadata, timeline, playback state, artwork, and published transport capabilities; additional window consumers attach without replacing that task.
 4. The shared mapping layer produces the same `PlaybackSnapshot` contract used by Companion.
 5. UI controls use capability flags rather than source-name checks.
 6. WMS Like/Dislike/Mute are disabled and remain successful no-ops in both frontend and Rust as defense in depth.
-7. Disconnect or source switching aborts the polling task. No WMS media data is persisted in version 3.1.0.
+7. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and missed polling ticks are skipped rather than replayed in a burst.
+8. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
+9. Disconnect or source switching aborts the polling task. No WMS media data is persisted in version 3.1.0.
 
 ## Settings and persistence
 

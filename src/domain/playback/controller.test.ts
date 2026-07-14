@@ -5,6 +5,7 @@ import type {
   CompanionGateway,
   CompanionRawState,
   DiscoveryInfo,
+  GatewayConnectResult,
   GatewayConnection,
   GatewayEventHandlers,
 } from '@/domain/playback/types';
@@ -139,6 +140,62 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
+  it('publishes source capability changes immediately when playback timing is unchanged', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const initialState = {
+      ...makeRawState(25),
+      capabilities: {
+        canPlayPause: true,
+        canGoPrevious: true,
+        canGoNext: true,
+        canSeek: true,
+        canMute: true,
+        canRate: true,
+      },
+    };
+    const gateway: CompanionGateway = {
+      kind: 'windowsMediaSession',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState,
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    onState({
+      ...initialState,
+      capabilities: {
+        canPlayPause: false,
+        canGoPrevious: false,
+        canGoNext: false,
+        canSeek: true,
+        canMute: false,
+        canRate: false,
+      },
+    });
+
+    expect(controller.getSnapshot().playback).toMatchObject({
+      canPlayPause: false,
+      canGoPrevious: false,
+      canGoNext: false,
+      canMute: false,
+      canRate: false,
+    });
+    vi.useRealTimers();
+  });
+
   it('publishes significant progress corrections such as seeks', async () => {
     let onState: GatewayEventHandlers['onState'] = () => undefined;
     const gateway: CompanionGateway = {
@@ -206,6 +263,55 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
+  it('disconnects a connection that resolves after the controller was disposed', async () => {
+    const lateHandlersRef: { current: GatewayEventHandlers | null } = {
+      current: null,
+    };
+    const resolveConnectRef: {
+      current: ((result: GatewayConnectResult) => void) | null;
+    } = { current: null };
+    const lateConnection: GatewayConnection = {
+      send: vi.fn(() => Promise.resolve()),
+      disconnect: vi.fn(() => Promise.resolve()),
+    };
+    const gateway: CompanionGateway = {
+      kind: 'windowsMediaSession',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn(
+        (handlers: GatewayEventHandlers): Promise<GatewayConnectResult> =>
+          new Promise<GatewayConnectResult>((resolve) => {
+            lateHandlersRef.current = handlers;
+            resolveConnectRef.current = resolve;
+          }),
+      ),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    const startPromise = controller.start();
+    await vi.waitFor(() => expect(gateway.connect).toHaveBeenCalledOnce());
+
+    await controller.dispose({ disconnectGateway: false });
+    lateHandlersRef.current?.onConnected();
+    lateHandlersRef.current?.onState(makeRawState(30));
+    resolveConnectRef.current?.({
+      connection: lateConnection,
+      initialState: null,
+    });
+    await startPromise;
+
+    expect(lateConnection.disconnect).toHaveBeenCalledOnce();
+    expect(lateConnection.disconnect).toHaveBeenCalledWith({
+      closeBackend: false,
+    });
+    expect(controller.getSnapshot().connection.status).not.toBe('connected');
+    expect(controller.getSnapshot().playback).toBeNull();
+    vi.useRealTimers();
+  });
+
   it('does not synthesize stored authorization after approval', async () => {
     const gateway: CompanionGateway = {
       kind: 'real',
@@ -255,7 +361,9 @@ describe('PlaybackController', () => {
     expect(gateway.connect).not.toHaveBeenCalled();
     expect(snapshot.connection.status).toBe('error');
     expect(snapshot.connection.hasStoredAuth).toBe(false);
-    expect(snapshot.connection.detail).toBe('Windows Credential Manager read failed.');
+    expect(snapshot.connection.detail).toBe(
+      'Windows Credential Manager read failed.',
+    );
     expect(snapshot.connection.authCode).toBeNull();
 
     vi.useRealTimers();
@@ -267,9 +375,11 @@ describe('PlaybackController', () => {
       discover: vi.fn(() => Promise.resolve(makeDiscovery())),
       hasStoredAuth: vi.fn(() => Promise.resolve(true)),
       connect: vi.fn(() =>
-        Promise.reject(Object.assign(new Error('Companion authorization is required.'), {
-          code: 'auth_required',
-        })),
+        Promise.reject(
+          Object.assign(new Error('Companion authorization is required.'), {
+            code: 'auth_required',
+          }),
+        ),
       ),
       requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
       completeAuth: vi.fn(() => Promise.resolve()),
@@ -282,7 +392,9 @@ describe('PlaybackController', () => {
     const snapshot = controller.getSnapshot();
     expect(snapshot.connection.status).toBe('error');
     expect(snapshot.connection.hasStoredAuth).toBe(true);
-    expect(snapshot.connection.detail).toContain('stored Companion authorization');
+    expect(snapshot.connection.detail).toContain(
+      'stored Companion authorization',
+    );
     expect(gateway.clearAuth).not.toHaveBeenCalled();
 
     vi.useRealTimers();
@@ -304,9 +416,11 @@ describe('PlaybackController', () => {
       ),
       requestAuthCode: vi.fn(() => Promise.resolve({ code: '3601' })),
       completeAuth: vi.fn(() =>
-        Promise.reject(Object.assign(new Error('Authorization request denied.'), {
-          code: 'auth_required',
-        })),
+        Promise.reject(
+          Object.assign(new Error('Authorization request denied.'), {
+            code: 'auth_required',
+          }),
+        ),
       ),
       clearAuth: vi.fn(() => Promise.resolve()),
     };
@@ -358,7 +472,9 @@ describe('PlaybackController', () => {
 
     const snapshot = controller.getSnapshot();
     expect(snapshot.connection.status).toBe('error');
-    expect(snapshot.connection.detail).toContain('authorization requests are disabled');
+    expect(snapshot.connection.detail).toContain(
+      'authorization requests are disabled',
+    );
     expect(snapshot.connection.authCode).toBeNull();
 
     vi.useRealTimers();
