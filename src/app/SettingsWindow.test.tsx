@@ -105,9 +105,8 @@ describe('SettingsWindow UI display preferences', () => {
     );
     const recipe = updateSettings.mock.calls[0]?.[0];
     expect(
-      (
-        recipe?.(model.settings).api as unknown as Record<string, unknown>
-      ).playbackSource,
+      (recipe?.(model.settings).api as unknown as Record<string, unknown>)
+        .playbackSource,
     ).toBe('windowsMediaSession');
   });
 
@@ -122,8 +121,12 @@ describe('SettingsWindow UI display preferences', () => {
         </I18nProvider>,
       );
 
-      expect(screen.queryByLabelText('Companion endpoint')).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Pair' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByLabelText('Companion endpoint'),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Pair' }),
+      ).not.toBeInTheDocument();
       expect(
         screen.getByText(/Like, Dislike, and mute are unavailable/i),
       ).toBeInTheDocument();
@@ -206,18 +209,15 @@ describe('SettingsWindow UI display preferences', () => {
       name: 'Connection status badge',
     });
     expect(group).toBeInTheDocument();
-    expect(within(group).getByRole('button', { name: 'Always' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(within(group).getByRole('button', { name: 'On hover' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    expect(within(group).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(
+      within(group).getByRole('button', { name: 'Always' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      within(group).getByRole('button', { name: 'On hover' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      within(group).getByRole('button', { name: 'Hidden' }),
+    ).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.click(within(group).getByRole('button', { name: 'Hidden' }));
     expect(updateSettings).toHaveBeenCalledTimes(1);
@@ -258,6 +258,19 @@ describe('SettingsWindow UI display preferences', () => {
       expect(
         within(group).getByRole('button', { name: 'Hidden' }),
       ).toBeInTheDocument();
+
+      const rows = group.querySelectorAll('.segmented-control__options-row');
+      expect(rows).toHaveLength(2);
+      expect(
+        within(rows[0] as HTMLElement)
+          .getAllByRole('button')
+          .map((button) => button.textContent),
+      ).toEqual(['Always', 'Hidden']);
+      expect(
+        within(rows[1] as HTMLElement)
+          .getAllByRole('button')
+          .map((button) => button.textContent),
+      ).toEqual(['On hover — keep space', 'On hover — resize widget']);
     }
 
     const progress = screen.getByRole('group', { name: 'Progress bar' });
@@ -281,14 +294,103 @@ describe('SettingsWindow UI display preferences', () => {
     );
 
     const group = screen.getByRole('group', { name: 'Mute button' });
-    expect(within(group).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    expect(
+      within(group).getByRole('button', { name: 'Hidden' }),
+    ).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByLabelText(/volume/i)).not.toBeInTheDocument();
     fireEvent.click(within(group).getByRole('button', { name: 'On hover' }));
     const recipe = updateSettings.mock.calls[0]?.[0];
     expect(recipe?.(model.settings).ui.muteButtonVisibility).toBe('hover');
+  });
+
+  it('presents Settings and Close button visibility as two-choice segmented controls', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    for (const name of ['Settings button', 'Close button']) {
+      const group = screen.getByRole('group', { name });
+      expect(within(group).getAllByRole('button')).toHaveLength(2);
+      expect(
+        within(group).getByRole('button', { name: 'Always' }),
+      ).toHaveAttribute('aria-pressed', 'false');
+      expect(
+        within(group).getByRole('button', { name: 'On hover' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(group).queryByRole('button', { name: 'Hidden' }),
+      ).not.toBeInTheDocument();
+    }
+
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Settings button' })).getByRole(
+        'button',
+        { name: 'Always' },
+      ),
+    );
+    let recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui.hideSettingsButton).toBe(false);
+
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Close button' })).getByRole(
+        'button',
+        { name: 'Always' },
+      ),
+    );
+    recipe = updateSettings.mock.calls[1]?.[0];
+    expect(recipe?.(model.settings).ui.hideCloseButton).toBe(false);
+  });
+
+  it('maps existing visible Settings and Close button preferences to Always', () => {
+    const previousSettings = model.settings.ui.hideSettingsButton;
+    const previousClose = model.settings.ui.hideCloseButton;
+    model.settings.ui.hideSettingsButton = false;
+    model.settings.ui.hideCloseButton = false;
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      for (const name of ['Settings button', 'Close button']) {
+        const group = screen.getByRole('group', { name });
+        expect(
+          within(group).getByRole('button', { name: 'Always' }),
+        ).toHaveAttribute('aria-pressed', 'true');
+        expect(
+          within(group).getByRole('button', { name: 'On hover' }),
+        ).toHaveAttribute('aria-pressed', 'false');
+      }
+
+      updateSettings.mockClear();
+      fireEvent.click(
+        within(
+          screen.getByRole('group', { name: 'Settings button' }),
+        ).getByRole('button', { name: 'On hover' }),
+      );
+      fireEvent.click(
+        within(screen.getByRole('group', { name: 'Close button' })).getByRole(
+          'button',
+          { name: 'On hover' },
+        ),
+      );
+      expect(updateSettings).toHaveBeenCalledTimes(2);
+      expect(
+        updateSettings.mock.calls[0]?.[0]?.(model.settings).ui
+          .hideSettingsButton,
+      ).toBe(true);
+      expect(
+        updateSettings.mock.calls[1]?.[0]?.(model.settings).ui.hideCloseButton,
+      ).toBe(true);
+    } finally {
+      model.settings.ui.hideSettingsButton = previousSettings;
+      model.settings.ui.hideCloseButton = previousClose;
+    }
   });
 
   it('moves blocks with accessible controls and persists the new permutation', () => {
@@ -301,7 +403,9 @@ describe('SettingsWindow UI display preferences', () => {
 
     const order = screen.getByRole('list', { name: 'Widget block order' });
     expect(
-      within(order).getAllByRole('listitem').map((item) => item.textContent),
+      within(order)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
     ).toEqual([
       expect.stringContaining('Header controls'),
       expect.stringContaining('Artwork'),

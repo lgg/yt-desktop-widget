@@ -13,12 +13,14 @@ const readWidgetSizeMode = async (page: import('@playwright/test').Page) =>
   page.evaluate((storageKey) => {
     const stored = window.localStorage.getItem(storageKey);
     return stored
-      ? (JSON.parse(stored) as {
-          ui?: {
-            widgetSizeMode?: string;
-            customWidgetScalePercentage?: number;
-          };
-        }).ui
+      ? (
+          JSON.parse(stored) as {
+            ui?: {
+              widgetSizeMode?: string;
+              customWidgetScalePercentage?: number;
+            };
+          }
+        ).ui
       : undefined;
   }, SETTINGS_STORAGE_KEY);
 
@@ -322,14 +324,18 @@ test('keeps reserved progress space stable and changes dynamic block height', as
   const widget = page.locator('.widget-window');
   const layout = page.locator('.widget-window__layout');
   const progress = page.locator('.progress-row');
-  const reservedHeight = await layout.evaluate((element) => element.scrollHeight);
+  const reservedHeight = await layout.evaluate(
+    (element) => element.scrollHeight,
+  );
   await expect(progress).toHaveCSS('opacity', '0');
   await expect(page.getByRole('slider', { name: 'Seek position' })).toHaveCount(
     0,
   );
   await widget.hover();
   await expect(progress).toHaveCSS('opacity', '1');
-  await expect(page.getByRole('slider', { name: 'Seek position' })).toBeVisible();
+  await expect(
+    page.getByRole('slider', { name: 'Seek position' }),
+  ).toBeVisible();
   await expect(layout).toHaveJSProperty('scrollHeight', reservedHeight);
 
   await page.evaluate((storageKey) => {
@@ -346,7 +352,9 @@ test('keeps reserved progress space stable and changes dynamic block height', as
   }, SETTINGS_STORAGE_KEY);
   await page.reload();
   await page.mouse.move(2_000, 2_000);
-  const compactHeight = await layout.evaluate((element) => element.scrollHeight);
+  const compactHeight = await layout.evaluate(
+    (element) => element.scrollHeight,
+  );
   await expect(page.locator('[data-widget-block="trackDetails"]')).toHaveCount(
     0,
   );
@@ -458,6 +466,90 @@ test('persists hover and connection badge preferences without layout shifts', as
   await page.locator('.widget-window').hover();
   await expect(page.locator('.status-badge')).toHaveCount(0);
   await expect(page.locator('.widget-window__connection-badge')).toHaveCount(1);
+});
+
+test('keeps visibility choices in intentional rows at supported Settings widths', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 720, height: 900 });
+  await page.goto('/?view=settings&source=simulator');
+
+  const settingsVisibility = page.getByRole('group', {
+    name: 'Settings button',
+  });
+  const closeVisibility = page.getByRole('group', { name: 'Close button' });
+  for (const group of [settingsVisibility, closeVisibility]) {
+    await expect(group.getByRole('button')).toHaveCount(2);
+    await expect(
+      group.getByRole('button', { name: 'On hover' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await expect(group.getByRole('button', { name: 'Hidden' })).toHaveCount(0);
+  }
+
+  await settingsVisibility.getByRole('button', { name: 'Always' }).click();
+  await closeVisibility.getByRole('button', { name: 'Always' }).click();
+  await page.reload();
+  await expect(
+    page
+      .getByRole('group', { name: 'Settings button' })
+      .getByRole('button', { name: 'Always' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page
+      .getByRole('group', { name: 'Close button' })
+      .getByRole('button', { name: 'Always' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  const assertVisibilityRows = async (groupName: string) => {
+    const group = page.getByRole('group', { name: groupName });
+    const rows = group.locator('.segmented-control__options-row');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).getByRole('button')).toHaveText([
+      /Always|Всегда/,
+      /Hidden|Скрыт/,
+    ]);
+    await expect(rows.nth(1).getByRole('button')).toHaveCount(2);
+
+    const geometry = await rows.evaluateAll((elements) =>
+      elements.map((row) => {
+        const rowRect = row.getBoundingClientRect();
+        const buttons = [...row.querySelectorAll('button')].map((button) => {
+          const rect = button.getBoundingClientRect();
+          return { top: rect.top, right: rect.right };
+        });
+        return {
+          rowTop: rowRect.top,
+          rowRight: rowRect.right,
+          buttonTops: buttons.map((button) => button.top),
+          buttonRights: buttons.map((button) => button.right),
+        };
+      }),
+    );
+
+    expect(geometry).toHaveLength(2);
+    expect(geometry[1]!.rowTop).toBeGreaterThan(geometry[0]!.rowTop);
+    for (const row of geometry) {
+      expect(row.buttonTops).toHaveLength(2);
+      expect(Math.abs(row.buttonTops[0]! - row.buttonTops[1]!)).toBeLessThan(1);
+      expect(Math.max(...row.buttonRights)).toBeLessThanOrEqual(
+        row.rowRight + 0.5,
+      );
+    }
+  };
+
+  await assertVisibilityRows('Like / Dislike buttons');
+
+  await page.getByRole('button', { name: 'Russian' }).click();
+  await page.setViewportSize({ width: 620, height: 900 });
+  await expect(
+    page.getByRole('group', { name: 'Кнопки нравится / не нравится' }),
+  ).toBeVisible();
+  await assertVisibilityRows('Кнопки нравится / не нравится');
+  expect(
+    await page
+      .locator('.settings-window__sections')
+      .evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
 });
 
 test('persists v3 block controls and sends mute and rating actions', async ({
