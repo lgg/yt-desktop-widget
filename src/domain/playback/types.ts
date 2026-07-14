@@ -261,7 +261,7 @@ export class GatewayError extends Error {
 export interface GatewayEventHandlers {
   onState: (state: CompanionRawState) => void;
   onDisconnected: (reason: GatewayDisconnectReason, detail?: string) => void;
-  onError: (detail: string) => void;
+  onError: (detail: string, diagnostic?: GatewayDiagnostic) => void;
   onConnected: () => void;
 }
 

@@ -263,6 +263,49 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
+  it('retains a structured diagnostic from a live Windows media poll failure', async () => {
+    const handlersRef: { current: GatewayEventHandlers | null } = {
+      current: null,
+    };
+    const gateway: CompanionGateway = {
+      kind: 'windowsMediaSession',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(false)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        handlersRef.current = handlers;
+        return Promise.resolve({
+          initialState: null,
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    handlersRef.current?.onError('Snapshot interrupted', {
+      stage: 'snapshot.media_properties.await',
+      hresult: '0x80004005',
+      category: 'windows_error',
+    });
+
+    expect(controller.getSnapshot().connection).toMatchObject({
+      status: 'error',
+      messageKey: 'socketError',
+      diagnostic: {
+        stage: 'snapshot.media_properties.await',
+        hresult: '0x80004005',
+        category: 'windows_error',
+      },
+    });
+    vi.useRealTimers();
+  });
+
   it('disconnects a connection that resolves after the controller was disposed', async () => {
     const lateHandlersRef: { current: GatewayEventHandlers | null } = {
       current: null,

@@ -159,12 +159,21 @@ describe('createWindowsMediaGateway', () => {
       kind: 'status',
       status: 'socket_error',
       detail: 'Interrupted',
+      diagnostic: {
+        stage: 'snapshot.media_properties.await',
+        hresult: '0x80004005',
+        category: 'windows_error',
+      },
     });
 
     expect(handlers.onConnected).toHaveBeenCalledOnce();
     expect(handlers.onState).toHaveBeenCalledWith({
       video: { id: 'track-1' },
     });
-    expect(handlers.onError).toHaveBeenCalledWith('Interrupted');
+    expect(handlers.onError).toHaveBeenCalledWith('Interrupted', {
+      stage: 'snapshot.media_properties.await',
+      hresult: '0x80004005',
+      category: 'windows_error',
+    });
   });
 });

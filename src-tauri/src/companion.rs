@@ -133,6 +133,7 @@ impl CompanionManager {
           CompanionEvent::Status {
             status: "socket_open".to_string(),
             detail: None,
+            diagnostic: None,
           },
         );
         return Ok(Some(state));
@@ -149,6 +150,7 @@ impl CompanionManager {
       CompanionEvent::Status {
         status: "socket_open".to_string(),
         detail: None,
+        diagnostic: None,
       },
     );
 
@@ -190,6 +192,7 @@ impl CompanionManager {
             CompanionEvent::Status {
               status: "socket_error".to_string(),
               detail: Some(payload_to_string(payload)),
+              diagnostic: None,
             },
           );
         }
@@ -205,6 +208,7 @@ impl CompanionManager {
             CompanionEvent::Status {
               status: "socket_closed".to_string(),
               detail: Some(payload_to_string(payload)),
+              diagnostic: None,
             },
           );
         }

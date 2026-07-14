@@ -15,6 +15,7 @@ export type CompanionEventPayload =
       kind: 'status';
       status: 'socket_open' | 'socket_closed' | 'socket_error';
       detail?: string | null;
+      diagnostic?: GatewayDiagnostic | null;
     };
 
 export type WindowsMediaEventPayload = CompanionEventPayload;
