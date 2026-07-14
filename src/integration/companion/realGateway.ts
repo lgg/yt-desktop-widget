@@ -26,7 +26,11 @@ const normalizeBridgeError = (error: unknown): GatewayError => {
         candidate.code === 'network' ||
         candidate.code === 'unknown'
       ) {
-        return new GatewayError(candidate.code, candidate.message);
+        return new GatewayError(
+          candidate.code,
+          candidate.message,
+          candidate.diagnostic,
+        );
       }
     }
   }

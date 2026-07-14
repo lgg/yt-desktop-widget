@@ -8,9 +8,9 @@ Deferred
 
 Live Apple Music testing of the portable version `3.1.0` showed `Media-session access is unavailable`. Investigation during task `0048` isolated the failure to `GlobalSystemMediaTransportControlsSessionManager::RequestAsync().get()` before any player/session lookup.
 
-A temporary two-process diagnostic called the same API without apartment initialization and after successful `RoInitialize(RO_INIT_MULTITHREADED)`. Both returned `0x80070005` (`E_ACCESSDENIED`), disproving the apartment hypothesis. Microsoft documents `globalMediaControl` as required for this manager and defines it as a `uap7:Capability` declared in an app package manifest. The current portable/unpackaged executable has no package identity and cannot possess that capability.
+A temporary two-process diagnostic called the same API without apartment initialization and after successful `RoInitialize(RO_INIT_MULTITHREADED)`. Both returned `0x80070005` (`E_ACCESSDENIED`). Microsoft documents `globalMediaControl` for this manager and defines it as a package-manifest capability. Follow-up task `0050` found that the real production adapter nevertheless ran blocking WinRT work on arbitrary uninitialized Tokio threads, discarded HRESULT details, and could be silently overridden by the simulator. The short-lived diagnostic did not exercise that corrected interactive runtime, so packaging remains a contingency rather than a proven prerequisite until the new portable build is tested.
 
-The user explicitly deferred the packaging decision on 2026-07-14 while asking task `0048` to finish only the independent Settings UI work.
+The user explicitly deferred the packaging decision on 2026-07-14 and then requested a corrected portable attempt based on an external audit. Task `0050` owns that attempt; this task remains deferred unless the corrected executable still receives access denied or the project later chooses package identity for release guarantees.
 
 ## Goal
 
@@ -76,7 +76,7 @@ Out of scope:
 | Question                                                                        | Status | Answer / Decision                                                            |
 | ------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------- |
 | Should delivery use full MSIX or a sparse package?                              | Open   | User/product decision required after a concrete artifact/signing comparison. |
-| Should portable remain available as Companion-only alongside packaged delivery? | Open   | Recommended, but requires explicit user approval.                            |
+| Should portable remain available alongside packaged delivery if package identity is still required for reliable WMS? | Open | Recommended: preserve Companion and the corrected best-effort portable WMS path, but obtain explicit user approval before packaging work. |
 | How will release certificates be issued, trusted, rotated, and protected?       | Open   | Must be resolved before distributable package implementation.                |
 
 ## Risks

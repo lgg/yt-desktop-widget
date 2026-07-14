@@ -438,6 +438,32 @@ pub struct CompanionAuthEvent {
 pub struct CommandError {
   pub code: String,
   pub message: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub diagnostic: Option<CommandDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CommandDiagnostic {
+  pub stage: String,
+  pub category: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub hresult: Option<String>,
+}
+
+impl CommandDiagnostic {
+  pub fn new(stage: impl Into<String>, category: impl Into<String>) -> Self {
+    Self {
+      stage: stage.into(),
+      category: category.into(),
+      hresult: None,
+    }
+  }
+
+  pub fn with_hresult(mut self, hresult: impl Into<String>) -> Self {
+    self.hresult = Some(hresult.into());
+    self
+  }
 }
 
 impl CommandError {
@@ -445,7 +471,13 @@ impl CommandError {
     Self {
       code: code.into(),
       message: message.into(),
+      diagnostic: None,
     }
+  }
+
+  pub fn with_diagnostic(mut self, diagnostic: CommandDiagnostic) -> Self {
+    self.diagnostic = Some(diagnostic);
+    self
   }
 
   pub fn unknown(message: impl Into<String>) -> Self {
@@ -480,7 +512,7 @@ impl From<keyring::Error> for CommandError {
 
 #[cfg(test)]
 mod tests {
-  use super::AppSettings;
+  use super::{AppSettings, CommandDiagnostic, CommandError};
   use serde_json::json;
 
   #[test]
@@ -672,5 +704,25 @@ mod tests {
       windows_media_json["api"]["playbackSource"],
       "windowsMediaSession"
     );
+  }
+
+  #[test]
+  fn serializes_safe_command_diagnostics_separately_from_public_copy() {
+    let error = CommandError::new(
+      "api_unavailable",
+      "Windows Media Session is unavailable.",
+    )
+    .with_diagnostic(
+      CommandDiagnostic::new("request_manager.await", "access_denied")
+        .with_hresult("0x80070005"),
+    );
+
+    let serialized = serde_json::to_value(error).expect("error should serialize");
+    assert_eq!(serialized["message"], "Windows Media Session is unavailable.");
+    assert_eq!(serialized["diagnostic"]["stage"], "request_manager.await");
+    assert_eq!(serialized["diagnostic"]["hresult"], "0x80070005");
+    assert_eq!(serialized["diagnostic"]["category"], "access_denied");
+    assert!(serialized.to_string().find("track").is_none());
+    assert!(serialized.to_string().find("artist").is_none());
   }
 }

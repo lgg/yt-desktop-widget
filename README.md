@@ -9,7 +9,7 @@ The app never scrapes player UI, injects scripts, parses window titles, or uses 
 ## What it does
 
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
-- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music. The WMS source currently requires the future packaged delivery described below; the portable build remains Companion-only in practice.
+- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music. A corrected portable WMS runtime is available for interactive validation; packaged delivery remains a fallback if Windows denies the unpackaged process.
 - Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
@@ -82,7 +82,9 @@ The real client is written so any unconfirmed response-shape differences are iso
 
 Version 3.1.0 contains a source adapter that can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player.
 
-Important delivery limitation: Microsoft requires the package-manifest `globalMediaControl` capability for session-manager access. The current portable/unpackaged executable has no package identity, so Windows denies that request and WMS is not operational in the portable artifact. Supported signed MSIX or sparse-package delivery, portable coexistence, and live Apple Music/Spotify/Yandex Music validation are deferred to [task 0049](./project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md). Companion mode is unaffected.
+The portable runtime now creates one lazy, long-lived MTA worker and performs manager discovery, session reads, polling, artwork reads, and playback commands only on that worker. Blocking WinRT futures no longer run on arbitrary Tokio threads. Requests have a 15-second frontend-facing bound, cancelled connects cannot become late ghost connections, and safe diagnostics retain only the failing stage, HRESULT, and category.
+
+Delivery status: Microsoft lists the package-manifest `globalMediaControl` capability for this API. An earlier isolated unpackaged probe returned `0x80070005` both with and without MTA initialization, but it did not exercise the corrected interactive portable process. The current portable executable is therefore a live-validation candidate, not a claimed Apple Music success. If the new build still reports `stage: request_manager.await`, `HRESULT: 0x80070005`, and `category: access_denied`, supported signed MSIX/sparse delivery remains tracked in [task 0049](./project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md). Companion mode is unaffected.
 
 - Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
 - Not provided by this Windows contract: application volume/mute and service-specific Like/Dislike. Those controls remain safely disabled/no-op in this mode even if their display preference is enabled.
@@ -117,7 +119,7 @@ Current debug MCP and dev-tool port configuration in this repo:
 - Rust stable toolchain with the MSVC target
 - WebView2 runtime on Windows
 - YTMDesktop, if you want to test the Companion flow
-- A Windows Media Session-compatible player plus a future capability-enabled packaged build, if you want to test multi-player mode; the current portable build cannot acquire the required capability
+- A Windows Media Session-compatible player, if you want to validate the corrected portable multi-player candidate; package-identity delivery remains a fallback if Windows reports access denied
 
 ### Install
 
@@ -146,11 +148,13 @@ The first Settings section stores the user-facing production source:
 - `YTMDesktop Companion` (default and migration-safe): full Companion auth, realtime, mute, Like, and Dislike behavior
 - `Windows Media Session`: current Windows-selected compatible player session without pairing
 
-The Developer section independently retains three internal runtime modes:
+Development builds retain three internal runtime modes:
 
 - `auto`: uses the selected production source in Tauri and the simulator in browser preview
 - `real`: always uses the selected Tauri/Rust production bridge
-- `simulator`: always use the development simulator
+- `simulator`: use the development simulator in development/browser workflows
+
+The Developer section and its About-page mock-mode shortcut are omitted from native release builds. A legacy persisted `sourceMode: simulator`, query override, or environment override cannot supersede the selected production source in a native release; browser preview and development builds keep simulator support.
 
 You can also override source mode during development:
 
@@ -267,5 +271,5 @@ Future live regression passes should still include uncommon upstream states such
 - Windows-only delivery focus
 - English and Russian are the only bundled locales
 - No macOS packaging work yet
-- Windows Media Session is not operational in the current portable/unpackaged artifact; supported packaged delivery is tracked in task `0049`
+- Windows Media Session in the corrected portable artifact still needs an interactive Apple Music/Spotify/Yandex Music smoke; supported packaged delivery remains the fallback in task `0049` if Windows returns access denied
 - Further visual refinements and alternate window modes are intentionally deferred

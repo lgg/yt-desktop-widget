@@ -19,13 +19,13 @@ Add a separate persisted `playbackSource` with two production values:
 
 Keep the existing `sourceMode` only as a development/runtime selector. In production Tauri:
 
-- `playbackSource=companion` resolves to the existing real Companion gateway unless the explicit dev simulator override is active.
+- `playbackSource=companion` resolves to the existing real Companion gateway unless an explicit simulator override is active in a development/browser workflow. Native release builds ignore legacy persisted or query/env simulator overrides.
 - `playbackSource=windowsMediaSession` resolves to a new WMS gateway and never touches Companion auth/network/keyring behavior.
 - Browser preview remains simulator-backed even if persisted WMS data appears, because WinRT is unavailable there.
 
 Extend playback snapshots with explicit capability flags. UI availability is derived from capabilities rather than source-name conditionals. The WMS gateway additionally treats unsupported rating and mute command variants as successful no-ops, providing defense in depth against stale UI, direct calls, or migrated settings.
 
-The WMS native adapter uses the Windows-selected current GSMTC session, keeps media data in memory only, polls only while connected, emits only changed snapshots, and stops its task during disconnect/source changes.
+The WMS native adapter uses the Windows-selected current GSMTC session and keeps media data in memory only. Task `0050` supersedes the original async-poll-task implementation with the dedicated MTA-worker architecture recorded in decision `0007`.
 
 ## Alternatives Considered
 

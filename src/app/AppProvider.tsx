@@ -138,19 +138,46 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
     right.window.settingsPosition,
   );
 
-const resolveSourceMode = (
-  preferredMode: DataSourceMode,
-): Exclude<DataSourceMode, 'auto'> => {
-  const searchParams = new URLSearchParams(window.location.search);
-  const queryMode = searchParams.get('source');
-  const envMode = import.meta.env.VITE_YTM_DATA_SOURCE as string | undefined;
+interface SourceModeRuntimeInput {
+  preferredMode: DataSourceMode;
+  queryMode: string | null;
+  envMode: string | undefined;
+  tauriRuntime: boolean;
+  allowSimulatorOverride: boolean;
+}
+
+export const resolveSourceModeForRuntime = ({
+  preferredMode,
+  queryMode,
+  envMode,
+  tauriRuntime,
+  allowSimulatorOverride,
+}: SourceModeRuntimeInput): Exclude<DataSourceMode, 'auto'> => {
   const candidate = queryMode ?? envMode ?? preferredMode;
 
-  if (candidate === 'real' || candidate === 'simulator') {
+  if (candidate === 'real') {
     return candidate;
   }
 
-  return isTauriRuntime() ? 'real' : 'simulator';
+  if (candidate === 'simulator' && allowSimulatorOverride) {
+    return candidate;
+  }
+
+  return tauriRuntime ? 'real' : 'simulator';
+};
+
+const resolveSourceMode = (
+  preferredMode: DataSourceMode,
+): Exclude<DataSourceMode, 'auto'> => {
+  const tauriRuntime = isTauriRuntime();
+
+  return resolveSourceModeForRuntime({
+    preferredMode,
+    queryMode: new URLSearchParams(window.location.search).get('source'),
+    envMode: import.meta.env.VITE_YTM_DATA_SOURCE as string | undefined,
+    tauriRuntime,
+    allowSimulatorOverride: import.meta.env.DEV || !tauriRuntime,
+  });
 };
 
 const shouldStartController = (

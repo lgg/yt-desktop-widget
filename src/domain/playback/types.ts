@@ -228,6 +228,12 @@ export interface GatewayDisconnectOptions {
   closeBackend?: boolean;
 }
 
+export interface GatewayDiagnostic {
+  stage: string;
+  category: string;
+  hresult?: string;
+}
+
 export class GatewayError extends Error {
   readonly code:
     | 'auth_required'
@@ -237,10 +243,16 @@ export class GatewayError extends Error {
     | 'api_unavailable'
     | 'network'
     | 'unknown';
+  readonly diagnostic: GatewayDiagnostic | undefined;
 
-  constructor(code: GatewayError['code'], message: string) {
+  constructor(
+    code: GatewayError['code'],
+    message: string,
+    diagnostic?: GatewayDiagnostic,
+  ) {
     super(message);
     this.code = code;
+    this.diagnostic = diagnostic;
   }
 }
 
