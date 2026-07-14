@@ -180,6 +180,9 @@ const hasPlaybackPresentationChanged = (
   previous.album !== next.album ||
   previous.coverUrl !== next.coverUrl ||
   previous.durationSeconds !== next.durationSeconds ||
+  previous.volume !== next.volume ||
+  previous.isMuted !== next.isMuted ||
+  previous.likeStatus !== next.likeStatus ||
   previous.playbackState !== next.playbackState ||
   previous.isAdPlaying !== next.isAdPlaying ||
   previous.isLive !== next.isLive ||

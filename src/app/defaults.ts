@@ -1,6 +1,7 @@
 import packageJson from '../../package.json';
 
 import type { AppSettings } from '@/domain/playback/types';
+import { DEFAULT_WIDGET_BLOCK_ORDER } from '@/app/widgetLayout';
 
 export const DEFAULT_SETTINGS: AppSettings = {
   api: {
@@ -9,11 +10,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
     sourceMode: 'auto',
   },
   ui: {
-    hidePlaybackControls: false,
-    showPlaybackControlsOnHover: true,
-    hideProgressBar: false,
+    playbackControlsVisibility: 'hoverReserved',
+    progressBarVisibility: 'always',
+    trackDetailsVisibility: 'always',
+    likeDislikeVisibility: 'hidden',
     connectionBadgeVisibility: 'always',
-    hideTrackDetails: false,
+    muteButtonVisibility: 'hidden',
+    widgetBlockOrder: [...DEFAULT_WIDGET_BLOCK_ORDER],
+    collapsedSettingsSections: [],
     useArtworkAsPlaybackControl: false,
     hideSettingsButton: true,
     hideCloseButton: true,

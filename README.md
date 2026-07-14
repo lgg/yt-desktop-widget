@@ -9,14 +9,16 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 ## What it does
 
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
-- Supports previous, play/pause, next, reconnect, auth, and settings flows.
+- Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
 - Provides Compact (85%), unchanged Default (100%), Large (125%), and linked Custom widget sizing; artwork, text, controls, spacing, progress UI, background, and intrinsic window height scale together.
-- Display preferences can remove playback controls, the progress row, or the title/artist block from the compact layout, allowing the widget height to shrink.
-- Playback controls can be kept always visible or faded out until pointer hover or keyboard focus; the controls keep a stable reserved row so visibility changes cannot resize or jitter the widget.
+- Track details, progress, Like/Dislike, and playback controls each support four display modes: always visible, hover/focus with reserved space, hover/focus with dynamic window height, or fully hidden.
+- The six primary widget blocks can be reordered vertically from Settings without changing the controls inside each block.
+- Mute is an optional header action with always, hover/focus, and hidden modes. It delegates mute/unmute restoration to YTMDesktop and never writes a numeric volume.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
 - The connection-status badge can stay visible, appear only on hover or keyboard focus, or remain fully hidden while its non-interactive area stays draggable.
+- Top-level Settings sections can be collapsed, and their collapsed state persists between launches.
 - Hides to tray instead of quitting by default.
 - Ships with a real Companion client and a separate simulator for local development and tests.
 - Uses matching English and Russian i18n JSON bundles, with English as the default and a persisted language selector in Settings.
@@ -63,7 +65,7 @@ Verified from upstream docs during the latest protocol audit:
 - Playback state endpoint: `GET /api/v1/state`
 - Companion `player.videoProgress` is elapsed playback time in seconds, while `videoDetails.durationSeconds` is total duration in seconds; the frontend derives the progress ratio from those two values.
 - Playback command endpoint: `POST /api/v1/command`
-  - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "seekTo", "data": 42 }`
+  - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "mute" }`, `{ "command": "toggleLike" }`, `{ "command": "seekTo", "data": 42 }`
 - Realtime Socket.IO base URL: `http://<host>:<port>`
 - Realtime Socket.IO namespace: `/api/v1/realtime`
 - Realtime transport: websocket only

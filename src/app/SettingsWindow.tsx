@@ -19,6 +19,10 @@ import {
 } from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
 import {
+  WIDGET_BLOCK_VISIBILITY_MODES,
+  moveWidgetBlock,
+} from '@/app/widgetLayout';
+import {
   WIDGET_CUSTOM_MAX_PERCENTAGE,
   WIDGET_CUSTOM_MIN_PERCENTAGE,
   getCustomWidgetScaleFromHeight,
@@ -28,6 +32,8 @@ import {
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import {
   CloseIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   GitHubIcon,
   RefreshIcon,
   SparkIcon,
@@ -37,11 +43,22 @@ import {
   SettingsRow,
   Toggle,
 } from '@/components/settings/SettingsSection';
+import type {
+  SettingsSectionId,
+  WidgetBlockId,
+  WidgetBlockVisibility,
+} from '@/domain/playback/types';
 
 type OpacitySettingKey =
   | 'windowSurfaceOpacity'
   | 'artworkBackgroundOpacity'
   | 'artworkGradientOpacity';
+
+type BlockVisibilitySettingKey =
+  | 'trackDetailsVisibility'
+  | 'progressBarVisibility'
+  | 'likeDislikeVisibility'
+  | 'playbackControlsVisibility';
 
 interface OpacityControlProps {
   id: string;
@@ -255,6 +272,78 @@ export const SettingsWindow = () => {
     );
   };
 
+  const getSectionCollapseProps = (
+    sectionId: SettingsSectionId,
+    title: string,
+  ) => ({
+    sectionId,
+    collapsed: settings.ui.collapsedSettingsSections.includes(sectionId),
+    expandLabel: t('settingsWindow.sections.expand', { section: title }),
+    collapseLabel: t('settingsWindow.sections.collapse', { section: title }),
+    onCollapsedChange: (collapsed: boolean) => {
+      void updateSettings((current) => ({
+        ...current,
+        ui: {
+          ...current.ui,
+          collapsedSettingsSections: collapsed
+            ? [
+                ...current.ui.collapsedSettingsSections.filter(
+                  (candidate) => candidate !== sectionId,
+                ),
+                sectionId,
+              ]
+            : current.ui.collapsedSettingsSections.filter(
+                (candidate) => candidate !== sectionId,
+              ),
+        },
+      }));
+    },
+  });
+
+  const renderBlockVisibilityControl = (
+    settingKey: BlockVisibilitySettingKey,
+    blockId: WidgetBlockId,
+  ) => {
+    const label = t(`settingsWindow.widgetBlocks.${blockId}`);
+    return (
+      <div className="segmented-control" key={settingKey}>
+        <span className="segmented-control__label">{label}</span>
+        <span className="segmented-control__description">
+          {t('settingsWindow.sections.layout.visibilityDescription')}
+        </span>
+        <div
+          className="segmented-control__options"
+          role="group"
+          aria-label={label}
+        >
+          {WIDGET_BLOCK_VISIBILITY_MODES.map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={settings.ui[settingKey] === mode}
+              className={
+                settings.ui[settingKey] === mode
+                  ? 'segmented-control__option segmented-control__option--active'
+                  : 'segmented-control__option'
+              }
+              onClick={() =>
+                void updateSettings((current) => ({
+                  ...current,
+                  ui: {
+                    ...current.ui,
+                    [settingKey]: mode as WidgetBlockVisibility,
+                  },
+                }))
+              }
+            >
+              {t(`settingsWindow.blockVisibility.${mode}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <main
       data-tauri-drag-region
@@ -285,6 +374,10 @@ export const SettingsWindow = () => {
 
         <div className="settings-window__sections">
           <SettingsSection
+            {...getSectionCollapseProps(
+              'api',
+              t('settingsWindow.sections.api.title'),
+            )}
             title={t('settingsWindow.sections.api.title')}
             description={t('settingsWindow.sections.api.description')}
             actions={
@@ -385,6 +478,108 @@ export const SettingsWindow = () => {
           </SettingsSection>
 
           <SettingsSection
+            {...getSectionCollapseProps(
+              'layout',
+              t('settingsWindow.sections.layout.title'),
+            )}
+            title={t('settingsWindow.sections.layout.title')}
+            description={t('settingsWindow.sections.layout.description')}
+          >
+            {renderBlockVisibilityControl(
+              'trackDetailsVisibility',
+              'trackDetails',
+            )}
+            {renderBlockVisibilityControl('progressBarVisibility', 'progress')}
+            {renderBlockVisibilityControl(
+              'likeDislikeVisibility',
+              'likeDislike',
+            )}
+            {renderBlockVisibilityControl(
+              'playbackControlsVisibility',
+              'playbackControls',
+            )}
+            <div className="widget-block-order-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.layout.order')}
+              </span>
+              <span className="segmented-control__description">
+                {t('settingsWindow.sections.layout.orderDescription')}
+              </span>
+              <ol
+                className="widget-block-order"
+                aria-label={t('settingsWindow.sections.layout.order')}
+              >
+                {settings.ui.widgetBlockOrder.map((blockId, index) => {
+                  const label = t(`settingsWindow.widgetBlocks.${blockId}`);
+                  return (
+                    <li className="widget-block-order__item" key={blockId}>
+                      <span className="widget-block-order__position">
+                        {index + 1}
+                      </span>
+                      <span className="widget-block-order__label">{label}</span>
+                      <span className="widget-block-order__actions">
+                        <button
+                          className="ghost-button widget-block-order__button"
+                          type="button"
+                          disabled={index === 0}
+                          aria-label={t('settingsWindow.sections.layout.moveUp', {
+                            block: label,
+                          })}
+                          onClick={() =>
+                            void updateSettings((current) => ({
+                              ...current,
+                              ui: {
+                                ...current.ui,
+                                widgetBlockOrder: moveWidgetBlock(
+                                  current.ui.widgetBlockOrder,
+                                  blockId,
+                                  -1,
+                                ),
+                              },
+                            }))
+                          }
+                        >
+                          <ChevronUpIcon />
+                        </button>
+                        <button
+                          className="ghost-button widget-block-order__button"
+                          type="button"
+                          disabled={
+                            index === settings.ui.widgetBlockOrder.length - 1
+                          }
+                          aria-label={t(
+                            'settingsWindow.sections.layout.moveDown',
+                            { block: label },
+                          )}
+                          onClick={() =>
+                            void updateSettings((current) => ({
+                              ...current,
+                              ui: {
+                                ...current.ui,
+                                widgetBlockOrder: moveWidgetBlock(
+                                  current.ui.widgetBlockOrder,
+                                  blockId,
+                                  1,
+                                ),
+                              },
+                            }))
+                          }
+                        >
+                          <ChevronDownIcon />
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            {...getSectionCollapseProps(
+              'ui',
+              t('settingsWindow.sections.ui.title'),
+            )}
             title={t('settingsWindow.sections.ui.title')}
             description={t('settingsWindow.sections.ui.description')}
           >
@@ -457,38 +652,6 @@ export const SettingsWindow = () => {
               </div>
             </div>
             <Toggle
-              checked={settings.ui.hidePlaybackControls}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hidePlaybackControls: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideControls')}
-              description={t(
-                'settingsWindow.sections.ui.hideControlsDescription',
-              )}
-            />
-            <Toggle
-              checked={settings.ui.showPlaybackControlsOnHover}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    showPlaybackControlsOnHover: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.showControlsOnHover')}
-              description={t(
-                'settingsWindow.sections.ui.showControlsOnHoverDescription',
-              )}
-            />
-            <Toggle
               checked={settings.ui.useArtworkAsPlaybackControl}
               onChange={(nextValue) =>
                 void updateSettings((current) => ({
@@ -502,38 +665,6 @@ export const SettingsWindow = () => {
               label={t('settingsWindow.sections.ui.artworkPlaybackControl')}
               description={t(
                 'settingsWindow.sections.ui.artworkPlaybackControlDescription',
-              )}
-            />
-            <Toggle
-              checked={settings.ui.hideProgressBar}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideProgressBar: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideProgress')}
-              description={t(
-                'settingsWindow.sections.ui.hideProgressDescription',
-              )}
-            />
-            <Toggle
-              checked={settings.ui.hideTrackDetails}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideTrackDetails: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideTrackDetails')}
-              description={t(
-                'settingsWindow.sections.ui.hideTrackDetailsDescription',
               )}
             />
             <div className="segmented-control">
@@ -579,6 +710,47 @@ export const SettingsWindow = () => {
                 ))}
               </div>
             </div>
+            <div className="segmented-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.ui.muteButtonVisibility')}
+              </span>
+              <span className="segmented-control__description">
+                {t(
+                  'settingsWindow.sections.ui.muteButtonVisibilityDescription',
+                )}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t(
+                  'settingsWindow.sections.ui.muteButtonVisibility',
+                )}
+              >
+                {(['always', 'hover', 'hidden'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={settings.ui.muteButtonVisibility === mode}
+                    className={
+                      settings.ui.muteButtonVisibility === mode
+                        ? 'segmented-control__option segmented-control__option--active'
+                        : 'segmented-control__option'
+                    }
+                    onClick={() =>
+                      void updateSettings((current) => ({
+                        ...current,
+                        ui: {
+                          ...current.ui,
+                          muteButtonVisibility: mode,
+                        },
+                      }))
+                    }
+                  >
+                    {t(`settingsWindow.connectionBadgeVisibility.${mode}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Toggle
               checked={settings.ui.hideSettingsButton}
               onChange={(nextValue) =>
@@ -614,6 +786,10 @@ export const SettingsWindow = () => {
           </SettingsSection>
 
           <SettingsSection
+            {...getSectionCollapseProps(
+              'size',
+              t('settingsWindow.sections.size.title'),
+            )}
             title={t('settingsWindow.sections.size.title')}
             description={t('settingsWindow.sections.size.description')}
           >
@@ -739,6 +915,10 @@ export const SettingsWindow = () => {
           </SettingsSection>
 
           <SettingsSection
+            {...getSectionCollapseProps(
+              'appearance',
+              t('settingsWindow.sections.appearance.title'),
+            )}
             title={t('settingsWindow.sections.appearance.title')}
             description={t('settingsWindow.sections.appearance.description')}
           >
@@ -751,6 +931,10 @@ export const SettingsWindow = () => {
           </SettingsSection>
 
           <SettingsSection
+            {...getSectionCollapseProps(
+              'window',
+              t('settingsWindow.sections.window.title'),
+            )}
             title={t('settingsWindow.sections.window.title')}
             description={t('settingsWindow.sections.window.description')}
           >
@@ -819,6 +1003,10 @@ export const SettingsWindow = () => {
 
           {import.meta.env.DEV ? (
             <SettingsSection
+              {...getSectionCollapseProps(
+                'dev',
+                t('settingsWindow.sections.dev.title'),
+              )}
               title={t('settingsWindow.sections.dev.title')}
               description={t('settingsWindow.sections.dev.description')}
             >
@@ -862,7 +1050,13 @@ export const SettingsWindow = () => {
             </SettingsSection>
           ) : null}
 
-          <SettingsSection title={t('settingsWindow.sections.about.title')}>
+          <SettingsSection
+            {...getSectionCollapseProps(
+              'about',
+              t('settingsWindow.sections.about.title'),
+            )}
+            title={t('settingsWindow.sections.about.title')}
+          >
             <p className="settings-about__version">
               {t('settingsWindow.sections.about.version')}: {APP_VERSION}
             </p>

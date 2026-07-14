@@ -50,13 +50,15 @@ const buildState = (
   index: number,
   elapsedSeconds: number,
   trackState: number,
+  volume: number,
+  likeStatus: number,
 ): CompanionRawState => {
   const track = TRACKS[index] ?? TRACKS[0];
   return {
     player: {
       trackState,
       videoProgress: elapsedSeconds,
-      volume: 55,
+      volume,
       adPlaying: false,
       queue: {
         autoplay: true,
@@ -95,6 +97,7 @@ const buildState = (
       metadataFilled: true,
       isLive: false,
       videoType: 0,
+      likeStatus,
     },
   };
 };
@@ -104,6 +107,9 @@ export const createSimulatorGateway = (): CompanionGateway => {
   let currentTrackIndex = 0;
   let elapsedSeconds = TRACKS[0].durationSeconds * 0.16;
   let trackState = 1;
+  let volume = 55;
+  let restoredVolume = 55;
+  let likeStatus = 1;
   let handlersRef:
     | {
         onState: (state: CompanionRawState) => void;
@@ -112,7 +118,15 @@ export const createSimulatorGateway = (): CompanionGateway => {
     | null = null;
 
   const emit = () => {
-    handlersRef?.onState(buildState(currentTrackIndex, elapsedSeconds, trackState));
+    handlersRef?.onState(
+      buildState(
+        currentTrackIndex,
+        elapsedSeconds,
+        trackState,
+        volume,
+        likeStatus,
+      ),
+    );
   };
 
   const sendCommand = (command: PlaybackCommand): Promise<void> => {
@@ -120,12 +134,14 @@ export const createSimulatorGateway = (): CompanionGateway => {
       case 'next':
         currentTrackIndex = (currentTrackIndex + 1) % TRACKS.length;
         elapsedSeconds = 0;
+        likeStatus = 1;
         emit();
         return Promise.resolve();
       case 'previous':
         currentTrackIndex =
           (currentTrackIndex - 1 + TRACKS.length) % TRACKS.length;
         elapsedSeconds = 0;
+        likeStatus = 1;
         emit();
         return Promise.resolve();
       case 'playPause':
@@ -138,6 +154,27 @@ export const createSimulatorGateway = (): CompanionGateway => {
         return Promise.resolve();
       case 'pause':
         trackState = 0;
+        emit();
+        return Promise.resolve();
+      case 'mute':
+        if (volume > 0) {
+          restoredVolume = volume;
+          volume = 0;
+          emit();
+        }
+        return Promise.resolve();
+      case 'unmute':
+        if (volume <= 0) {
+          volume = restoredVolume > 0 ? restoredVolume : 55;
+          emit();
+        }
+        return Promise.resolve();
+      case 'toggleLike':
+        likeStatus = likeStatus === 2 ? 1 : 2;
+        emit();
+        return Promise.resolve();
+      case 'toggleDislike':
+        likeStatus = likeStatus === 0 ? 1 : 0;
         emit();
         return Promise.resolve();
       case 'seekTo': {
@@ -182,7 +219,13 @@ export const createSimulatorGateway = (): CompanionGateway => {
       }
 
       return Promise.resolve({
-        initialState: buildState(currentTrackIndex, elapsedSeconds, trackState),
+        initialState: buildState(
+          currentTrackIndex,
+          elapsedSeconds,
+          trackState,
+          volume,
+          likeStatus,
+        ),
         connection: {
           send: sendCommand,
           disconnect: () => {

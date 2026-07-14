@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AppModel } from '@/app/AppProvider';
 import { APP_VERSION } from '@/app/defaults';
 import { I18nProvider } from '@/app/i18n';
 import { SettingsWindow } from '@/app/SettingsWindow';
+import { DEFAULT_WIDGET_BLOCK_ORDER } from '@/app/widgetLayout';
 
 const windowControllerMocks = vi.hoisted(() => ({
   hideCurrentAppWindow: vi.fn(() => Promise.resolve()),
@@ -23,11 +24,14 @@ const model: AppModel = {
   settings: {
     api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
     ui: {
-      hidePlaybackControls: false,
-      showPlaybackControlsOnHover: true,
-      hideProgressBar: false,
+      playbackControlsVisibility: 'hoverReserved',
+      progressBarVisibility: 'always',
+      trackDetailsVisibility: 'always',
+      likeDislikeVisibility: 'hidden',
       connectionBadgeVisibility: 'always',
-      hideTrackDetails: false,
+      muteButtonVisibility: 'hidden',
+      widgetBlockOrder: [...DEFAULT_WIDGET_BLOCK_ORDER],
+      collapsedSettingsSections: [],
       useArtworkAsPlaybackControl: false,
       hideSettingsButton: true,
       hideCloseButton: true,
@@ -84,7 +88,7 @@ describe('SettingsWindow UI display preferences', () => {
 
     const theme = screen.getByText('Theme mode').closest('.segmented-control');
     const firstToggle = screen
-      .getByText('Hide playback controls')
+      .getByText('Use artwork as play/pause control')
       .closest('.toggle-row');
     expect(theme).not.toBeNull();
     expect(firstToggle).not.toBeNull();
@@ -93,7 +97,7 @@ describe('SettingsWindow UI display preferences', () => {
     );
 
     expect(
-      screen.getByLabelText('Hide track title and artist'),
+      screen.getByRole('group', { name: 'Track title and artist' }),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Use artwork as play/pause control'),
@@ -149,25 +153,142 @@ describe('SettingsWindow UI display preferences', () => {
       name: 'Connection status badge',
     });
     expect(group).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Always' })).toHaveAttribute(
+    expect(within(group).getByRole('button', { name: 'Always' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(screen.getByRole('button', { name: 'On hover' })).toHaveAttribute(
+    expect(within(group).getByRole('button', { name: 'On hover' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
-    expect(screen.getByRole('button', { name: 'Hidden' })).toHaveAttribute(
+    expect(within(group).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hidden' }));
+    fireEvent.click(within(group).getByRole('button', { name: 'Hidden' }));
     expect(updateSettings).toHaveBeenCalledTimes(1);
     const recipe = updateSettings.mock.calls[0]?.[0];
     expect(recipe?.(model.settings).ui).toMatchObject({
       connectionBadgeVisibility: 'hidden',
     });
+  });
+
+  it('offers four visibility modes for each configurable widget content block', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    for (const name of [
+      'Track title and artist',
+      'Progress bar',
+      'Like / Dislike buttons',
+      'Playback controls',
+    ]) {
+      const group = screen.getByRole('group', { name });
+      expect(
+        within(group).getByRole('button', { name: 'Always' }),
+      ).toBeInTheDocument();
+      expect(
+        within(group).getByRole('button', {
+          name: 'On hover — keep space',
+        }),
+      ).toBeInTheDocument();
+      expect(
+        within(group).getByRole('button', {
+          name: 'On hover — resize widget',
+        }),
+      ).toBeInTheDocument();
+      expect(
+        within(group).getByRole('button', { name: 'Hidden' }),
+      ).toBeInTheDocument();
+    }
+
+    const progress = screen.getByRole('group', { name: 'Progress bar' });
+    fireEvent.click(
+      within(progress).getByRole('button', {
+        name: 'On hover — resize widget',
+      }),
+    );
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui.progressBarVisibility).toBe(
+      'hoverDynamic',
+    );
+  });
+
+  it('offers independent mute-button visibility without volume controls', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const group = screen.getByRole('group', { name: 'Mute button' });
+    expect(within(group).getByRole('button', { name: 'Hidden' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.queryByLabelText(/volume/i)).not.toBeInTheDocument();
+    fireEvent.click(within(group).getByRole('button', { name: 'On hover' }));
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui.muteButtonVisibility).toBe('hover');
+  });
+
+  it('moves blocks with accessible controls and persists the new permutation', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const order = screen.getByRole('list', { name: 'Widget block order' });
+    expect(
+      within(order).getAllByRole('listitem').map((item) => item.textContent),
+    ).toEqual([
+      expect.stringContaining('Header controls'),
+      expect.stringContaining('Artwork'),
+      expect.stringContaining('Track title and artist'),
+      expect.stringContaining('Like / Dislike buttons'),
+      expect.stringContaining('Playback controls'),
+      expect.stringContaining('Progress bar'),
+    ]);
+
+    fireEvent.click(
+      within(order).getByRole('button', { name: 'Move Progress bar up' }),
+    );
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui.widgetBlockOrder).toEqual([
+      'header',
+      'artwork',
+      'trackDetails',
+      'likeDislike',
+      'progress',
+      'playbackControls',
+    ]);
+  });
+
+  it('persists collapsed top-level Settings sections with semantic expanded state', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const apiToggle = screen.getByRole('button', {
+      name: 'Collapse API / Connection',
+    });
+    expect(apiToggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(apiToggle);
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(recipe?.(model.settings).ui.collapsedSettingsSections).toEqual([
+      'api',
+    ]);
   });
 
   it('starts native dragging from the persistent header after the sections scroll', () => {

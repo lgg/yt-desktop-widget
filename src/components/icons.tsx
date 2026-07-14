@@ -79,3 +79,45 @@ export const SparkIcon = (props: SVGProps<SVGSVGElement>) => (
     <path d="m12 2 1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2Z" fill="currentColor" stroke="none" />
   </svg>
 );
+
+export const VolumeIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="M5 9h4l5-4v14l-5-4H5V9Z" />
+    <path d="M17 9.5a4 4 0 0 1 0 5" />
+    <path d="M19.5 7a7.5 7.5 0 0 1 0 10" />
+  </svg>
+);
+
+export const MutedIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="M5 9h4l5-4v14l-5-4H5V9Z" />
+    <path d="m17 10 4 4" />
+    <path d="m21 10-4 4" />
+  </svg>
+);
+
+export const LikeIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="M8 10v10H4V10h4Z" />
+    <path d="M8 19h8.2a2 2 0 0 0 1.94-1.52l1.35-5.5A2 2 0 0 0 17.55 9H14l.55-3.3A2.32 2.32 0 0 0 12.26 3L8 10Z" />
+  </svg>
+);
+
+export const DislikeIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="M8 14V4H4v10h4Z" />
+    <path d="M8 5h8.2a2 2 0 0 1 1.94 1.52l1.35 5.5A2 2 0 0 1 17.55 15H14l.55 3.3A2.32 2.32 0 0 1 12.26 21L8 14Z" />
+  </svg>
+);
+
+export const ChevronUpIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="m6 15 6-6 6 6" />
+  </svg>
+);
+
+export const ChevronDownIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);

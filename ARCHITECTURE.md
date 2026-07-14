@@ -144,8 +144,12 @@ Settings are grouped by feature area:
 
 1. API / Connection
 2. UI / Display
-3. Window / Behavior
-4. Development / About
+3. Widget Layout
+4. Widget Size
+5. Transparency / Background
+6. Window / Behavior
+7. Developer controls
+8. About
 
 Persistence model:
 
@@ -154,6 +158,8 @@ Persistence model:
 - auth token: OS keyring through Rust, not in frontend storage
 - locale: persisted as part of UI settings; English is the backward-compatible default
 - widget size: persisted as a named mode plus one canonical Custom percentage; custom width and height are derived views of that percentage
+- widget layout: persisted as a normalized permutation of six typed block IDs plus explicit visibility modes; unknown/duplicate IDs are repaired and missing IDs are appended
+- Settings disclosure state: persisted as a deduplicated whitelist of top-level section IDs
 
 ## Version model
 
@@ -171,6 +177,7 @@ Persistence model:
 - transparent
 - canonical 336 px cover-driven layout with Compact, unchanged Default, Large, and linked Custom uniform scaling
 - intrinsic content height is measured before the selected scale is applied to both the content layer and native window
+- six primary blocks render through a persisted order while fallback/auth state cards remain outside the user-controlled order
 - free border resize remains disabled; sizing is controlled through Settings
 - always-on-top capable
 - draggable on free surface

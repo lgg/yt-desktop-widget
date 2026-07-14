@@ -467,6 +467,10 @@ fn command_request_body(command: &PlaybackCommand) -> Value {
     PlaybackCommand::Pause => json!({ "command": "pause" }),
     PlaybackCommand::Next => json!({ "command": "next" }),
     PlaybackCommand::Previous => json!({ "command": "previous" }),
+    PlaybackCommand::Mute => json!({ "command": "mute" }),
+    PlaybackCommand::Unmute => json!({ "command": "unmute" }),
+    PlaybackCommand::ToggleLike => json!({ "command": "toggleLike" }),
+    PlaybackCommand::ToggleDislike => json!({ "command": "toggleDislike" }),
     PlaybackCommand::SeekTo { seconds } => json!({
       "command": "seekTo",
       "data": sanitize_seek_seconds(*seconds),
@@ -657,6 +661,22 @@ mod tests {
     assert_eq!(
       command_request_body(&PlaybackCommand::Previous),
       json!({ "command": "previous" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Mute),
+      json!({ "command": "mute" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::Unmute),
+      json!({ "command": "unmute" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::ToggleLike),
+      json!({ "command": "toggleLike" })
+    );
+    assert_eq!(
+      command_request_body(&PlaybackCommand::ToggleDislike),
+      json!({ "command": "toggleDislike" })
     );
   }
 

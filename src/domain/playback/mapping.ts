@@ -4,6 +4,7 @@
   CompanionThumbnail,
   PlaybackSnapshot,
   PlaybackState,
+  LikeStatus,
 } from '@/domain/playback/types';
 
 const clamp = (value: number, min: number, max: number) =>
@@ -79,6 +80,23 @@ const mapTrackState = (trackState: number | undefined): PlaybackState => {
   }
 };
 
+const mapLikeStatus = (
+  rawStatus: number | null | undefined,
+  previous: PlaybackSnapshot | null,
+  sameTrack: boolean,
+): LikeStatus => {
+  switch (rawStatus) {
+    case 0:
+      return 'disliked';
+    case 1:
+      return 'indifferent';
+    case 2:
+      return 'liked';
+    default:
+      return sameTrack ? (previous?.likeStatus ?? 'unknown') : 'unknown';
+  }
+};
+
 const splitArtists = (author: string | undefined): string[] => {
   if (!author) {
     return [];
@@ -117,6 +135,12 @@ export const mapCompanionState = (
     : 0;
   const progressRatio = durationSeconds ? elapsedSeconds / durationSeconds : 0;
   const nextId = video?.id ?? previous?.id ?? 'unknown-track';
+  const sameTrack = previous?.id === nextId;
+  const rawVolume = rawState.player?.volume;
+  const volume =
+    typeof rawVolume === 'number' && Number.isFinite(rawVolume)
+      ? clamp(rawVolume, 0, 100)
+      : (previous?.volume ?? 100);
   const metadataFilled = video?.metadataFilled ?? true;
   const canSeek = !video?.isLive && durationSeconds > 0;
   const artistCandidates = splitArtists(video?.author);
@@ -136,6 +160,9 @@ export const mapCompanionState = (
     durationSeconds,
     elapsedSeconds,
     progressRatio,
+    volume,
+    isMuted: volume <= 0,
+    likeStatus: mapLikeStatus(video?.likeStatus, previous, sameTrack),
     playbackState: mapTrackState(rawState.player?.trackState),
     isAdPlaying: rawState.player?.adPlaying ?? false,
     isLive: video?.isLive ?? false,

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AppModel } from '@/app/AppProvider';
 import { I18nProvider } from '@/app/i18n';
 import { WidgetWindow } from '@/app/WidgetWindow';
+import { DEFAULT_WIDGET_BLOCK_ORDER } from '@/app/widgetLayout';
 
 const mockUseAppModel = vi.fn<() => AppModel>();
 const resolvedAction = () => Promise.resolve();
@@ -33,6 +34,12 @@ const createConnectedModel = ({
   hideProgressBar = false,
   connectionBadgeVisibility = 'always',
   hideTrackDetails = false,
+  playbackControlsVisibility,
+  progressBarVisibility,
+  trackDetailsVisibility,
+  likeDislikeVisibility = 'hidden',
+  muteButtonVisibility = 'hidden',
+  widgetBlockOrder = [...DEFAULT_WIDGET_BLOCK_ORDER],
   useArtworkAsPlaybackControl = false,
   widgetSizeMode = 'default',
   customWidgetScalePercentage = 100,
@@ -43,6 +50,28 @@ const createConnectedModel = ({
   hideProgressBar?: boolean;
   connectionBadgeVisibility?: 'always' | 'hover' | 'hidden';
   hideTrackDetails?: boolean;
+  playbackControlsVisibility?:
+    | 'always'
+    | 'hoverReserved'
+    | 'hoverDynamic'
+    | 'hidden';
+  progressBarVisibility?:
+    | 'always'
+    | 'hoverReserved'
+    | 'hoverDynamic'
+    | 'hidden';
+  trackDetailsVisibility?:
+    | 'always'
+    | 'hoverReserved'
+    | 'hoverDynamic'
+    | 'hidden';
+  likeDislikeVisibility?:
+    | 'always'
+    | 'hoverReserved'
+    | 'hoverDynamic'
+    | 'hidden';
+  muteButtonVisibility?: 'always' | 'hover' | 'hidden';
+  widgetBlockOrder?: AppModel['settings']['ui']['widgetBlockOrder'];
   useArtworkAsPlaybackControl?: boolean;
   widgetSizeMode?: 'compact' | 'default' | 'large' | 'custom';
   customWidgetScalePercentage?: number;
@@ -51,11 +80,22 @@ const createConnectedModel = ({
   settings: {
     api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
     ui: {
-      hidePlaybackControls,
-      showPlaybackControlsOnHover,
-      hideProgressBar,
+      playbackControlsVisibility:
+        playbackControlsVisibility ??
+        (hidePlaybackControls
+          ? 'hidden'
+          : showPlaybackControlsOnHover
+            ? 'hoverReserved'
+            : 'always'),
+      progressBarVisibility:
+        progressBarVisibility ?? (hideProgressBar ? 'hidden' : 'always'),
+      trackDetailsVisibility:
+        trackDetailsVisibility ?? (hideTrackDetails ? 'hidden' : 'always'),
+      likeDislikeVisibility,
       connectionBadgeVisibility,
-      hideTrackDetails,
+      muteButtonVisibility,
+      widgetBlockOrder,
+      collapsedSettingsSections: [],
       useArtworkAsPlaybackControl,
       hideSettingsButton: true,
       hideCloseButton: true,
@@ -92,6 +132,9 @@ const createConnectedModel = ({
       durationSeconds: 248,
       elapsedSeconds: 12,
       progressRatio: 0.05,
+      volume: 55,
+      isMuted: false,
+      likeStatus: 'indifferent',
       playbackState,
       isAdPlaying: false,
       isLive: false,
@@ -233,6 +276,129 @@ describe('WidgetWindow', () => {
     expect(model.sendCommand).toHaveBeenNthCalledWith(2, { type: 'playPause' });
     expect(model.sendCommand).toHaveBeenNthCalledWith(3, { type: 'next' });
     expect(model.sendCommand).toHaveBeenCalledTimes(3);
+  });
+
+  it('renders every enabled primary block in the persisted order', () => {
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({
+        playbackControlsVisibility: 'always',
+        likeDislikeVisibility: 'always',
+        widgetBlockOrder: [
+          'progress',
+          'header',
+          'artwork',
+          'trackDetails',
+          'likeDislike',
+          'playbackControls',
+        ],
+      }),
+    );
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      [...document.querySelectorAll('[data-widget-block]')].map((element) =>
+        element.getAttribute('data-widget-block'),
+      ),
+    ).toEqual([
+      'progress',
+      'header',
+      'artwork',
+      'trackDetails',
+      'likeDislike',
+      'playbackControls',
+    ]);
+  });
+
+  it('uses the current Companion mute state and never sends a numeric volume', () => {
+    const model = createConnectedModel({ muteButtonVisibility: 'always' });
+    mockUseAppModel.mockReturnValue(model);
+    const view = render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mute' }));
+    expect(model.sendCommand).toHaveBeenLastCalledWith({ type: 'mute' });
+
+    if (model.session.playback) {
+      model.session.playback.volume = 0;
+      model.session.playback.isMuted = true;
+    }
+    mockUseAppModel.mockReturnValue(model);
+    view.rerender(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Unmute' }));
+    expect(model.sendCommand).toHaveBeenLastCalledWith({ type: 'unmute' });
+    expect(model.sendCommand).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'setVolume' }),
+    );
+  });
+
+  it('shows active Like/Dislike state and dispatches typed toggle commands', () => {
+    const model = createConnectedModel({
+      likeDislikeVisibility: 'always',
+    });
+    if (model.session.playback) {
+      model.session.playback.likeStatus = 'liked';
+    }
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const like = screen.getByRole('button', { name: 'Like' });
+    const dislike = screen.getByRole('button', { name: 'Dislike' });
+    expect(like).toHaveAttribute('aria-pressed', 'true');
+    expect(dislike).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(like);
+    fireEvent.click(dislike);
+    expect(model.sendCommand).toHaveBeenNthCalledWith(1, {
+      type: 'toggleLike',
+    });
+    expect(model.sendCommand).toHaveBeenNthCalledWith(2, {
+      type: 'toggleDislike',
+    });
+  });
+
+  it('renders dynamic-hover blocks only inside the active pointer boundary', () => {
+    mockUseAppModel.mockReturnValue(
+      createConnectedModel({
+        trackDetailsVisibility: 'hoverDynamic',
+        playbackControlsVisibility: 'hidden',
+        progressBarVisibility: 'hidden',
+      }),
+    );
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const widget = document.querySelector('.widget-window') as HTMLElement;
+    expect(
+      document.querySelector('[data-widget-block="trackDetails"]'),
+    ).not.toBeInTheDocument();
+    fireEvent.pointerEnter(widget);
+    expect(
+      document.querySelector('[data-widget-block="trackDetails"]'),
+    ).toBeInTheDocument();
+    fireEvent.pointerLeave(widget);
+    expect(
+      document.querySelector('[data-widget-block="trackDetails"]'),
+    ).not.toBeInTheDocument();
   });
 
   it('removes playback controls from layout when the display preference hides them', () => {
@@ -805,11 +971,14 @@ describe('WidgetWindow', () => {
       settings: {
         api: { host: '127.0.0.1', port: 9863, sourceMode: 'real' },
         ui: {
-          hidePlaybackControls: false,
-          showPlaybackControlsOnHover: true,
-          hideProgressBar: false,
+          playbackControlsVisibility: 'hoverReserved',
+          progressBarVisibility: 'always',
+          trackDetailsVisibility: 'always',
+          likeDislikeVisibility: 'hidden',
           connectionBadgeVisibility: 'always',
-          hideTrackDetails: false,
+          muteButtonVisibility: 'hidden',
+          widgetBlockOrder: [...DEFAULT_WIDGET_BLOCK_ORDER],
+          collapsedSettingsSections: [],
           useArtworkAsPlaybackControl: false,
           hideSettingsButton: true,
           hideCloseButton: true,

@@ -1,6 +1,27 @@
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type Locale = 'en' | 'ru';
 export type ConnectionBadgeVisibility = 'always' | 'hover' | 'hidden';
+export type WidgetBlockVisibility =
+  | 'always'
+  | 'hoverReserved'
+  | 'hoverDynamic'
+  | 'hidden';
+export type WidgetBlockId =
+  | 'header'
+  | 'artwork'
+  | 'trackDetails'
+  | 'likeDislike'
+  | 'playbackControls'
+  | 'progress';
+export type SettingsSectionId =
+  | 'api'
+  | 'ui'
+  | 'layout'
+  | 'size'
+  | 'appearance'
+  | 'window'
+  | 'dev'
+  | 'about';
 export type WidgetSizeMode = 'compact' | 'default' | 'large' | 'custom';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
 export type CloseButtonAction = 'exit' | 'hideToTray';
@@ -26,6 +47,7 @@ export type ConnectionMessageKey =
   | 'socketClosed'
   | 'unexpected';
 export type PlaybackState = 'unknown' | 'paused' | 'playing' | 'buffering';
+export type LikeStatus = 'unknown' | 'disliked' | 'indifferent' | 'liked';
 
 export interface ConnectionSettings {
   host: string;
@@ -34,11 +56,14 @@ export interface ConnectionSettings {
 }
 
 export interface UiSettings {
-  hidePlaybackControls: boolean;
-  showPlaybackControlsOnHover: boolean;
-  hideProgressBar: boolean;
+  playbackControlsVisibility: WidgetBlockVisibility;
+  progressBarVisibility: WidgetBlockVisibility;
+  trackDetailsVisibility: WidgetBlockVisibility;
+  likeDislikeVisibility: WidgetBlockVisibility;
   connectionBadgeVisibility: ConnectionBadgeVisibility;
-  hideTrackDetails: boolean;
+  muteButtonVisibility: ConnectionBadgeVisibility;
+  widgetBlockOrder: WidgetBlockId[];
+  collapsedSettingsSections: SettingsSectionId[];
   useArtworkAsPlaybackControl: boolean;
   hideSettingsButton: boolean;
   hideCloseButton: boolean;
@@ -136,6 +161,9 @@ export interface PlaybackSnapshot {
   durationSeconds: number;
   elapsedSeconds: number;
   progressRatio: number;
+  volume: number;
+  isMuted: boolean;
+  likeStatus: LikeStatus;
   playbackState: PlaybackState;
   isAdPlaying: boolean;
   isLive: boolean;
@@ -168,6 +196,10 @@ export type PlaybackCommand =
   | { type: 'pause' }
   | { type: 'next' }
   | { type: 'previous' }
+  | { type: 'mute' }
+  | { type: 'unmute' }
+  | { type: 'toggleLike' }
+  | { type: 'toggleDislike' }
   | { type: 'seekTo'; seconds: number };
 
 export type GatewayDisconnectReason =

@@ -9,6 +9,7 @@ describe('mapCompanionState', () => {
         player: {
           trackState: 1,
           videoProgress: 50,
+          volume: 0,
         },
         video: {
           id: 'track-1',
@@ -19,6 +20,7 @@ describe('mapCompanionState', () => {
           thumbnails: [{ url: 'https://example.com/cover.png', width: 600, height: 600 }],
           metadataFilled: true,
           isLive: false,
+          likeStatus: 2,
         },
       },
       null,
@@ -32,6 +34,9 @@ describe('mapCompanionState', () => {
     expect(snapshot?.playbackState).toBe('playing');
     expect(snapshot?.canSeek).toBe(true);
     expect(snapshot?.coverUrl).toBe('https://example.com/cover.png');
+    expect(snapshot?.volume).toBe(0);
+    expect(snapshot?.isMuted).toBe(true);
+    expect(snapshot?.likeStatus).toBe('liked');
   });
 
   it('treats Companion videoProgress as elapsed seconds instead of a percentage', () => {
@@ -87,5 +92,39 @@ describe('mapCompanionState', () => {
 
     expect(next?.title).toBe('Late Echo');
     expect(next?.coverUrl).toBe('https://example.com/original.png');
+  });
+
+  it('preserves mute and rating presentation when a same-track update omits them', () => {
+    const previous = mapCompanionState(
+      {
+        player: { trackState: 1, videoProgress: 20, volume: 37 },
+        video: {
+          id: 'track-actions',
+          title: 'Action State',
+          durationSeconds: 180,
+          likeStatus: 0,
+        },
+      },
+      null,
+      100,
+    );
+
+    const next = mapCompanionState(
+      {
+        player: { trackState: 1, videoProgress: 21 },
+        video: {
+          id: 'track-actions',
+          title: 'Action State',
+          durationSeconds: 180,
+          likeStatus: -1,
+        },
+      },
+      previous,
+      200,
+    );
+
+    expect(next?.volume).toBe(37);
+    expect(next?.isMuted).toBe(false);
+    expect(next?.likeStatus).toBe('disliked');
   });
 });

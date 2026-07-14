@@ -1,7 +1,7 @@
 {
   "name": "ytm-desktop-widget",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "description": "A premium Windows desktop widget for YTMDesktop powered by Tauri v2, React, TypeScript, and the Companion Server API.",
   "engines": {
