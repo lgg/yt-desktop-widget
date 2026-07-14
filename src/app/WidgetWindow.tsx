@@ -92,6 +92,7 @@ export const WidgetWindow = () => {
     ready,
     session,
     settings,
+    resolvedSourceMode,
     reconnect,
     generateAuthCode,
     confirmAuthentication,
@@ -100,11 +101,27 @@ export const WidgetWindow = () => {
     closeWidget,
   } = useAppModel();
   const { t } = useI18n();
-  const connectionMessage = getConnectionMessage(t, session.connection);
+  const windowsMediaSessionActive =
+    resolvedSourceMode === 'real' &&
+    settings.api.playbackSource === 'windowsMediaSession';
+  const activePlaybackSource = windowsMediaSessionActive
+    ? 'windowsMediaSession'
+    : 'companion';
+  const sourceStateKey = (
+    state: 'discovering' | 'disconnected' | 'reconnecting' | 'error' | 'empty',
+    field: 'eyebrow' | 'title' | 'body',
+  ) =>
+    windowsMediaSessionActive
+      ? `widget.windowsMediaStates.${state}.${field}`
+      : `widget.states.${state}.${field}`;
+  const connectionMessage = getConnectionMessage(
+    t,
+    session.connection,
+    activePlaybackSource,
+  );
   const [hovered, setHovered] = useState(false);
   const [focusedWithin, setFocusedWithin] = useState(false);
-  const [baseWindowHeight, setBaseWindowHeight] =
-    useState(WIDGET_BASE_HEIGHT);
+  const [baseWindowHeight, setBaseWindowHeight] = useState(WIDGET_BASE_HEIGHT);
   const keyboardInteractionRef = useRef(false);
   const widgetRef = useRef<HTMLElement | null>(null);
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -163,30 +180,37 @@ export const WidgetWindow = () => {
   const closeButtonVisible = !settings.ui.hideCloseButton || interactionActive;
   const canSendCommands =
     session.connection.status === 'connected' && !!session.playback;
-  const titleLine = playback?.title ?? t('widget.states.disconnected.title');
+  const titleLine =
+    playback?.title ??
+    t(
+      sourceStateKey(
+        session.connection.status === 'connected' ? 'empty' : 'disconnected',
+        'title',
+      ),
+    );
   const artistLine = playback
     ? formatArtistLine(playback.artists)
     : (connectionMessage ?? '');
   const coverState =
     session.connection.status === 'discovering'
       ? {
-          eyebrow: t('widget.states.discovering.eyebrow'),
-          title: t('widget.states.discovering.title'),
+          eyebrow: t(sourceStateKey('discovering', 'eyebrow')),
+          title: t(sourceStateKey('discovering', 'title')),
         }
       : session.connection.status === 'disconnected'
         ? {
-            eyebrow: t('widget.states.disconnected.eyebrow'),
-            title: t('widget.states.disconnected.title'),
+            eyebrow: t(sourceStateKey('disconnected', 'eyebrow')),
+            title: t(sourceStateKey('disconnected', 'title')),
           }
         : session.connection.status === 'reconnecting'
           ? {
-              eyebrow: t('widget.states.reconnecting.eyebrow'),
-              title: t('widget.states.reconnecting.title'),
+              eyebrow: t(sourceStateKey('reconnecting', 'eyebrow')),
+              title: t(sourceStateKey('reconnecting', 'title')),
             }
           : session.connection.status === 'error'
             ? {
-                eyebrow: t('widget.states.error.eyebrow'),
-                title: t('widget.states.error.title'),
+                eyebrow: t(sourceStateKey('error', 'eyebrow')),
+                title: t(sourceStateKey('error', 'title')),
               }
             : null;
   const artworkAction =
@@ -198,7 +222,7 @@ export const WidgetWindow = () => {
               : 'widget.artwork.play',
             { title: titleLine },
           ),
-          disabled: !canSendCommands,
+          disabled: !canSendCommands || !playback.canPlayPause,
           visible: interactionActive,
           icon:
             playback.playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />,
@@ -394,7 +418,10 @@ export const WidgetWindow = () => {
     switch (session.connection.status) {
       case 'discovering':
         return (
-          <WidgetStateCard body={t('widget.states.discovering.body')} compact />
+          <WidgetStateCard
+            body={t(sourceStateKey('discovering', 'body'))}
+            compact
+          />
         );
       case 'auth_required':
         return (
@@ -445,7 +472,9 @@ export const WidgetWindow = () => {
       case 'disconnected':
         return (
           <WidgetStateCard
-            body={connectionMessage ?? t('widget.states.disconnected.body')}
+            body={
+              connectionMessage ?? t(sourceStateKey('disconnected', 'body'))
+            }
             compact
             actions={
               <button
@@ -461,7 +490,9 @@ export const WidgetWindow = () => {
       case 'reconnecting':
         return (
           <WidgetStateCard
-            body={connectionMessage ?? t('widget.states.reconnecting.body')}
+            body={
+              connectionMessage ?? t(sourceStateKey('reconnecting', 'body'))
+            }
             compact
             actions={
               <button
@@ -477,7 +508,7 @@ export const WidgetWindow = () => {
       case 'error':
         return (
           <WidgetStateCard
-            body={connectionMessage ?? t('widget.states.error.body')}
+            body={connectionMessage ?? t(sourceStateKey('error', 'body'))}
             compact
             actions={
               <button
@@ -494,9 +525,9 @@ export const WidgetWindow = () => {
         if (!session.playback) {
           return (
             <WidgetStateCard
-              eyebrow={t('widget.states.empty.eyebrow')}
-              title={t('widget.states.empty.title')}
-              body={t('widget.states.empty.body')}
+              eyebrow={t(sourceStateKey('empty', 'eyebrow'))}
+              title={t(sourceStateKey('empty', 'title'))}
+              body={t(sourceStateKey('empty', 'body'))}
             />
           );
         }
@@ -540,7 +571,9 @@ export const WidgetWindow = () => {
                       : 'icon-button widget-window__window-action'
                   }
                   type="button"
-                  disabled={!canSendCommands || !muteButtonVisible}
+                  disabled={
+                    !canSendCommands || !playback.canMute || !muteButtonVisible
+                  }
                   aria-hidden={!muteButtonVisible}
                   aria-label={
                     playback.isMuted
@@ -649,11 +682,9 @@ export const WidgetWindow = () => {
           >
             <RatingControls
               likeStatus={playback.likeStatus}
-              disabled={!canSendCommands}
+              disabled={!canSendCommands || !playback.canRate}
               visible={ratingState.visible}
-              onToggleLike={() =>
-                void sendCommand({ type: 'toggleLike' })
-              }
+              onToggleLike={() => void sendCommand({ type: 'toggleLike' })}
               onToggleDislike={() =>
                 void sendCommand({ type: 'toggleDislike' })
               }
@@ -673,6 +704,9 @@ export const WidgetWindow = () => {
             <TransportControls
               playbackState={playback.playbackState}
               disabled={!canSendCommands}
+              previousDisabled={!playback.canGoPrevious}
+              playPauseDisabled={!playback.canPlayPause}
+              nextDisabled={!playback.canGoNext}
               visible={controlsState.visible}
               onPrevious={() => void sendCommand({ type: 'previous' })}
               onPlayPause={() => void sendCommand({ type: 'playPause' })}
@@ -749,7 +783,6 @@ export const WidgetWindow = () => {
           ) : null}
 
           {renderStateCard()}
-
         </div>
       </div>
     </main>

@@ -137,7 +137,7 @@ See `project-tracking/checklists/0000-definition-of-done.md`.
 ## 8. Project Notes
 
 - This is a Windows-first Tauri v2 + React + TypeScript desktop widget app.
-- The app integrates with YTMDesktop only through the official Companion Server API.
+- Production playback integrations are limited to the official YTMDesktop Companion Server API and the official Windows Media Session/GSMTC contract. Do not add scraping, injection, OCR, or window-title parsing.
 - Current manual test builds are portable-only.
 - Keep UX behavior unchanged unless the task explicitly calls for a UX change.
 - Respect existing architecture and decisions before broad changes:

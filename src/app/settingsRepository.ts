@@ -5,6 +5,7 @@ import type {
   ConnectionBadgeVisibility,
   DataSourceMode,
   Locale,
+  PlaybackSource,
   ThemeMode,
   WidgetBlockVisibility,
   WidgetSizeMode,
@@ -122,6 +123,11 @@ export const normalizeSettings = (value: unknown): AppSettings => {
         api.sourceMode,
         ['auto', 'real', 'simulator'],
         DEFAULT_SETTINGS.api.sourceMode,
+      ),
+      playbackSource: enumOr<PlaybackSource>(
+        api.playbackSource,
+        ['companion', 'windowsMediaSession'],
+        DEFAULT_SETTINGS.api.playbackSource,
       ),
     },
     ui: {

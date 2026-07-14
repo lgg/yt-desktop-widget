@@ -1,9 +1,9 @@
 {
   "name": "ytm-desktop-widget",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
-  "description": "A premium Windows desktop widget for YTMDesktop powered by Tauri v2, React, TypeScript, and the Companion Server API.",
+  "description": "A premium Windows desktop media widget powered by Tauri v2, React, TypeScript, YTMDesktop Companion, and Windows Media Session.",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -20,7 +20,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-e2e.ps1",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check",
     "verify": "npm run version:check && npm run lint && npm run test && npm run build",

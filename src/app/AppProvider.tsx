@@ -25,14 +25,17 @@ import { PlaybackController } from '@/domain/playback/controller';
 import { createInitialConnectionState } from '@/domain/playback/connectionMachine';
 import type {
   AppSettings,
+  CompanionGateway,
   DataSourceMode,
   PlaybackCommand,
   PlaybackSessionState,
+  PlaybackSource,
   WindowPosition,
 } from '@/domain/playback/types';
 import { createRealGateway } from '@/integration/companion/realGateway';
 import { tauriBridge } from '@/integration/companion/tauriBridge';
 import { createSimulatorGateway } from '@/integration/simulator/simulatorGateway';
+import { createWindowsMediaGateway } from '@/integration/windowsMedia/windowsMediaGateway';
 import { isTauriRuntime } from '@/utils/runtime';
 
 export interface AppModel {
@@ -96,6 +99,7 @@ const areSettingsEqual = (left: AppSettings, right: AppSettings): boolean =>
   left.api.host === right.api.host &&
   left.api.port === right.api.port &&
   left.api.sourceMode === right.api.sourceMode &&
+  left.api.playbackSource === right.api.playbackSource &&
   left.ui.playbackControlsVisibility ===
     right.ui.playbackControlsVisibility &&
   left.ui.progressBarVisibility === right.ui.progressBarVisibility &&
@@ -156,8 +160,21 @@ const shouldStartController = (
 
 const shouldDisconnectGatewayOnDispose = (
   windowLabel: AppWindowLabel,
+  gatewayKind: CompanionGateway['kind'],
+) => windowLabel === 'main' || gatewayKind === 'simulator';
+
+const resolveGatewayKind = (
   sourceMode: Exclude<DataSourceMode, 'auto'>,
-) => windowLabel === 'main' || sourceMode !== 'real';
+  playbackSource: PlaybackSource,
+): CompanionGateway['kind'] => {
+  if (sourceMode === 'simulator') {
+    return 'simulator';
+  }
+
+  return playbackSource === 'windowsMediaSession'
+    ? 'windowsMediaSession'
+    : 'real';
+};
 
 export const AppProvider = ({
   children,
@@ -176,6 +193,10 @@ export const AppProvider = ({
   const resolvedSourceMode = useMemo(
     () => resolveSourceMode(settings.api.sourceMode),
     [settings.api.sourceMode],
+  );
+  const resolvedGatewayKind = resolveGatewayKind(
+    resolvedSourceMode,
+    settings.api.playbackSource,
   );
 
   useEffect(() => {
@@ -269,6 +290,7 @@ export const AppProvider = ({
       !ready ||
       windowLabel !== 'main' ||
       resolvedSourceMode !== 'real' ||
+      resolvedGatewayKind !== 'real' ||
       !isTauriRuntime()
     ) {
       return undefined;
@@ -301,7 +323,7 @@ export const AppProvider = ({
       active = false;
       unlisten?.();
     };
-  }, [ready, resolvedSourceMode, windowLabel]);
+  }, [ready, resolvedGatewayKind, resolvedSourceMode, windowLabel]);
 
   useEffect(() => {
     if (windowLabel !== 'settings' || !isTauriRuntime()) {
@@ -373,9 +395,11 @@ export const AppProvider = ({
     }
 
     const gateway =
-      resolvedSourceMode === 'real'
+      resolvedGatewayKind === 'real'
         ? createRealGateway()
-        : createSimulatorGateway();
+        : resolvedGatewayKind === 'windowsMediaSession'
+          ? createWindowsMediaGateway()
+          : createSimulatorGateway();
     const controller = new PlaybackController(gateway);
     controllerRef.current = controller;
 
@@ -392,7 +416,7 @@ export const AppProvider = ({
       void controller.dispose({
         disconnectGateway: shouldDisconnectGatewayOnDispose(
           windowLabel,
-          resolvedSourceMode,
+          resolvedGatewayKind,
         ),
       });
       controllerRef.current = null;
@@ -400,6 +424,8 @@ export const AppProvider = ({
   }, [
     ready,
     resolvedSourceMode,
+    resolvedGatewayKind,
+    settings.api.playbackSource,
     settings.api.host,
     settings.api.port,
     windowLabel,

@@ -1,12 +1,22 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use tauri::Error as TauriError;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConnectionSettings {
   pub host: String,
   pub port: u16,
   pub source_mode: String,
+  pub playback_source: String,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+struct StoredConnectionSettings {
+  host: Option<String>,
+  port: Option<u16>,
+  source_mode: Option<String>,
+  playback_source: Option<String>,
 }
 
 impl Default for ConnectionSettings {
@@ -15,7 +25,39 @@ impl Default for ConnectionSettings {
       host: "127.0.0.1".to_string(),
       port: 9863,
       source_mode: "auto".to_string(),
+      playback_source: "companion".to_string(),
     }
+  }
+}
+
+impl<'de> Deserialize<'de> for ConnectionSettings {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let stored = StoredConnectionSettings::deserialize(deserializer)?;
+    let defaults = Self::default();
+    let host = stored
+      .host
+      .map(|value| value.trim().to_string())
+      .filter(|value| !value.is_empty())
+      .unwrap_or(defaults.host);
+    let port = stored.port.filter(|value| *value > 0).unwrap_or(defaults.port);
+
+    Ok(Self {
+      host,
+      port,
+      source_mode: normalize_string_enum(
+        stored.source_mode,
+        &["auto", "real", "simulator"],
+        &defaults.source_mode,
+      ),
+      playback_source: normalize_string_enum(
+        stored.playback_source,
+        &["companion", "windowsMediaSession"],
+        &defaults.playback_source,
+      ),
+    })
   }
 }
 
@@ -203,6 +245,7 @@ fn widget_block_ids() -> &'static [&'static str] {
 
 fn settings_section_ids() -> &'static [&'static str] {
   &[
+    "source",
     "api",
     "ui",
     "layout",
@@ -604,6 +647,30 @@ mod tests {
     assert_eq!(
       serialized["ui"]["collapsedSettingsSections"],
       json!(["ui", "api"])
+    );
+  }
+
+  #[test]
+  fn defaults_and_preserves_the_user_facing_playback_source() {
+    let legacy: AppSettings = serde_json::from_value(json!({
+      "api": { "sourceMode": "real" }
+    }))
+    .expect("legacy settings should deserialize");
+    let legacy_json = serde_json::to_value(legacy).expect("legacy settings should serialize");
+    assert_eq!(legacy_json["api"]["playbackSource"], "companion");
+
+    let windows_media: AppSettings = serde_json::from_value(json!({
+      "api": {
+        "sourceMode": "real",
+        "playbackSource": "windowsMediaSession"
+      }
+    }))
+    .expect("WMS settings should deserialize");
+    let windows_media_json =
+      serde_json::to_value(windows_media).expect("WMS settings should serialize");
+    assert_eq!(
+      windows_media_json["api"]["playbackSource"],
+      "windowsMediaSession"
     );
   }
 }

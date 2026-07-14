@@ -20,6 +20,11 @@ const makePlayback = (lastSyncedAt: number): PlaybackSnapshot => ({
   isAdPlaying: false,
   isLive: false,
   canSeek: true,
+  canPlayPause: true,
+  canGoPrevious: true,
+  canGoNext: true,
+  canMute: true,
+  canRate: true,
   metadataFilled: true,
   lastSyncedAt,
 });

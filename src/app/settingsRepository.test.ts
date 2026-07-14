@@ -35,6 +35,40 @@ describe('settingsRepository browser persistence', () => {
     );
   });
 
+  it('defaults and validates the user-facing playback source independently from dev mode', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ api: { sourceMode: 'real' } }),
+    );
+    const legacy = await loadSettings();
+    expect(
+      (legacy.api as unknown as Record<string, unknown>).playbackSource,
+    ).toBe('companion');
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        api: {
+          sourceMode: 'real',
+          playbackSource: 'windowsMediaSession',
+        },
+      }),
+    );
+    const windowsMedia = await loadSettings();
+    expect(
+      (windowsMedia.api as unknown as Record<string, unknown>).playbackSource,
+    ).toBe('windowsMediaSession');
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ api: { playbackSource: 'unsupported' } }),
+    );
+    const repaired = await loadSettings();
+    expect(
+      (repaired.api as unknown as Record<string, unknown>).playbackSource,
+    ).toBe('companion');
+  });
+
   it('migrates legacy connection badge booleans without losing hover behavior', async () => {
     window.localStorage.setItem(
       STORAGE_KEY,

@@ -17,20 +17,21 @@ Trade-off:
 - some behavior must cross the Rust and frontend boundary cleanly
 - desktop-specific integration work moves into Rust instead of staying web-only
 
-## 2. Integrate with YTMDesktop only through the Companion Server API
+## 2. Use only official playback integrations
 
-Status: accepted
+Status: amended for version 3.1.0; see `project-tracking/decisions/0006-separate-product-playback-source-from-development-source-mode.md`
 
 Reasoning:
 
-- this is the only explicitly allowed integration path for the project
+- YTMDesktop uses only its official Companion Server API
+- compatible non-YTMDesktop players use only the official Windows Media Session/GSMTC contract
 - it avoids fragile hacks like scraping, DOM injection, OCR, or window-title parsing
 - it keeps the codebase aligned with upstream semantics and future API evolution
 
 Trade-off:
 
-- the widget is fully dependent on Companion API availability and auth behavior
-- some live behavior could not be validated locally without a running YTMDesktop instance
+- Companion completeness depends on API availability and auth behavior
+- WMS completeness depends on what the current Windows-selected player publishes and does not include rating or volume/mute
 
 ## 3. Keep the real Companion client in Rust, not in the browser layer
 

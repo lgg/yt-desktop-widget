@@ -77,12 +77,15 @@ export const createRealGateway = (): CompanionGateway => ({
       }
 
       if (payload.status === 'socket_closed') {
-        handlers.onDisconnected('socket_closed', payload.detail);
+        handlers.onDisconnected('socket_closed', payload.detail ?? undefined);
         return;
       }
 
       if (payload.status === 'socket_error') {
-        handlers.onDisconnected('socket_error', payload.detail ?? SOCKET_ERROR_MESSAGE);
+        handlers.onDisconnected(
+          'socket_error',
+          payload.detail ?? SOCKET_ERROR_MESSAGE,
+        );
       }
     });
 
@@ -100,7 +103,8 @@ export const createRealGateway = (): CompanionGateway => ({
       return {
         initialState: result.initialState,
         connection: {
-          send: (command) => invokeBridge(() => tauriBridge.companionSendCommand(command)),
+          send: (command) =>
+            invokeBridge(() => tauriBridge.companionSendCommand(command)),
           disconnect: async (options) => {
             stopListening();
             if (options?.closeBackend === false) {

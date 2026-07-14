@@ -6263,8 +6263,9 @@ dependencies = [
 
 [[package]]
 name = "ytm-desktop-widget"
-version = "3.0.0"
+version = "3.1.0"
 dependencies = [
+ "base64 0.22.1",
  "futures-util",
  "keyring",
  "reqwest 0.12.28",
@@ -6277,6 +6278,8 @@ dependencies = [
  "tauri-plugin-opener",
  "thiserror 2.0.18",
  "tokio",
+ "windows",
+ "windows-future",
  "winreg",
 ]
 

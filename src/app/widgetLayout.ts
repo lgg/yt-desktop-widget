@@ -25,6 +25,7 @@ export const WIDGET_BLOCK_VISIBILITY_MODES = [
 ] as const satisfies readonly WidgetBlockVisibility[];
 
 export const SETTINGS_SECTION_IDS = [
+  'source',
   'api',
   'ui',
   'layout',

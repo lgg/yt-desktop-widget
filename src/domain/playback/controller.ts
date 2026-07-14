@@ -187,6 +187,11 @@ const hasPlaybackPresentationChanged = (
   previous.isAdPlaying !== next.isAdPlaying ||
   previous.isLive !== next.isLive ||
   previous.canSeek !== next.canSeek ||
+  previous.canPlayPause !== next.canPlayPause ||
+  previous.canGoPrevious !== next.canGoPrevious ||
+  previous.canGoNext !== next.canGoNext ||
+  previous.canMute !== next.canMute ||
+  previous.canRate !== next.canRate ||
   previous.metadataFilled !== next.metadataFilled;
 
 const shouldPublishPlayback = (
@@ -233,6 +238,7 @@ export class PlaybackController {
   private connection: GatewayConnection | null = null;
   private reconnectTimer: number | null = null;
   private disposed = false;
+  private disposeCloseBackend = true;
   private authCode: string | null = null;
   private authCompletionCode: string | null = null;
   private authCompletionPromise: Promise<void> | null = null;
@@ -332,9 +338,10 @@ export class PlaybackController {
 
   async dispose(options: DisposeOptions = {}) {
     this.disposed = true;
+    this.disposeCloseBackend = options.disconnectGateway ?? true;
     this.clearReconnectTimer();
     await this.disconnectInternal({
-      closeBackend: options.disconnectGateway ?? true,
+      closeBackend: this.disposeCloseBackend,
     });
     this.subscribers.clear();
   }
@@ -450,6 +457,10 @@ export class PlaybackController {
     try {
       hasStoredAuth = await this.gateway.hasStoredAuth();
     } catch (error) {
+      if (this.disposed) {
+        return;
+      }
+
       this.patchConnection((state) =>
         reduceConnectionState(state, {
           type: 'error',
@@ -458,6 +469,10 @@ export class PlaybackController {
           clearAuthCode: options.requireStoredAuth === true,
         }),
       );
+      return;
+    }
+
+    if (this.disposed) {
       return;
     }
 
@@ -472,6 +487,10 @@ export class PlaybackController {
 
     try {
       const discovery = await this.gateway.discover();
+      if (this.disposed) {
+        return;
+      }
+
       this.patchConnection((state) =>
         reduceConnectionState(state, {
           type: 'availability',
@@ -510,6 +529,10 @@ export class PlaybackController {
       const connectedHasStoredAuth = hasStoredAuth;
       const { connection, initialState } = await this.gateway.connect({
         onConnected: () => {
+          if (this.disposed) {
+            return;
+          }
+
           this.patchConnection((state) =>
             reduceConnectionState(state, {
               type: 'connected',
@@ -518,6 +541,10 @@ export class PlaybackController {
           );
         },
         onError: (detail) => {
+          if (this.disposed) {
+            return;
+          }
+
           this.patchConnection((state) =>
             reduceConnectionState(state, {
               type: 'error',
@@ -530,9 +557,20 @@ export class PlaybackController {
           this.scheduleReconnect(reason, detail);
         },
         onState: (rawState) => {
+          if (this.disposed) {
+            return;
+          }
+
           this.patchPlayback(rawState);
         },
       });
+
+      if (this.disposed) {
+        await connection.disconnect({
+          closeBackend: this.disposeCloseBackend,
+        });
+        return;
+      }
 
       this.connection = connection;
       this.patchConnection((state) =>
@@ -546,6 +584,10 @@ export class PlaybackController {
         this.patchPlayback(initialState);
       }
     } catch (error) {
+      if (this.disposed) {
+        return;
+      }
+
       const gatewayError = error as GatewayError;
       if (gatewayError?.code === 'authorization_disabled') {
         this.patchConnection((state) =>

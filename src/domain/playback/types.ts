@@ -14,6 +14,7 @@ export type WidgetBlockId =
   | 'playbackControls'
   | 'progress';
 export type SettingsSectionId =
+  | 'source'
   | 'api'
   | 'ui'
   | 'layout'
@@ -24,6 +25,7 @@ export type SettingsSectionId =
   | 'about';
 export type WidgetSizeMode = 'compact' | 'default' | 'large' | 'custom';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
+export type PlaybackSource = 'companion' | 'windowsMediaSession';
 export type CloseButtonAction = 'exit' | 'hideToTray';
 export type ConnectionStatus =
   | 'disconnected'
@@ -53,6 +55,7 @@ export interface ConnectionSettings {
   host: string;
   port: number;
   sourceMode: DataSourceMode;
+  playbackSource: PlaybackSource;
 }
 
 export interface UiSettings {
@@ -120,6 +123,14 @@ export interface CompanionQueueItem {
 }
 
 export interface CompanionRawState {
+  capabilities?: {
+    canPlayPause?: boolean;
+    canGoPrevious?: boolean;
+    canGoNext?: boolean;
+    canSeek?: boolean;
+    canMute?: boolean;
+    canRate?: boolean;
+  };
   player?: {
     trackState?: number;
     videoProgress?: number;
@@ -168,6 +179,11 @@ export interface PlaybackSnapshot {
   isAdPlaying: boolean;
   isLive: boolean;
   canSeek: boolean;
+  canPlayPause: boolean;
+  canGoPrevious: boolean;
+  canGoNext: boolean;
+  canMute: boolean;
+  canRate: boolean;
   metadataFilled: boolean;
   lastSyncedAt: number;
 }
@@ -246,7 +262,7 @@ export interface GatewayConnectResult {
 }
 
 export interface CompanionGateway {
-  readonly kind: 'real' | 'simulator';
+  readonly kind: 'real' | 'windowsMediaSession' | 'simulator';
   discover: () => Promise<DiscoveryInfo>;
   hasStoredAuth: () => Promise<boolean>;
   connect: (handlers: GatewayEventHandlers) => Promise<GatewayConnectResult>;

@@ -32,6 +32,13 @@
     "socketClosed": "The Companion connection closed. Retrying shortly.",
     "unexpected": "The Companion connection returned an unexpected error. Try reconnecting."
   },
+  "windowsMediaConnectionMessages": {
+    "notRunning": "Windows Media Session is unavailable. Start a compatible player and try again.",
+    "apiUnavailable": "Windows could not provide media-session access right now.",
+    "socketError": "Windows media updates were interrupted. The widget will keep checking the current session.",
+    "socketClosed": "The Windows media-session connection closed. Try reconnecting.",
+    "unexpected": "The Windows media integration returned an unexpected error. Try reconnecting."
+  },
   "widget": {
     "transport": {
       "previous": "Previous",
@@ -92,6 +99,33 @@
         "body": "The API responded with an unexpected error. You can retry now or re-authorize the widget from settings."
       }
     },
+    "windowsMediaStates": {
+      "discovering": {
+        "eyebrow": "Windows media",
+        "title": "Finding the current media session",
+        "body": "Checking Windows for playback published by a compatible media app."
+      },
+      "disconnected": {
+        "eyebrow": "Windows media",
+        "title": "Media-session access is unavailable",
+        "body": "Start a compatible Windows media app, begin playback, and reconnect."
+      },
+      "reconnecting": {
+        "eyebrow": "Windows media",
+        "title": "Refreshing media-session access",
+        "body": "The widget is checking Windows again for an available media session."
+      },
+      "error": {
+        "eyebrow": "Windows media",
+        "title": "The media session needs attention",
+        "body": "Windows could not complete the media-session request. Try reconnecting."
+      },
+      "empty": {
+        "eyebrow": "Windows media",
+        "title": "Nothing is playing",
+        "body": "Start playback in a compatible Windows media app."
+      }
+    },
     "auth": {
       "generate": "Generate code",
       "confirm": "Confirm in YTMDesktop",
@@ -113,6 +147,14 @@
     "sections": {
       "expand": "Expand {{section}}",
       "collapse": "Collapse {{section}}",
+      "source": {
+        "title": "Playback Source",
+        "description": "Choose which Windows playback integration supplies the widget.",
+        "mode": "Playback source",
+        "companionDescription": "Use YTMDesktop Companion for the complete feature set, including authorization, mute, Like, and Dislike.",
+        "windowsMediaSessionDescription": "Follow the current Windows media session exposed by compatible players such as Apple Music, Spotify, and Yandex Music.",
+        "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player."
+      },
       "api": {
         "title": "API / Connection",
         "description": "Manage Companion API availability, pairing state, and recovery actions.",
@@ -249,6 +291,10 @@
       "auto": "Auto",
       "real": "Real API",
       "simulator": "Simulator"
+    },
+    "playbackSource": {
+      "companion": "YTMDesktop Companion",
+      "windowsMediaSession": "Windows Media Session"
     },
     "closeButtonAction": {
       "exit": "Exit app",

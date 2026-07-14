@@ -1,14 +1,15 @@
 # YTM Desktop Widget
 
-A premium Windows desktop widget for YTMDesktop built with Tauri v2, React, TypeScript, and Vite.
+A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop through its Companion API and compatible players through Windows Media Session.
 
 Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, bootstrap-sync status, time tracking, and markdown project-tracking rules.
 
-The app integrates with YTMDesktop only through the official Companion Server API. It does not scrape UI, inject scripts, parse window titles, use OCR, or fall back to platform media sessions.
+The app never scrapes player UI, injects scripts, parses window titles, or uses OCR. YTMDesktop integration uses only the official Companion Server API; the optional multi-player mode uses only the official Windows Global System Media Transport Controls session selected by Windows.
 
 ## What it does
 
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
+- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music.
 - Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
@@ -16,11 +17,12 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Track details, progress, Like/Dislike, and playback controls each support four display modes: always visible, hover/focus with reserved space, hover/focus with dynamic window height, or fully hidden.
 - The six primary widget blocks can be reordered vertically from Settings without changing the controls inside each block.
 - Mute is an optional header action with always, hover/focus, and hidden modes. It delegates mute/unmute restoration to YTMDesktop and never writes a numeric volume.
+- Windows Media Session exposes source-specific capabilities: unsupported buttons are disabled, and Like/Dislike/Mute are also safe no-ops at both gateway boundaries.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
 - The connection-status badge can stay visible, appear only on hover or keyboard focus, or remain fully hidden while its non-interactive area stays draggable.
 - Top-level Settings sections can be collapsed, and their collapsed state persists between launches.
 - Hides to tray instead of quitting by default.
-- Ships with a real Companion client and a separate simulator for local development and tests.
+- Ships with real Companion and Windows Media Session clients plus a separate simulator for local development and tests.
 - Uses matching English and Russian i18n JSON bundles, with English as the default and a persisted language selector in Settings.
 
 ## Stack
@@ -28,7 +30,7 @@ The app integrates with YTMDesktop only through the official Companion Server AP
 - Tauri v2 for a lightweight Windows desktop shell, tray integration, custom windows, and native storage access.
 - React 19 + TypeScript for UI composition and stateful interactions.
 - Vite for fast development and production builds.
-- Rust backend bridge for Companion API networking, keyring-backed token storage, and Windows-specific behavior.
+- Rust backend bridge for Companion API networking, Windows Media Session/WinRT access, keyring-backed token storage, and Windows-specific behavior.
 - Vitest + Testing Library for unit/component coverage.
 - Playwright for browser-level simulator smoke coverage.
 
@@ -75,6 +77,19 @@ Verified from upstream docs during the latest protocol audit:
 
 The real client is written so any unconfirmed response-shape differences are isolated to the backend bridge and mapping layer.
 
+## Windows Media Session mode
+
+Version 3.1.0 can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player.
+
+- Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
+- Not provided by this Windows contract: application volume/mute and service-specific Like/Dislike. Those controls remain safely disabled/no-op in this mode even if their display preference is enabled.
+- Timeline positions are normalized against the session start and clamped to the published seek range, so non-zero-origin sessions cannot make the progress clock run fast or seek outside the player contract.
+- External text and artwork are bounded in memory; oversized or active/non-raster artwork payloads are rejected, and an accepted artwork payload is sent only when resolving a new track rather than on every polling tick.
+- No playback metadata or artwork is persisted, logged, or transmitted by WMS mode in 3.1.0.
+- Local WMS history, local favorites, copy/export, retention, and deletion are deferred to the separately designed, default-off roadmap task `0046`.
+
+References: [Microsoft session manager documentation](https://learn.microsoft.com/en-us/uwp/api/windows.media.control.globalsystemmediatransportcontrolssessionmanager) and [Windows App SDK desktop WinRT support](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/winrt-api-desktop-app-support).
+
 ## Tauri MCP support
 
 This project is configured for the Tauri MCP server named `tauri`.
@@ -98,7 +113,8 @@ Current debug MCP and dev-tool port configuration in this repo:
 - Node.js 24+
 - Rust stable toolchain with the MSVC target
 - WebView2 runtime on Windows
-- YTMDesktop, if you want to test the real Companion flow
+- YTMDesktop, if you want to test the Companion flow
+- A Windows Media Session-compatible player, if you want to test multi-player mode
 
 ### Install
 
@@ -120,12 +136,17 @@ npm run dev
 
 The browser preview automatically falls back to the simulator unless you override the source mode.
 
-## Real source vs simulator
+## Playback source vs development source mode
 
-The app supports three source modes in settings:
+The first Settings section stores the user-facing production source:
 
-- `auto`: uses the real Companion bridge in Tauri and the simulator in browser preview
-- `real`: always use the Tauri/Rust Companion bridge
+- `YTMDesktop Companion` (default and migration-safe): full Companion auth, realtime, mute, Like, and Dislike behavior
+- `Windows Media Session`: current Windows-selected compatible player session without pairing
+
+The Developer section independently retains three internal runtime modes:
+
+- `auto`: uses the selected production source in Tauri and the simulator in browser preview
+- `real`: always uses the selected Tauri/Rust production bridge
 - `simulator`: always use the development simulator
 
 You can also override source mode during development:
@@ -150,7 +171,7 @@ For the near-term testing cycle, rebuilds are intentionally portable-only.
 - `npm run build:portable` - portable Tauri release build without bundling
 - `npm run lint` - ESLint
 - `npm test` - Vitest
-- `npm run test:e2e` - Playwright simulator smoke test
+- `npm run test:e2e` - deterministic serial Playwright simulator suite; its Windows wrapper owns and always stops the temporary Vite preview process
 - `npm run version:sync` - synchronize Cargo/lock metadata from the root `package.json` version
 - `npm run version:check` - fail if any required version copy or Tauri version source is out of sync
 - `npm run verify` - version consistency + lint + tests + web build

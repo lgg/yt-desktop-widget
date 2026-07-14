@@ -10,7 +10,9 @@
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-const pickLargestThumbnail = (thumbnails: CompanionThumbnail[] | undefined): string | null => {
+const pickLargestThumbnail = (
+  thumbnails: CompanionThumbnail[] | undefined,
+): string | null => {
   if (!thumbnails || thumbnails.length === 0) {
     return null;
   }
@@ -51,7 +53,9 @@ const pickSelectedItemFromList = (
   return relativeIndex >= 0 ? items[relativeIndex] : undefined;
 };
 
-const getSelectedQueueItem = (state: CompanionRawState): CompanionQueueItem | undefined => {
+const getSelectedQueueItem = (
+  state: CompanionRawState,
+): CompanionQueueItem | undefined => {
   const queue = state.player?.queue;
   if (!queue) {
     return undefined;
@@ -120,43 +124,53 @@ export const mapCompanionState = (
 
   const queueItem = getSelectedQueueItem(rawState);
   const coverUrl =
-    pickLargestThumbnail(video?.thumbnails) ?? pickLargestThumbnail(queueItem?.thumbnails);
+    pickLargestThumbnail(video?.thumbnails) ??
+    pickLargestThumbnail(queueItem?.thumbnails);
+  const nextId = video?.id ?? previous?.id ?? 'unknown-track';
+  const sameTrack = previous?.id === nextId;
+  const metadataFilled = video?.metadataFilled ?? true;
+  const canReusePreviousMetadata = sameTrack || !metadataFilled;
+  const resolvedCoverUrl =
+    coverUrl ??
+    (canReusePreviousMetadata ? (previous?.coverUrl ?? null) : null);
   const rawDurationSeconds = video?.durationSeconds ?? 0;
   const durationSeconds = Number.isFinite(rawDurationSeconds)
     ? clamp(rawDurationSeconds, 0, Number.MAX_SAFE_INTEGER)
     : 0;
   const rawElapsedSeconds = rawState.player?.videoProgress ?? 0;
   const elapsedSeconds = Number.isFinite(rawElapsedSeconds)
-    ? clamp(
-        rawElapsedSeconds,
-        0,
-        durationSeconds || Number.MAX_SAFE_INTEGER,
-      )
+    ? clamp(rawElapsedSeconds, 0, durationSeconds || Number.MAX_SAFE_INTEGER)
     : 0;
   const progressRatio = durationSeconds ? elapsedSeconds / durationSeconds : 0;
-  const nextId = video?.id ?? previous?.id ?? 'unknown-track';
-  const sameTrack = previous?.id === nextId;
   const rawVolume = rawState.player?.volume;
   const volume =
     typeof rawVolume === 'number' && Number.isFinite(rawVolume)
       ? clamp(rawVolume, 0, 100)
       : (previous?.volume ?? 100);
-  const metadataFilled = video?.metadataFilled ?? true;
-  const canSeek = !video?.isLive && durationSeconds > 0;
+  const defaultCanSeek = !video?.isLive && durationSeconds > 0;
+  const capabilities = rawState.capabilities;
   const artistCandidates = splitArtists(video?.author);
   const queueArtists = splitArtists(queueItem?.author);
 
   const snapshot: PlaybackSnapshot = {
     id: nextId,
-    title: video?.title?.trim() || queueItem?.title?.trim() || previous?.title || 'Unknown track',
+    title:
+      video?.title?.trim() ||
+      queueItem?.title?.trim() ||
+      (canReusePreviousMetadata ? previous?.title : undefined) ||
+      'Unknown track',
     artists:
       artistCandidates.length > 0
         ? artistCandidates
         : queueArtists.length > 0
           ? queueArtists
-          : previous?.artists ?? [],
-    album: video?.album ?? previous?.album ?? null,
-    coverUrl: coverUrl ?? previous?.coverUrl ?? null,
+          : canReusePreviousMetadata
+            ? (previous?.artists ?? [])
+            : [],
+    album:
+      video?.album ??
+      (canReusePreviousMetadata ? (previous?.album ?? null) : null),
+    coverUrl: resolvedCoverUrl,
     durationSeconds,
     elapsedSeconds,
     progressRatio,
@@ -166,7 +180,12 @@ export const mapCompanionState = (
     playbackState: mapTrackState(rawState.player?.trackState),
     isAdPlaying: rawState.player?.adPlaying ?? false,
     isLive: video?.isLive ?? false,
-    canSeek,
+    canSeek: capabilities?.canSeek ?? defaultCanSeek,
+    canPlayPause: capabilities?.canPlayPause ?? true,
+    canGoPrevious: capabilities?.canGoPrevious ?? true,
+    canGoNext: capabilities?.canGoNext ?? true,
+    canMute: capabilities?.canMute ?? true,
+    canRate: capabilities?.canRate ?? true,
     metadataFilled,
     lastSyncedAt: now,
   };

@@ -8,15 +8,17 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 44
+- Total tracked tasks: 47
 - Open: 0
-- In progress: 0
+- In progress: 1
 - Blocked: 0
-- Deferred: 5
-- Completed: 39
+- Deferred: 6
+- Completed: 40
 
 ## Current Stabilization Work
 
+- In Progress P1: Deep completion audit for Windows Media Session version 3.1.0 - [`0047-deep-audit-windows-media-session-release.md`](../tasks/0047-deep-audit-windows-media-session-release.md) - reopens the delivery gate after task `0045` to inspect lifecycle, concurrency, capabilities, error handling, migrations, UI, security/privacy, E2E/release behavior, fix confirmed defects with regressions, and complete the previously blocked Git push/merge flow.
+- Completed P1: Windows Media Session playback source and version 3.1.0 - [`0045-add-windows-media-session-playback-source.md`](../tasks/0045-add-windows-media-session-playback-source.md) - keeps Companion as the default, adds a first Settings source choice and current-session GSMTC adapter, capability-safe WMS controls, docs, migration, and a full audit; a normal interactive Windows/app compatibility smoke remains a release activity.
 - Completed P1: Version 3 customizable blocks and playback actions - [`0044-add-v3-customizable-widget-blocks-and-playback-actions.md`](../tasks/0044-add-v3-customizable-widget-blocks-and-playback-actions.md) - adds mute and Like/Dislike controls, explicit four-mode visibility, persisted block ordering, collapsible Settings sections, centralized `3.0.0`, and a full audit while preserving the v2 migration default.
 - Completed P3: Widget size presets and custom dimensions - [`0043-add-widget-size-presets-and-custom-dimensions.md`](../tasks/0043-add-widget-size-presets-and-custom-dimensions.md) - preserves the current 336 x 438 layout as Default, adds Compact/Large presets and linked Custom width/height controls, uniformly scales the full widget plus its intrinsic window height, and closes migrated parent task [`0006`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md).
 - Completed P1: Fix stuck hover and control jitter - [`0042-fix-stuck-hover-and-control-jitter.md`](../tasks/0042-fix-stuck-hover-and-control-jitter.md) - removed conflicting native drag regions from the hover boundary, stabilized pointer/focus/blur visibility and button geometry, added reduced-motion handling, and completed a fresh frontend/native/dependency audit.
@@ -57,6 +59,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 ## Deferred Roadmap
 
+- Deferred P2: Opt-in local WMS playback history, favorites, and export - [`0046-add-opt-in-local-playback-history-favorites-and-export.md`](../tasks/0046-add-opt-in-local-playback-history-favorites-and-export.md) - default-off local history enables local favorite marking for WMS tracks plus review/copy/export/delete flows; consent, identity, retention, corruption recovery, and privacy require a dedicated design pass.
 - Deferred P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md) - umbrella retained only for the explicitly deferred future children below.
 - Deferred P4: ytw-5v6.2 - [`0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md)
 - Deferred P3: ytw-5v6.4 - [`0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md`](../tasks/0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md)

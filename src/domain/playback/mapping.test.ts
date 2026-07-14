@@ -17,7 +17,9 @@ describe('mapCompanionState', () => {
           author: 'Aster Vale',
           album: 'Quiet City',
           durationSeconds: 200,
-          thumbnails: [{ url: 'https://example.com/cover.png', width: 600, height: 600 }],
+          thumbnails: [
+            { url: 'https://example.com/cover.png', width: 600, height: 600 },
+          ],
           metadataFilled: true,
           isLive: false,
           likeStatus: 2,
@@ -69,7 +71,13 @@ describe('mapCompanionState', () => {
           title: 'Late Echo',
           author: 'Lumen Choir',
           durationSeconds: 240,
-          thumbnails: [{ url: 'https://example.com/original.png', width: 400, height: 400 }],
+          thumbnails: [
+            {
+              url: 'https://example.com/original.png',
+              width: 400,
+              height: 400,
+            },
+          ],
           metadataFilled: true,
         },
       },
@@ -92,6 +100,50 @@ describe('mapCompanionState', () => {
 
     expect(next?.title).toBe('Late Echo');
     expect(next?.coverUrl).toBe('https://example.com/original.png');
+  });
+
+  it('does not reuse completed artwork for a different track without artwork', () => {
+    const previous = mapCompanionState(
+      {
+        player: { trackState: 1, videoProgress: 25 },
+        video: {
+          id: 'track-with-art',
+          title: 'Previous Track',
+          author: 'Previous Artist',
+          album: 'Previous Album',
+          durationSeconds: 240,
+          thumbnails: [
+            {
+              url: 'https://example.com/previous.png',
+              width: 400,
+              height: 400,
+            },
+          ],
+          metadataFilled: true,
+        },
+      },
+      null,
+      500,
+    );
+
+    const next = mapCompanionState(
+      {
+        player: { trackState: 1, videoProgress: 0 },
+        video: {
+          id: 'track-without-art',
+          title: 'Current Track',
+          durationSeconds: 180,
+          thumbnails: [],
+          metadataFilled: true,
+        },
+      },
+      previous,
+      700,
+    );
+
+    expect(next?.coverUrl).toBeNull();
+    expect(next?.artists).toEqual([]);
+    expect(next?.album).toBeNull();
   });
 
   it('preserves mute and rating presentation when a same-track update omits them', () => {
@@ -126,5 +178,37 @@ describe('mapCompanionState', () => {
     expect(next?.volume).toBe(37);
     expect(next?.isMuted).toBe(false);
     expect(next?.likeStatus).toBe('disliked');
+  });
+
+  it('maps explicit source capabilities for Windows Media Session snapshots', () => {
+    const snapshot = mapCompanionState(
+      {
+        capabilities: {
+          canPlayPause: true,
+          canGoPrevious: false,
+          canGoNext: true,
+          canSeek: false,
+          canMute: false,
+          canRate: false,
+        },
+        player: { trackState: 1, videoProgress: 12 },
+        video: {
+          id: 'wms:track-1',
+          title: 'System Session Track',
+          author: 'Windows Artist',
+          durationSeconds: 180,
+        },
+      } as Parameters<typeof mapCompanionState>[0],
+      null,
+      1_000,
+    );
+
+    const capabilities = snapshot as unknown as Record<string, unknown>;
+    expect(capabilities.canPlayPause).toBe(true);
+    expect(capabilities.canGoPrevious).toBe(false);
+    expect(capabilities.canGoNext).toBe(true);
+    expect(capabilities.canSeek).toBe(false);
+    expect(capabilities.canMute).toBe(false);
+    expect(capabilities.canRate).toBe(false);
   });
 });

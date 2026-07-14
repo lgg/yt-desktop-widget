@@ -2,6 +2,7 @@ mod companion;
 mod models;
 mod settings;
 mod startup;
+mod windows_media;
 
 use std::sync::{
   atomic::{AtomicBool, Ordering},
@@ -43,6 +44,7 @@ const MCP_BRIDGE_BASE_PORT: u16 = 39223;
 pub struct AppState {
   settings: SettingsStore,
   companion: tokio::sync::Mutex<CompanionManager>,
+  windows_media: tokio::sync::Mutex<windows_media::WindowsMediaManager>,
   quitting: AtomicBool,
   app_has_focused_window: AtomicBool,
   window_position_flush_task: Mutex<Option<tauri::async_runtime::JoinHandle<()>>>,
@@ -54,6 +56,7 @@ impl AppState {
     Self {
       settings,
       companion: tokio::sync::Mutex::new(CompanionManager::default()),
+      windows_media: tokio::sync::Mutex::new(windows_media::WindowsMediaManager::default()),
       quitting: AtomicBool::new(false),
       app_has_focused_window: AtomicBool::new(false),
       window_position_flush_task: Mutex::new(None),
@@ -239,6 +242,41 @@ async fn companion_send_command(
     Err(companion::CompanionError::AuthRequired) => Err(CommandError::auth_required()),
     Err(error) => Err(error.into()),
   }
+}
+
+#[tauri::command]
+async fn windows_media_discover(
+  state: tauri::State<'_, AppState>,
+) -> Result<DiscoveryInfo, CommandError> {
+  let manager = state.windows_media.lock().await;
+  Ok(manager.discover().await)
+}
+
+#[tauri::command]
+async fn windows_media_connect(
+  app: AppHandle,
+  state: tauri::State<'_, AppState>,
+) -> Result<CompanionConnectResponse, CommandError> {
+  let mut manager = state.windows_media.lock().await;
+  manager.connect(&app).await
+}
+
+#[tauri::command]
+async fn windows_media_disconnect(
+  state: tauri::State<'_, AppState>,
+) -> Result<(), CommandError> {
+  let mut manager = state.windows_media.lock().await;
+  manager.disconnect().await;
+  Ok(())
+}
+
+#[tauri::command]
+async fn windows_media_send_command(
+  state: tauri::State<'_, AppState>,
+  command: PlaybackCommand,
+) -> Result<(), CommandError> {
+  let manager = state.windows_media.lock().await;
+  manager.send_command(&command).await
 }
 
 fn app_window(app: &AppHandle, label: &str) -> Result<WebviewWindow, CommandError> {
@@ -587,7 +625,11 @@ pub fn run() {
       companion_request_auth_code,
       companion_complete_auth,
       companion_clear_auth,
-      companion_send_command
+      companion_send_command,
+      windows_media_discover,
+      windows_media_connect,
+      windows_media_disconnect,
+      windows_media_send_command
     ])
     .run(tauri::generate_context!())
     .expect("error while running YTM Desktop Widget");
