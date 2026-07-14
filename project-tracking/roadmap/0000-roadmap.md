@@ -10,14 +10,14 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 - Migrated Beads issues: 15
 - Total tracked tasks: 49
 - Open: 0
-- In progress: 1
+- In progress: 0
 - Blocked: 0
 - Deferred: 7
-- Completed: 41
+- Completed: 42
 
 ## Current Stabilization Work
 
-- In Progress P1: Unify Settings visibility controls and layout - [`0048-unify-settings-visibility-controls-and-layout.md`](../tasks/0048-unify-settings-visibility-controls-and-layout.md) - replaces Settings/Close switches with two-choice segmented controls while preserving booleans, and makes four-mode selectors use deterministic two-row grouping.
+- Completed P1: Unify Settings visibility controls and layout - [`0048-unify-settings-visibility-controls-and-layout.md`](../tasks/0048-unify-settings-visibility-controls-and-layout.md) - replaced Settings/Close switches with two-choice segmented controls while preserving booleans, made four-mode selectors use deterministic two-row grouping, and completed branch plus `master` delivery.
 - Completed P1: Deep completion audit for Windows Media Session version 3.1.0 - [`0047-deep-audit-windows-media-session-release.md`](../tasks/0047-deep-audit-windows-media-session-release.md) - verified lifecycle, concurrency, capabilities, error handling, migrations, UI, security/privacy, E2E/release behavior, fixed all confirmed defects with regressions, and completed branch plus `master` delivery.
 - Completed P1: Windows Media Session playback source and version 3.1.0 - [`0045-add-windows-media-session-playback-source.md`](../tasks/0045-add-windows-media-session-playback-source.md) - keeps Companion as the default, adds a first Settings source choice and current-session GSMTC adapter, capability-safe WMS controls, docs, migration, and a full audit; a normal interactive Windows/app compatibility smoke remains a release activity.
 - Completed P1: Version 3 customizable blocks and playback actions - [`0044-add-v3-customizable-widget-blocks-and-playback-actions.md`](../tasks/0044-add-v3-customizable-widget-blocks-and-playback-actions.md) - adds mute and Like/Dislike controls, explicit four-mode visibility, persisted block ordering, collapsible Settings sections, centralized `3.0.0`, and a full audit while preserving the v2 migration default.
