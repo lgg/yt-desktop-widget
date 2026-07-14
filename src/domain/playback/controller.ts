@@ -567,7 +567,7 @@ export class PlaybackController {
             }),
           );
         },
-        onError: (detail) => {
+        onError: (detail, diagnostic) => {
           if (this.disposed) {
             return;
           }
@@ -576,7 +576,8 @@ export class PlaybackController {
             reduceConnectionState(state, {
               type: 'error',
               message: detail,
-              messageKey: 'unexpected',
+              messageKey: 'socketError',
+              diagnostic,
             }),
           );
         },

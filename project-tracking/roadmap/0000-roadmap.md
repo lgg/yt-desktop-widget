@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 51
+- Total tracked tasks: 52
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 7
-- Completed: 44
+- Completed: 45
 
 ## Current Stabilization Work
 
+- Completed P1: Fix live Windows Media Session snapshot failure - [`0052-fix-live-windows-media-session-snapshot-failure.md`](../tasks/0052-fix-live-windows-media-session-snapshot-failure.md) - decouples manager attach from the initial snapshot, reacquires after transient poll failures, preserves live diagnostics end to end, passes full verification, and produces a fresh healthy WMS-selected portable build.
 - Completed P1: Diagnose unpackaged Windows Media access - [`0051-diagnose-unpackaged-windows-media-access.md`](../tasks/0051-diagnose-unpackaged-windows-media-access.md) - proved the same unpackaged WMS probe fails only under the restricted Codex sandbox and succeeds against active Apple Music in the normal interactive user session, then added localized direct-launch recovery, safe rotating diagnostics, regressions, and a fresh portable artifact.
 - Completed P1: Fix portable Windows Media Session runtime - [`0050-fix-portable-windows-media-session-runtime.md`](../tasks/0050-fix-portable-windows-media-session-runtime.md) - moved all blocking GSMTC work to a dedicated MTA worker, preserved safe HRESULT diagnostics, prevented release simulator overrides, and was validated by task `0051` in the normal interactive Windows context.
 - Completed P1: Unify Settings visibility controls and layout - [`0048-unify-settings-visibility-controls-and-layout.md`](../tasks/0048-unify-settings-visibility-controls-and-layout.md) - replaced Settings/Close switches with two-choice segmented controls while preserving booleans, made four-mode selectors use deterministic two-row grouping, and completed branch plus `master` delivery.

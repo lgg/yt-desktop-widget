@@ -211,6 +211,12 @@ mod platform {
     )
   }
 
+  pub(super) fn connection_ready_response() -> CompanionConnectResponse {
+    CompanionConnectResponse {
+      initial_state: None,
+    }
+  }
+
   pub(super) fn diagnostic_log_line(
     timestamp_unix_ms: u128,
     operation: &str,
@@ -578,11 +584,15 @@ mod platform {
 
     fn discover(&mut self) -> Result<DiscoveryInfo, CommandError> {
       let result = (|| {
-        let (count, has_current_session) = {
-          let manager = self.ensure_manager()?;
-          (session_count(manager)?, current_session(manager)?.is_some())
+        let manager = self.ensure_manager()?;
+        let count = session_count(manager)
+          .map(|value| value.to_string())
+          .unwrap_or_else(|_| "unknown".to_string());
+        let current_state = match current_session(manager) {
+          Ok(Some(_)) => "present",
+          Ok(None) => "absent",
+          Err(_) => "temporarily unreadable",
         };
-        let current_state = if has_current_session { "present" } else { "absent" };
 
         Ok(DiscoveryInfo {
           available: true,
@@ -603,16 +613,11 @@ mod platform {
     }
 
     fn prepare_connection(&mut self) -> Result<CompanionConnectResponse, CommandError> {
-      let result = (|| {
-        let manager = self.ensure_manager()?;
-        current_snapshot(manager, None)
-      })();
-      if result.is_err() {
+      if let Err(error) = self.ensure_manager() {
         self.manager = None;
+        return Err(error);
       }
-      Ok(CompanionConnectResponse {
-        initial_state: result?,
-      })
+      Ok(connection_ready_response())
     }
 
     fn commit_connection(&mut self, app: AppHandle, initial_state: Option<Value>) {
@@ -620,7 +625,7 @@ mod platform {
       self.app = Some(app);
       self.previous_state = initial_state;
       self.poll_error_active = false;
-      self.emit_status("socket_open", None);
+      self.emit_status("socket_open", None, None);
     }
 
     fn disconnect(&mut self) {
@@ -708,22 +713,19 @@ mod platform {
         return;
       }
 
-      let result = match &self.manager {
-        Some(manager) => current_snapshot(manager, self.previous_state.as_ref()),
-        None => Err(worker_error(
-          "poll.manager",
-          "Windows Media Session is not connected.",
-          "manager_unavailable",
-        )),
-      };
+      let previous_state = self.previous_state.take();
+      let result = self
+        .ensure_manager()
+        .and_then(|manager| current_snapshot(manager, previous_state.as_ref()));
 
       match result {
         Ok(next_state) => {
           if self.poll_error_active {
             self.poll_error_active = false;
-            self.emit_status("socket_open", None);
+            self.emit_status("socket_open", None, None);
           }
-          if next_state == self.previous_state {
+          if next_state == previous_state {
+            self.previous_state = previous_state;
             return;
           }
           self.previous_state = next_state.clone();
@@ -732,6 +734,8 @@ mod platform {
           });
         }
         Err(error) => {
+          self.previous_state = previous_state;
+          self.manager = None;
           if self.poll_error_active {
             return;
           }
@@ -739,15 +743,25 @@ mod platform {
           if let Some(app) = &self.app {
             write_diagnostic(app, "poll", error.diagnostic.as_ref());
           }
-          self.emit_status("socket_error", Some(diagnostic_detail(&error)));
+          self.emit_status(
+            "socket_error",
+            Some(diagnostic_detail(&error)),
+            error.diagnostic.clone(),
+          );
         }
       }
     }
 
-    fn emit_status(&self, status: &str, detail: Option<String>) {
+    fn emit_status(
+      &self,
+      status: &str,
+      detail: Option<String>,
+      diagnostic: Option<CommandDiagnostic>,
+    ) {
       self.emit(CompanionEvent::Status {
         status: status.to_string(),
         detail,
+        diagnostic,
       });
     }
 
@@ -1088,7 +1102,7 @@ mod tests {
 
   #[cfg(target_os = "windows")]
   use super::platform::{
-    classify_windows_hresult, diagnostic_log_line, format_windows_hresult,
+    classify_windows_hresult, connection_ready_response, diagnostic_log_line, format_windows_hresult,
     initialized_worker_thread_ids, unavailable_discovery,
   };
 
@@ -1228,6 +1242,33 @@ mod tests {
     assert_eq!(value.as_object().map(serde_json::Map::len), Some(5));
     assert!(!log_line.contains("track"));
     assert!(!log_line.contains("artist"));
+  }
+
+  #[test]
+  fn status_events_serialize_structured_runtime_diagnostics() {
+    let event = crate::models::CompanionEvent::Status {
+      status: "socket_error".to_string(),
+      detail: Some("Snapshot interrupted".to_string()),
+      diagnostic: Some(
+        crate::models::CommandDiagnostic::new(
+          "snapshot.media_properties.await",
+          "windows_error",
+        )
+        .with_hresult("0x80004005"),
+      ),
+    };
+
+    let value = serde_json::to_value(event).expect("status event should serialize");
+    assert_eq!(value["diagnostic"]["stage"], "snapshot.media_properties.await");
+    assert_eq!(value["diagnostic"]["hresult"], "0x80004005");
+    assert_eq!(value["diagnostic"]["category"], "windows_error");
+  }
+
+  #[cfg(target_os = "windows")]
+  #[test]
+  fn connection_setup_does_not_wait_for_an_initial_media_snapshot() {
+    let response = connection_ready_response();
+    assert!(response.initial_state.is_none());
   }
 
   #[cfg(target_os = "windows")]

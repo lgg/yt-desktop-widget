@@ -87,7 +87,10 @@ export const createWindowsMediaGateway = (): CompanionGateway => ({
         return;
       }
 
-      handlers.onError(payload.detail ?? SESSION_ERROR_MESSAGE);
+      handlers.onError(
+        payload.detail ?? SESSION_ERROR_MESSAGE,
+        payload.diagnostic ?? undefined,
+      );
     });
 
     const stopListening = () => {

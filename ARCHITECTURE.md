@@ -147,20 +147,22 @@ Design rules:
 
 ## Windows Media Session flow
 
-Delivery status: tasks `0050` and `0051` corrected the runtime and isolated the remaining `E_ACCESSDENIED` report to the restricted Codex sandbox token. The exact same unpackaged MTA probe succeeds in the normal interactive Windows user session and sees active Apple Music. Package identity is not required for the supported portable path; [`task 0049`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md) remains only an optional future installer/signing decision.
+Delivery status: tasks `0050` and `0051` corrected the worker/runtime and isolated `E_ACCESSDENIED` to the restricted Codex sandbox token. Task `0052` then removed a separate transient attach failure: connect no longer waits for a complete current-session snapshot, live poll diagnostics survive the native/frontend boundary, and a failed poll reacquires the manager. The unpackaged path succeeds in the normal interactive Windows user session with Apple Music; package identity is not required, so [`task 0049`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md) remains only an optional future installer/signing decision.
 
 1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
 2. The Rust adapter lazily starts one long-lived `std::thread`, initializes it with `RoInitialize(RO_INIT_MULTITHREADED)`, and sends typed requests through an actor queue.
-3. Manager acquisition, session discovery, blocking WinRT futures, polling, metadata, timeline, artwork, and commands all execute sequentially on that worker rather than on the Tokio runtime.
-4. The shared mapping layer produces the same `PlaybackSnapshot` contract used by Companion.
-5. UI controls use capability flags rather than source-name checks.
-6. WMS Like/Dislike/Mute are disabled and remain successful no-ops in both frontend and Rust as defense in depth.
-7. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and polling waits 750 ms between unchanged snapshots rather than replaying missed async ticks in a burst.
-8. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
-9. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
-10. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
-11. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
-12. No WMS media data is persisted in version 3.1.0.
+3. Discovery and connection require manager access only. Session enumeration/current-session detail is best-effort, and connect commits before metadata, timeline, controls, or artwork are read.
+4. Manager acquisition, session discovery, blocking WinRT futures, polling, metadata, timeline, artwork, and commands all execute sequentially on that worker rather than on the Tokio runtime.
+5. A failed poll retains the previous snapshot, drops the stale manager, publishes a structured diagnostic, and retries manager/current-session acquisition on the next 750 ms worker cycle. A later successful poll restores the connected status.
+6. The shared mapping layer produces the same `PlaybackSnapshot` contract used by Companion.
+7. UI controls use capability flags rather than source-name checks.
+8. WMS Like/Dislike/Mute are disabled and remain successful no-ops in both frontend and Rust as defense in depth.
+9. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and polling waits 750 ms between unchanged snapshots rather than replaying missed async ticks in a burst.
+10. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
+11. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
+12. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
+13. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
+14. No WMS media data is persisted in version 3.1.0.
 
 ## Settings and persistence
 
