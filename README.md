@@ -1,6 +1,6 @@
 # YTM Desktop Widget
 
-A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop through its Companion API and compatible players through Windows Media Session.
+A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop through its Companion API and contains an optional Windows Media Session integration for compatible players.
 
 Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, bootstrap-sync status, time tracking, and markdown project-tracking rules.
 
@@ -9,7 +9,7 @@ The app never scrapes player UI, injects scripts, parses window titles, or uses 
 ## What it does
 
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
-- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music.
+- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music. The WMS source currently requires the future packaged delivery described below; the portable build remains Companion-only in practice.
 - Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
@@ -17,6 +17,7 @@ The app never scrapes player UI, injects scripts, parses window titles, or uses 
 - Track details, progress, Like/Dislike, and playback controls each support four display modes: always visible, hover/focus with reserved space, hover/focus with dynamic window height, or fully hidden.
 - The six primary widget blocks can be reordered vertically from Settings without changing the controls inside each block.
 - Mute is an optional header action with always, hover/focus, and hidden modes. It delegates mute/unmute restoration to YTMDesktop and never writes a numeric volume.
+- Settings and Close header actions can each remain always visible or appear only on hover/focus, using the same segmented Settings control style as the other visibility preferences.
 - Windows Media Session exposes source-specific capabilities: unsupported buttons are disabled, and Like/Dislike/Mute are also safe no-ops at both gateway boundaries.
 - The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
 - The connection-status badge can stay visible, appear only on hover or keyboard focus, or remain fully hidden while its non-interactive area stays draggable.
@@ -79,7 +80,9 @@ The real client is written so any unconfirmed response-shape differences are iso
 
 ## Windows Media Session mode
 
-Version 3.1.0 can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player.
+Version 3.1.0 contains a source adapter that can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player.
+
+Important delivery limitation: Microsoft requires the package-manifest `globalMediaControl` capability for session-manager access. The current portable/unpackaged executable has no package identity, so Windows denies that request and WMS is not operational in the portable artifact. Supported signed MSIX or sparse-package delivery, portable coexistence, and live Apple Music/Spotify/Yandex Music validation are deferred to [task 0049](./project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md). Companion mode is unaffected.
 
 - Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
 - Not provided by this Windows contract: application volume/mute and service-specific Like/Dislike. Those controls remain safely disabled/no-op in this mode even if their display preference is enabled.
@@ -114,7 +117,7 @@ Current debug MCP and dev-tool port configuration in this repo:
 - Rust stable toolchain with the MSVC target
 - WebView2 runtime on Windows
 - YTMDesktop, if you want to test the Companion flow
-- A Windows Media Session-compatible player, if you want to test multi-player mode
+- A Windows Media Session-compatible player plus a future capability-enabled packaged build, if you want to test multi-player mode; the current portable build cannot acquire the required capability
 
 ### Install
 
@@ -264,4 +267,5 @@ Future live regression passes should still include uncommon upstream states such
 - Windows-only delivery focus
 - English and Russian are the only bundled locales
 - No macOS packaging work yet
+- Windows Media Session is not operational in the current portable/unpackaged artifact; supported packaged delivery is tracked in task `0049`
 - Further visual refinements and alternate window modes are intentionally deferred

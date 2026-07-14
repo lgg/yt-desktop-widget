@@ -146,6 +146,8 @@ Design rules:
 
 ## Windows Media Session flow
 
+Delivery constraint: `GlobalSystemMediaTransportControlsSessionManager` requires the package-manifest `globalMediaControl` capability. The current portable/unpackaged executable has no package identity and is denied before session discovery. The adapter flow below describes the implemented runtime path, but supported signed package delivery and portable coexistence remain deferred to [`project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md).
+
 1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
 2. The Rust adapter requests `GlobalSystemMediaTransportControlsSessionManager` and follows its current system-preferred session.
 3. While connected, one shared bounded polling task reads changed metadata, timeline, playback state, artwork, and published transport capabilities; additional window consumers attach without replacing that task.

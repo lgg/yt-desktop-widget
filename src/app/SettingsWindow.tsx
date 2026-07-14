@@ -18,10 +18,7 @@ import {
   startCurrentAppWindowDragging,
 } from '@/app/windowController';
 import { useI18n } from '@/app/i18n';
-import {
-  WIDGET_BLOCK_VISIBILITY_MODES,
-  moveWidgetBlock,
-} from '@/app/widgetLayout';
+import { moveWidgetBlock } from '@/app/widgetLayout';
 import {
   WIDGET_CUSTOM_MAX_PERCENTAGE,
   WIDGET_CUSTOM_MIN_PERCENTAGE,
@@ -59,6 +56,15 @@ type BlockVisibilitySettingKey =
   | 'progressBarVisibility'
   | 'likeDislikeVisibility'
   | 'playbackControlsVisibility';
+
+type HeaderButtonVisibilitySettingKey =
+  | 'hideSettingsButton'
+  | 'hideCloseButton';
+
+const BLOCK_VISIBILITY_ROWS = [
+  ['always', 'hidden'],
+  ['hoverReserved', 'hoverDynamic'],
+] as const satisfies readonly (readonly WidgetBlockVisibility[])[];
 
 interface OpacityControlProps {
   id: string;
@@ -319,33 +325,87 @@ export const SettingsWindow = () => {
           {t('settingsWindow.sections.layout.visibilityDescription')}
         </span>
         <div
+          className="segmented-control__options segmented-control__options--visibility"
+          role="group"
+          aria-label={label}
+        >
+          {BLOCK_VISIBILITY_ROWS.map((row, rowIndex) => (
+            <div
+              className="segmented-control__options-row"
+              data-visibility-row={rowIndex === 0 ? 'fixed' : 'hover'}
+              key={rowIndex}
+            >
+              {row.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={settings.ui[settingKey] === mode}
+                  className={
+                    settings.ui[settingKey] === mode
+                      ? 'segmented-control__option segmented-control__option--active'
+                      : 'segmented-control__option'
+                  }
+                  onClick={() =>
+                    void updateSettings((current) => ({
+                      ...current,
+                      ui: {
+                        ...current.ui,
+                        [settingKey]: mode,
+                      },
+                    }))
+                  }
+                >
+                  {t(`settingsWindow.blockVisibility.${mode}`)}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderHeaderButtonVisibilityControl = (
+    settingKey: HeaderButtonVisibilitySettingKey,
+  ) => {
+    const label = t(`settingsWindow.sections.ui.${settingKey}`);
+    return (
+      <div className="segmented-control" key={settingKey}>
+        <span className="segmented-control__label">{label}</span>
+        <span className="segmented-control__description">
+          {t(`settingsWindow.sections.ui.${settingKey}Description`)}
+        </span>
+        <div
           className="segmented-control__options"
           role="group"
           aria-label={label}
         >
-          {WIDGET_BLOCK_VISIBILITY_MODES.map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              aria-pressed={settings.ui[settingKey] === mode}
-              className={
-                settings.ui[settingKey] === mode
-                  ? 'segmented-control__option segmented-control__option--active'
-                  : 'segmented-control__option'
-              }
-              onClick={() =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    [settingKey]: mode as WidgetBlockVisibility,
-                  },
-                }))
-              }
-            >
-              {t(`settingsWindow.blockVisibility.${mode}`)}
-            </button>
-          ))}
+          {([false, true] as const).map((hideOnIdle) => {
+            const mode = hideOnIdle ? 'hover' : 'always';
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={settings.ui[settingKey] === hideOnIdle}
+                className={
+                  settings.ui[settingKey] === hideOnIdle
+                    ? 'segmented-control__option segmented-control__option--active'
+                    : 'segmented-control__option'
+                }
+                onClick={() =>
+                  void updateSettings((current) => ({
+                    ...current,
+                    ui: {
+                      ...current.ui,
+                      [settingKey]: hideOnIdle,
+                    },
+                  }))
+                }
+              >
+                {t(`settingsWindow.connectionBadgeVisibility.${mode}`)}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -837,38 +897,8 @@ export const SettingsWindow = () => {
                 ))}
               </div>
             </div>
-            <Toggle
-              checked={settings.ui.hideSettingsButton}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideSettingsButton: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideSettingsButton')}
-              description={t(
-                'settingsWindow.sections.ui.hideSettingsButtonDescription',
-              )}
-            />
-            <Toggle
-              checked={settings.ui.hideCloseButton}
-              onChange={(nextValue) =>
-                void updateSettings((current) => ({
-                  ...current,
-                  ui: {
-                    ...current.ui,
-                    hideCloseButton: nextValue,
-                  },
-                }))
-              }
-              label={t('settingsWindow.sections.ui.hideCloseButton')}
-              description={t(
-                'settingsWindow.sections.ui.hideCloseButtonDescription',
-              )}
-            />
+            {renderHeaderButtonVisibilityControl('hideSettingsButton')}
+            {renderHeaderButtonVisibilityControl('hideCloseButton')}
           </SettingsSection>
 
           <SettingsSection

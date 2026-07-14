@@ -8,15 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 47
+- Total tracked tasks: 49
 - Open: 0
-- In progress: 0
+- In progress: 1
 - Blocked: 0
-- Deferred: 6
+- Deferred: 7
 - Completed: 41
 
 ## Current Stabilization Work
 
+- In Progress P1: Unify Settings visibility controls and layout - [`0048-unify-settings-visibility-controls-and-layout.md`](../tasks/0048-unify-settings-visibility-controls-and-layout.md) - replaces Settings/Close switches with two-choice segmented controls while preserving booleans, and makes four-mode selectors use deterministic two-row grouping.
 - Completed P1: Deep completion audit for Windows Media Session version 3.1.0 - [`0047-deep-audit-windows-media-session-release.md`](../tasks/0047-deep-audit-windows-media-session-release.md) - verified lifecycle, concurrency, capabilities, error handling, migrations, UI, security/privacy, E2E/release behavior, fixed all confirmed defects with regressions, and completed branch plus `master` delivery.
 - Completed P1: Windows Media Session playback source and version 3.1.0 - [`0045-add-windows-media-session-playback-source.md`](../tasks/0045-add-windows-media-session-playback-source.md) - keeps Companion as the default, adds a first Settings source choice and current-session GSMTC adapter, capability-safe WMS controls, docs, migration, and a full audit; a normal interactive Windows/app compatibility smoke remains a release activity.
 - Completed P1: Version 3 customizable blocks and playback actions - [`0044-add-v3-customizable-widget-blocks-and-playback-actions.md`](../tasks/0044-add-v3-customizable-widget-blocks-and-playback-actions.md) - adds mute and Like/Dislike controls, explicit four-mode visibility, persisted block ordering, collapsible Settings sections, centralized `3.0.0`, and a full audit while preserving the v2 migration default.
@@ -59,6 +60,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 ## Deferred Roadmap
 
+- Deferred P1: Supported packaged Windows Media Session delivery - [`0049-add-supported-packaged-wms-delivery.md`](../tasks/0049-add-supported-packaged-wms-delivery.md) - live diagnostics proved the portable process is denied the required `globalMediaControl` package capability; design signed MSIX/sparse delivery, portable coexistence, and interactive Apple Music/Spotify/Yandex validation without bypassing Windows checks.
 - Deferred P2: Opt-in local WMS playback history, favorites, and export - [`0046-add-opt-in-local-playback-history-favorites-and-export.md`](../tasks/0046-add-opt-in-local-playback-history-favorites-and-export.md) - default-off local history enables local favorite marking for WMS tracks plus review/copy/export/delete flows; consent, identity, retention, corruption recovery, and privacy require a dedicated design pass.
 - Deferred P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md) - umbrella retained only for the explicitly deferred future children below.
 - Deferred P4: ytw-5v6.2 - [`0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md)

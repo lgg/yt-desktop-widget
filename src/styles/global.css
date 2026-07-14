@@ -1375,6 +1375,26 @@ a,
   flex-wrap: wrap;
 }
 
+.segmented-control__options--visibility {
+  flex-direction: column;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.segmented-control__options-row {
+  display: flex;
+  max-width: 100%;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.segmented-control__options-row .segmented-control__option {
+  min-width: 88px;
+  min-height: 40px;
+  height: auto;
+  padding-block: 8px;
+}
+
 .segmented-control__option {
   min-width: 88px;
   min-height: 40px;
