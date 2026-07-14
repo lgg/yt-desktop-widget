@@ -1182,20 +1182,24 @@ export const SettingsWindow = () => {
                 <GitHubIcon />
                 <span>{t('settingsWindow.actions.openRepo')}</span>
               </button>
-              <button
-                className={
-                  debugMockModeActive ? 'primary-button' : 'secondary-button'
-                }
-                type="button"
-                onClick={() => void toggleDebugMockMode()}
-              >
-                <SparkIcon />
-                <span>
-                  {debugMockModeActive
-                    ? t('settingsWindow.actions.stopDebugMockMode')
-                    : t('settingsWindow.actions.runDebugMockMode')}
-                </span>
-              </button>
+              {import.meta.env.DEV ? (
+                <button
+                  className={
+                    debugMockModeActive
+                      ? 'primary-button'
+                      : 'secondary-button'
+                  }
+                  type="button"
+                  onClick={() => void toggleDebugMockMode()}
+                >
+                  <SparkIcon />
+                  <span>
+                    {debugMockModeActive
+                      ? t('settingsWindow.actions.stopDebugMockMode')
+                      : t('settingsWindow.actions.runDebugMockMode')}
+                  </span>
+                </button>
+              ) : null}
             </div>
           </SettingsSection>
         </div>

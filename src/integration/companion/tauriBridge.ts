@@ -5,6 +5,7 @@ import type {
   AppSettings,
   CompanionRawState,
   DiscoveryInfo,
+  GatewayDiagnostic,
   PlaybackCommand,
 } from '@/domain/playback/types';
 
@@ -29,6 +30,7 @@ export interface CompanionConnectResponse {
 export interface BackendCommandError {
   code: string;
   message: string;
+  diagnostic?: GatewayDiagnostic;
 }
 
 export const tauriBridge = {

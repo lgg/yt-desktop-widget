@@ -1,4 +1,6 @@
-use crate::models::{CommandError, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand};
+use crate::models::{
+  CommandDiagnostic, CommandError, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand,
+};
 use serde_json::Value;
 
 pub const WINDOWS_MEDIA_EVENT: &str = "windows-media://event";
@@ -103,34 +105,104 @@ fn ensure_command_completed(completed: bool) -> Result<(), CommandError> {
   Err(CommandError::new(
     "api_unavailable",
     "The current Windows media session did not accept the command.",
-  ))
+  )
+  .with_diagnostic(CommandDiagnostic::new(
+    "send_command.complete",
+    "command_rejected",
+  )))
+}
+
+fn should_dispatch_command(
+  command: &PlaybackCommand,
+  connected: bool,
+) -> Result<bool, CommandError> {
+  if is_unsupported_command(command) {
+    return Ok(false);
+  }
+  if connected {
+    return Ok(true);
+  }
+
+  Err(
+    CommandError::new("not_running", "Windows Media Session is not connected.")
+      .with_diagnostic(CommandDiagnostic::new(
+        "send_command.prerequisite",
+        "backend_not_connected",
+      )),
+  )
 }
 
 #[cfg(target_os = "windows")]
 mod platform {
-  use std::time::Duration;
+  use std::{
+    sync::{
+      mpsc::{self, Receiver, RecvTimeoutError, Sender},
+      OnceLock,
+    },
+    thread,
+    time::Duration,
+  };
 
   use base64::Engine;
   use serde_json::json;
   use tauri::{AppHandle, Emitter};
-  use tokio::time::MissedTickBehavior;
+  use tokio::sync::oneshot;
   use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSession, GlobalSystemMediaTransportControlsSessionManager,
     GlobalSystemMediaTransportControlsSessionMediaProperties, GlobalSystemMediaTransportControlsSessionPlaybackStatus,
   };
   use windows::Storage::Streams::DataReader;
+  use windows::Win32::System::WinRT::{RoInitialize, RoUninitialize, RO_INIT_MULTITHREADED};
 
   use super::{
-    accepted_artwork_size, ensure_command_completed, is_unsupported_command, normalize_timeline,
-    safe_artwork_content_type, seek_position_ticks, should_load_artwork, truncate_metadata, CommandError,
-    CompanionConnectResponse, DiscoveryInfo, PlaybackCommand, Value, WINDOWS_MEDIA_EVENT,
+    accepted_artwork_size, ensure_command_completed, normalize_timeline, safe_artwork_content_type,
+    seek_position_ticks, should_dispatch_command, should_load_artwork, truncate_metadata, CommandDiagnostic,
+    CommandError, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand, Value, WINDOWS_MEDIA_EVENT,
   };
   use crate::models::CompanionEvent;
 
   const POLL_INTERVAL: Duration = Duration::from_millis(750);
+  const WORKER_RESPONSE_TIMEOUT: Duration = Duration::from_secs(15);
 
-  fn windows_error(context: &str, _error: windows::core::Error) -> CommandError {
+  const E_POINTER: i32 = 0x8000_4003_u32 as i32;
+
+  pub(super) fn classify_windows_hresult(hresult: i32) -> &'static str {
+    match hresult as u32 {
+      0x8007_0005 => "access_denied",
+      0x8004_01F0 => "apartment_not_initialized",
+      0x8001_010E => "wrong_thread",
+      0x8000_4003 => "empty_result",
+      0x8007_0490 => "not_found",
+      _ => "windows_error",
+    }
+  }
+
+  pub(super) fn format_windows_hresult(hresult: i32) -> String {
+    format!("0x{:08X}", hresult as u32)
+  }
+
+  fn windows_error(stage: &str, context: &str, error: windows::core::Error) -> CommandError {
+    let hresult = error.code().0;
+    CommandError::new("api_unavailable", context).with_diagnostic(
+      CommandDiagnostic::new(stage, classify_windows_hresult(hresult))
+        .with_hresult(format_windows_hresult(hresult)),
+    )
+  }
+
+  fn worker_error(stage: &str, context: &str, category: &str) -> CommandError {
     CommandError::new("api_unavailable", context)
+      .with_diagnostic(CommandDiagnostic::new(stage, category))
+  }
+
+  fn diagnostic_detail(error: &CommandError) -> String {
+    let Some(diagnostic) = &error.diagnostic else {
+      return error.message.clone();
+    };
+    let hresult = diagnostic.hresult.as_deref().unwrap_or("n/a");
+    format!(
+      "{} (stage: {}; HRESULT: {}; category: {})",
+      error.message, diagnostic.stage, hresult, diagnostic.category
+    )
   }
 
   fn playback_track_state(status: GlobalSystemMediaTransportControlsSessionPlaybackStatus) -> i32 {
@@ -185,18 +257,48 @@ mod platform {
   ) -> Result<Value, CommandError> {
     let properties = session
       .TryGetMediaPropertiesAsync()
-      .map_err(|error| windows_error("Unable to request Windows media metadata", error))?
+      .map_err(|error| {
+        windows_error(
+          "snapshot.media_properties.request",
+          "Unable to request Windows media metadata",
+          error,
+        )
+      })?
       .get()
-      .map_err(|error| windows_error("Unable to read Windows media metadata", error))?;
+      .map_err(|error| {
+        windows_error(
+          "snapshot.media_properties.await",
+          "Unable to read Windows media metadata",
+          error,
+        )
+      })?;
     let timeline = session
       .GetTimelineProperties()
-      .map_err(|error| windows_error("Unable to read Windows media timeline", error))?;
+      .map_err(|error| {
+        windows_error(
+          "snapshot.timeline",
+          "Unable to read Windows media timeline",
+          error,
+        )
+      })?;
     let playback = session
       .GetPlaybackInfo()
-      .map_err(|error| windows_error("Unable to read Windows playback state", error))?;
+      .map_err(|error| {
+        windows_error(
+          "snapshot.playback_info",
+          "Unable to read Windows playback state",
+          error,
+        )
+      })?;
     let controls = playback
       .Controls()
-      .map_err(|error| windows_error("Unable to read Windows media controls", error))?;
+      .map_err(|error| {
+        windows_error(
+          "snapshot.controls",
+          "Unable to read Windows media controls",
+          error,
+        )
+      })?;
 
     let source_app = truncate_metadata(
       session
@@ -278,11 +380,25 @@ mod platform {
     }))
   }
 
+  fn current_session(
+    manager: &GlobalSystemMediaTransportControlsSessionManager,
+  ) -> Result<Option<GlobalSystemMediaTransportControlsSession>, CommandError> {
+    match manager.GetCurrentSession() {
+      Ok(session) => Ok(Some(session)),
+      Err(error) if error.code().0 == E_POINTER => Ok(None),
+      Err(error) => Err(windows_error(
+        "current_session.get",
+        "Unable to read the current Windows media session",
+        error,
+      )),
+    }
+  }
+
   fn current_snapshot(
     manager: &GlobalSystemMediaTransportControlsSessionManager,
     previous: Option<&Value>,
   ) -> Result<Option<Value>, CommandError> {
-    let Some(session) = manager.GetCurrentSession().ok() else {
+    let Some(session) = current_session(manager)? else {
       return Ok(None);
     };
     snapshot_for_session(&session, previous).map(Some)
@@ -290,136 +406,188 @@ mod platform {
 
   fn request_manager() -> Result<GlobalSystemMediaTransportControlsSessionManager, CommandError> {
     GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
-      .map_err(|error| windows_error("Unable to request Windows Media Session access", error))?
+      .map_err(|error| {
+        windows_error(
+          "request_manager.request",
+          "Unable to request Windows Media Session access",
+          error,
+        )
+      })?
       .get()
-      .map_err(|error| windows_error("Unable to initialize Windows Media Session", error))
+      .map_err(|error| {
+        windows_error(
+          "request_manager.await",
+          "Unable to initialize Windows Media Session",
+          error,
+        )
+      })
   }
 
-  #[derive(Default)]
-  pub struct WindowsMediaManager {
+  fn session_count(
+    manager: &GlobalSystemMediaTransportControlsSessionManager,
+  ) -> Result<u32, CommandError> {
+    let sessions = manager.GetSessions().map_err(|error| {
+      windows_error(
+        "discover.sessions",
+        "Unable to enumerate Windows media sessions",
+        error,
+      )
+    })?;
+    sessions.Size().map_err(|error| {
+      windows_error(
+        "discover.sessions.size",
+        "Unable to count Windows media sessions",
+        error,
+      )
+    })
+  }
+
+  fn unavailable_discovery(error: &CommandError) -> DiscoveryInfo {
+    DiscoveryInfo {
+      available: false,
+      api_versions: Vec::new(),
+      supports_realtime: false,
+      supports_seek: false,
+      using_browser_bridge: false,
+      detail: Some(diagnostic_detail(error)),
+    }
+  }
+
+  enum WorkerRequest {
+    Discover {
+      respond_to: oneshot::Sender<Result<DiscoveryInfo, CommandError>>,
+    },
+    Connect {
+      app: AppHandle,
+      respond_to: oneshot::Sender<Result<CompanionConnectResponse, CommandError>>,
+    },
+    Disconnect {
+      respond_to: oneshot::Sender<()>,
+    },
+    SendCommand {
+      command: PlaybackCommand,
+      respond_to: oneshot::Sender<Result<(), CommandError>>,
+    },
+  }
+
+  struct WorkerState {
+    startup_error: Option<CommandError>,
     manager: Option<GlobalSystemMediaTransportControlsSessionManager>,
-    poll_task: Option<tauri::async_runtime::JoinHandle<()>>,
+    connected: bool,
+    app: Option<AppHandle>,
+    previous_state: Option<Value>,
+    poll_error_active: bool,
   }
 
-  impl WindowsMediaManager {
-    pub async fn discover(&self) -> DiscoveryInfo {
-      match request_manager() {
-        Ok(_) => DiscoveryInfo {
+  impl WorkerState {
+    fn new(startup_error: Option<CommandError>) -> Self {
+      Self {
+        startup_error,
+        manager: None,
+        connected: false,
+        app: None,
+        previous_state: None,
+        poll_error_active: false,
+      }
+    }
+
+    fn ensure_started(&self) -> Result<(), CommandError> {
+      match &self.startup_error {
+        Some(error) => Err(error.clone()),
+        None => Ok(()),
+      }
+    }
+
+    fn ensure_manager(
+      &mut self,
+    ) -> Result<&GlobalSystemMediaTransportControlsSessionManager, CommandError> {
+      self.ensure_started()?;
+      if self.manager.is_none() {
+        self.manager = Some(request_manager()?);
+      }
+      self.manager.as_ref().ok_or_else(|| {
+        worker_error(
+          "worker.manager",
+          "Windows Media Session did not provide a manager",
+          "manager_unavailable",
+        )
+      })
+    }
+
+    fn discover(&mut self) -> Result<DiscoveryInfo, CommandError> {
+      let result = (|| {
+        let (count, has_current_session) = {
+          let manager = self.ensure_manager()?;
+          (session_count(manager)?, current_session(manager)?.is_some())
+        };
+        let current_state = if has_current_session { "present" } else { "absent" };
+
+        Ok(DiscoveryInfo {
           available: true,
           api_versions: vec!["Windows.Media.Control".to_string()],
           supports_realtime: true,
           supports_seek: true,
           using_browser_bridge: false,
-          detail: Some("Windows Media Session is available; controls depend on the current player.".to_string()),
-        },
-        Err(error) => DiscoveryInfo {
-          available: false,
-          api_versions: Vec::new(),
-          supports_realtime: false,
-          supports_seek: false,
-          using_browser_bridge: false,
-          detail: Some(error.message),
-        },
+          detail: Some(format!(
+            "Windows Media Session is available ({count} sessions; current session {current_state})."
+          )),
+        })
+      })();
+      if result.is_err() {
+        self.manager = None;
       }
+      result
     }
 
-    pub async fn connect(&mut self, app: &AppHandle) -> Result<CompanionConnectResponse, CommandError> {
-      if let (Some(manager), Some(_)) = (&self.manager, &self.poll_task) {
-        let initial_state = current_snapshot(manager, None)?;
-        let _ = app.emit(
-          WINDOWS_MEDIA_EVENT,
-          CompanionEvent::Status {
-            status: "socket_open".to_string(),
-            detail: None,
-          },
-        );
-        return Ok(CompanionConnectResponse { initial_state });
+    fn prepare_connection(&mut self) -> Result<CompanionConnectResponse, CommandError> {
+      let result = (|| {
+        let manager = self.ensure_manager()?;
+        current_snapshot(manager, None)
+      })();
+      if result.is_err() {
+        self.manager = None;
       }
-
-      self.disconnect().await;
-      let manager = request_manager()?;
-      let initial_state = current_snapshot(&manager, None)?;
-      let poll_manager = manager.clone();
-      let app_handle = app.clone();
-      let mut previous_state = initial_state.clone();
-
-      let _ = app.emit(
-        WINDOWS_MEDIA_EVENT,
-        CompanionEvent::Status {
-          status: "socket_open".to_string(),
-          detail: None,
-        },
-      );
-
-      self.poll_task = Some(tauri::async_runtime::spawn(async move {
-        let mut interval = tokio::time::interval(POLL_INTERVAL);
-        interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
-        let mut poll_error_active = false;
-        interval.tick().await;
-        loop {
-          interval.tick().await;
-          match current_snapshot(&poll_manager, previous_state.as_ref()) {
-            Ok(next_state) => {
-              if poll_error_active {
-                poll_error_active = false;
-                let _ = app_handle.emit(
-                  WINDOWS_MEDIA_EVENT,
-                  CompanionEvent::Status {
-                    status: "socket_open".to_string(),
-                    detail: None,
-                  },
-                );
-              }
-              if next_state == previous_state {
-                continue;
-              }
-              previous_state = next_state.clone();
-              let _ = app_handle.emit(
-                WINDOWS_MEDIA_EVENT,
-                CompanionEvent::State {
-                  state: next_state.unwrap_or_else(|| json!({})),
-                },
-              );
-            }
-            Err(error) => {
-              if poll_error_active {
-                continue;
-              }
-              poll_error_active = true;
-              let _ = app_handle.emit(
-                WINDOWS_MEDIA_EVENT,
-                CompanionEvent::Status {
-                  status: "socket_error".to_string(),
-                  detail: Some(error.message),
-                },
-              );
-            }
-          }
-        }
-      }));
-      self.manager = Some(manager);
-
-      Ok(CompanionConnectResponse { initial_state })
+      Ok(CompanionConnectResponse {
+        initial_state: result?,
+      })
     }
 
-    pub async fn disconnect(&mut self) {
-      if let Some(task) = self.poll_task.take() {
-        task.abort();
-      }
+    fn commit_connection(&mut self, app: AppHandle, initial_state: Option<Value>) {
+      self.connected = true;
+      self.app = Some(app);
+      self.previous_state = initial_state;
+      self.poll_error_active = false;
+      self.emit_status("socket_open", None);
+    }
+
+    fn disconnect(&mut self) {
+      self.connected = false;
+      self.app = None;
+      self.previous_state = None;
+      self.poll_error_active = false;
       self.manager = None;
     }
 
-    pub async fn send_command(&self, command: &PlaybackCommand) -> Result<(), CommandError> {
-      if is_unsupported_command(command) {
+    fn send_command(&self, command: &PlaybackCommand) -> Result<(), CommandError> {
+      if !should_dispatch_command(command, self.connected)? {
         return Ok(());
       }
+      self.ensure_started()?;
 
-      let Some(manager) = &self.manager else {
-        return Ok(());
-      };
-      let Some(session) = manager.GetCurrentSession().ok() else {
-        return Ok(());
-      };
+      let manager = self.manager.as_ref().ok_or_else(|| {
+        worker_error(
+          "send_command.manager",
+          "Windows Media Session is not connected.",
+          "manager_unavailable",
+        )
+      })?;
+      let session = current_session(manager)?.ok_or_else(|| {
+        worker_error(
+          "send_command.session",
+          "No current Windows media session is available.",
+          "no_current_session",
+        )
+      })?;
 
       let operation = match command {
         PlaybackCommand::PlayPause => session.TryTogglePlayPauseAsync(),
@@ -428,9 +596,13 @@ mod platform {
         PlaybackCommand::Next => session.TrySkipNextAsync(),
         PlaybackCommand::Previous => session.TrySkipPreviousAsync(),
         PlaybackCommand::SeekTo { seconds } => {
-          let timeline = session
-            .GetTimelineProperties()
-            .map_err(|error| windows_error("Unable to read Windows media timeline", error))?;
+          let timeline = session.GetTimelineProperties().map_err(|error| {
+            windows_error(
+              "send_command.seek.timeline",
+              "Unable to read Windows media timeline",
+              error,
+            )
+          })?;
           let start_ticks = timeline.StartTime().map(|value| value.Duration).unwrap_or(0);
           let end_ticks = timeline.EndTime().map(|value| value.Duration).unwrap_or(start_ticks);
           let normalized_timeline = normalize_timeline(
@@ -450,12 +622,340 @@ mod platform {
         | PlaybackCommand::ToggleLike
         | PlaybackCommand::ToggleDislike => return Ok(()),
       }
-      .map_err(|error| windows_error("Windows rejected the media command", error))?;
+      .map_err(|error| {
+        windows_error(
+          "send_command.request",
+          "Windows rejected the media command",
+          error,
+        )
+      })?;
 
-      let completed = operation
-        .get()
-        .map_err(|error| windows_error("Windows could not complete the media command", error))?;
+      let completed = operation.get().map_err(|error| {
+        windows_error(
+          "send_command.await",
+          "Windows could not complete the media command",
+          error,
+        )
+      })?;
       ensure_command_completed(completed)
+    }
+
+    fn poll(&mut self) {
+      if !self.connected {
+        return;
+      }
+
+      let result = match &self.manager {
+        Some(manager) => current_snapshot(manager, self.previous_state.as_ref()),
+        None => Err(worker_error(
+          "poll.manager",
+          "Windows Media Session is not connected.",
+          "manager_unavailable",
+        )),
+      };
+
+      match result {
+        Ok(next_state) => {
+          if self.poll_error_active {
+            self.poll_error_active = false;
+            self.emit_status("socket_open", None);
+          }
+          if next_state == self.previous_state {
+            return;
+          }
+          self.previous_state = next_state.clone();
+          self.emit(CompanionEvent::State {
+            state: next_state.unwrap_or_else(|| json!({})),
+          });
+        }
+        Err(error) => {
+          if self.poll_error_active {
+            return;
+          }
+          self.poll_error_active = true;
+          self.emit_status("socket_error", Some(diagnostic_detail(&error)));
+        }
+      }
+    }
+
+    fn emit_status(&self, status: &str, detail: Option<String>) {
+      self.emit(CompanionEvent::Status {
+        status: status.to_string(),
+        detail,
+      });
+    }
+
+    fn emit(&self, event: CompanionEvent) {
+      if let Some(app) = &self.app {
+        let _ = app.emit(WINDOWS_MEDIA_EVENT, event);
+      }
+    }
+
+    fn handle(&mut self, request: WorkerRequest) {
+      match request {
+        WorkerRequest::Discover { respond_to } => {
+          if respond_to.is_closed() {
+            return;
+          }
+          let result = self.discover();
+          let _ = respond_to.send(result);
+        }
+        WorkerRequest::Connect { app, respond_to } => {
+          if respond_to.is_closed() {
+            return;
+          }
+          match self.prepare_connection() {
+            Ok(response) => {
+              let initial_state = response.initial_state.clone();
+              if respond_to.send(Ok(response)).is_ok() {
+                self.commit_connection(app, initial_state);
+              }
+            }
+            Err(error) => {
+              let _ = respond_to.send(Err(error));
+            }
+          }
+        }
+        WorkerRequest::Disconnect { respond_to } => {
+          self.disconnect();
+          let _ = respond_to.send(());
+        }
+        WorkerRequest::SendCommand {
+          command,
+          respond_to,
+        } => {
+          if respond_to.is_closed() {
+            return;
+          }
+          let result = self.send_command(&command);
+          let _ = respond_to.send(result);
+        }
+      }
+    }
+  }
+
+  struct WorkerApartment;
+
+  impl WorkerApartment {
+    fn initialize() -> Result<Self, CommandError> {
+      unsafe { RoInitialize(RO_INIT_MULTITHREADED) }
+        .map(|()| Self)
+        .map_err(|error| {
+          windows_error(
+            "worker.initialize_mta",
+            "Unable to initialize the Windows Media worker",
+            error,
+          )
+        })
+    }
+  }
+
+  impl Drop for WorkerApartment {
+    fn drop(&mut self) {
+      unsafe { RoUninitialize() };
+    }
+  }
+
+  fn spawn_mta_thread(
+    name: &str,
+    run: impl FnOnce(Option<CommandError>) + Send + 'static,
+  ) -> Result<thread::JoinHandle<()>, CommandError> {
+    thread::Builder::new()
+      .name(name.to_string())
+      .spawn(move || {
+        let apartment = WorkerApartment::initialize();
+        let startup_error = apartment.as_ref().err().cloned();
+        run(startup_error);
+        drop(apartment);
+      })
+      .map_err(|_| {
+        worker_error(
+          "worker.spawn",
+          "Unable to start the Windows Media worker",
+          "worker_spawn_failed",
+        )
+      })
+  }
+
+  fn run_worker(receiver: Receiver<WorkerRequest>, startup_error: Option<CommandError>) {
+    let mut state = WorkerState::new(startup_error);
+
+    loop {
+      let request = if state.connected {
+        match receiver.recv_timeout(POLL_INTERVAL) {
+          Ok(request) => Some(request),
+          Err(RecvTimeoutError::Timeout) => {
+            state.poll();
+            None
+          }
+          Err(RecvTimeoutError::Disconnected) => break,
+        }
+      } else {
+        match receiver.recv() {
+          Ok(request) => Some(request),
+          Err(_) => break,
+        }
+      };
+
+      if let Some(request) = request {
+        state.handle(request);
+      }
+    }
+
+    state.disconnect();
+  }
+
+  #[cfg(test)]
+  pub(super) async fn initialized_worker_thread_ids(
+  ) -> Result<(thread::ThreadId, thread::ThreadId), CommandError> {
+    let (respond_to, response) = oneshot::channel();
+    let worker_thread = spawn_mta_thread("windows-media-worker-test", move |startup_error| {
+      let result = match startup_error {
+        Some(error) => Err(error),
+        None => {
+          let thread_id = thread::current().id();
+          Ok((thread_id, thread_id))
+        }
+      };
+      let _ = respond_to.send(result);
+    })?;
+    let result = response.await.map_err(|_| {
+      worker_error(
+        "worker.test.receive",
+        "The Windows Media worker test stopped unexpectedly",
+        "worker_stopped",
+      )
+    })?;
+    let _ = worker_thread.join();
+    result
+  }
+
+  struct WindowsMediaWorker {
+    sender: Sender<WorkerRequest>,
+    _thread: thread::JoinHandle<()>,
+  }
+
+  impl WindowsMediaWorker {
+    fn spawn() -> Result<Self, CommandError> {
+      let (sender, receiver) = mpsc::channel();
+      let worker_thread = spawn_mta_thread("windows-media-worker", move |startup_error| {
+        run_worker(receiver, startup_error);
+      })?;
+      Ok(Self {
+        sender,
+        _thread: worker_thread,
+      })
+    }
+
+    async fn request<T>(
+      &self,
+      build_request: impl FnOnce(oneshot::Sender<Result<T, CommandError>>) -> WorkerRequest,
+    ) -> Result<T, CommandError> {
+      let (respond_to, response) = oneshot::channel();
+      self.sender.send(build_request(respond_to)).map_err(|_| {
+        worker_error(
+          "worker.request.send",
+          "The Windows Media worker is unavailable",
+          "worker_stopped",
+        )
+      })?;
+      let response = tokio::time::timeout(WORKER_RESPONSE_TIMEOUT, response)
+        .await
+        .map_err(|_| {
+          worker_error(
+            "worker.request.timeout",
+            "The Windows Media worker did not respond in time",
+            "worker_timeout",
+          )
+        })?;
+      response.map_err(|_| {
+        worker_error(
+          "worker.request.receive",
+          "The Windows Media worker stopped before completing the request",
+          "worker_stopped",
+        )
+      })?
+    }
+
+    async fn discover(&self) -> Result<DiscoveryInfo, CommandError> {
+      self
+        .request(|respond_to| WorkerRequest::Discover { respond_to })
+        .await
+    }
+
+    async fn connect(&self, app: AppHandle) -> Result<CompanionConnectResponse, CommandError> {
+      self
+        .request(|respond_to| WorkerRequest::Connect { app, respond_to })
+        .await
+    }
+
+    async fn disconnect(&self) {
+      let (respond_to, response) = oneshot::channel();
+      if self
+        .sender
+        .send(WorkerRequest::Disconnect { respond_to })
+        .is_ok()
+      {
+        let _ = tokio::time::timeout(WORKER_RESPONSE_TIMEOUT, response).await;
+      }
+    }
+
+    async fn send_command(&self, command: PlaybackCommand) -> Result<(), CommandError> {
+      self
+        .request(|respond_to| WorkerRequest::SendCommand {
+          command,
+          respond_to,
+        })
+        .await
+    }
+  }
+
+  pub struct WindowsMediaManager {
+    worker: OnceLock<Result<WindowsMediaWorker, CommandError>>,
+  }
+
+  impl Default for WindowsMediaManager {
+    fn default() -> Self {
+      Self {
+        worker: OnceLock::new(),
+      }
+    }
+  }
+
+  impl WindowsMediaManager {
+    fn worker(&self) -> Result<&WindowsMediaWorker, CommandError> {
+      match self.worker.get_or_init(WindowsMediaWorker::spawn) {
+        Ok(worker) => Ok(worker),
+        Err(error) => Err(error.clone()),
+      }
+    }
+
+    pub async fn discover(&self) -> DiscoveryInfo {
+      let result = match self.worker() {
+        Ok(worker) => worker.discover().await,
+        Err(error) => Err(error),
+      };
+      match result {
+        Ok(discovery) => discovery,
+        Err(error) => unavailable_discovery(&error),
+      }
+    }
+
+    pub async fn connect(&mut self, app: &AppHandle) -> Result<CompanionConnectResponse, CommandError> {
+      self.worker()?.connect(app.clone()).await
+    }
+
+    pub async fn disconnect(&mut self) {
+      if let Ok(worker) = self.worker() {
+        worker.disconnect().await;
+      }
+    }
+
+    pub async fn send_command(&self, command: &PlaybackCommand) -> Result<(), CommandError> {
+      if !should_dispatch_command(command, true)? {
+        return Ok(());
+      }
+      self.worker()?.send_command(command.clone()).await
     }
   }
 }
@@ -489,8 +989,14 @@ impl WindowsMediaManager {
 
   pub async fn disconnect(&mut self) {}
 
-  pub async fn send_command(&self, _command: &PlaybackCommand) -> Result<(), CommandError> {
-    Ok(())
+  pub async fn send_command(&self, command: &PlaybackCommand) -> Result<(), CommandError> {
+    if !should_dispatch_command(command, true)? {
+      return Ok(());
+    }
+    Err(CommandError::new(
+      "api_unavailable",
+      "Windows Media Session is only available on Windows.",
+    ))
   }
 }
 
@@ -500,10 +1006,15 @@ mod tests {
 
   use super::{
     accepted_artwork_size, ensure_command_completed, is_unsupported_command, normalize_timeline,
-    safe_artwork_content_type, seek_position_ticks, should_load_artwork, truncate_metadata, WindowsMediaManager,
-    MAX_ARTWORK_BYTES, MAX_METADATA_CHARS, TICKS_PER_SECOND,
+    safe_artwork_content_type, seek_position_ticks, should_dispatch_command, should_load_artwork,
+    truncate_metadata, MAX_ARTWORK_BYTES, MAX_METADATA_CHARS, TICKS_PER_SECOND,
   };
   use crate::models::PlaybackCommand;
+
+  #[cfg(target_os = "windows")]
+  use super::platform::{
+    classify_windows_hresult, format_windows_hresult, initialized_worker_thread_ids,
+  };
 
   #[test]
   fn rating_and_mute_commands_are_safe_no_ops() {
@@ -576,11 +1087,49 @@ mod tests {
     assert!(output.ends_with('🎵'));
   }
 
+  #[test]
+  fn supported_commands_require_a_connected_backend() {
+    assert!(!should_dispatch_command(&PlaybackCommand::ToggleLike, false)
+      .expect("rating stays a no-op"));
+    let error = should_dispatch_command(&PlaybackCommand::PlayPause, false)
+      .expect_err("transport must not silently succeed while disconnected");
+    assert_eq!(error.code, "not_running");
+    assert_eq!(
+      error.diagnostic.expect("diagnostic should exist").category,
+      "backend_not_connected"
+    );
+    assert!(should_dispatch_command(&PlaybackCommand::PlayPause, true)
+      .expect("connected transport should dispatch"));
+  }
+
+  #[cfg(target_os = "windows")]
+  #[test]
+  fn classifies_winrt_hresult_without_media_metadata() {
+    assert_eq!(
+      classify_windows_hresult(0x8007_0005_u32 as i32),
+      "access_denied"
+    );
+    assert_eq!(
+      classify_windows_hresult(0x8004_01F0_u32 as i32),
+      "apartment_not_initialized"
+    );
+    assert_eq!(
+      classify_windows_hresult(0x8001_010E_u32 as i32),
+      "wrong_thread"
+    );
+    assert_eq!(classify_windows_hresult(-1), "windows_error");
+    assert_eq!(format_windows_hresult(0x8007_0005_u32 as i32), "0x80070005");
+  }
+
   #[cfg(target_os = "windows")]
   #[tokio::test]
-  #[ignore = "manual Windows integration smoke"]
-  async fn requests_windows_media_session_access() {
-    let discovery = WindowsMediaManager::default().discover().await;
-    assert!(discovery.available, "{:?}", discovery.detail);
+  async fn serializes_winrt_work_on_one_initialized_worker_thread() {
+    let caller = std::thread::current().id();
+    let (first, second) = initialized_worker_thread_ids()
+      .await
+      .expect("worker apartment should initialize");
+
+    assert_ne!(first, caller);
+    assert_eq!(first, second);
   }
 }

@@ -7,7 +7,11 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AppProvider, useAppModel } from '@/app/AppProvider';
+import {
+  AppProvider,
+  resolveSourceModeForRuntime,
+  useAppModel,
+} from '@/app/AppProvider';
 import type {
   AppSettings,
   PlaybackSessionState,
@@ -184,6 +188,28 @@ describe('AppProvider', () => {
     appProviderMocks.controllerInstances.length = 0;
     appProviderMocks.saveSettings.mockClear();
     appProviderMocks.createWindowsMediaGateway.mockClear();
+  });
+
+  it('ignores a persisted simulator override in a native production runtime', () => {
+    expect(
+      resolveSourceModeForRuntime({
+        preferredMode: 'simulator',
+        queryMode: null,
+        envMode: undefined,
+        tauriRuntime: true,
+        allowSimulatorOverride: false,
+      }),
+    ).toBe('real');
+
+    expect(
+      resolveSourceModeForRuntime({
+        preferredMode: 'simulator',
+        queryMode: null,
+        envMode: undefined,
+        tauriRuntime: true,
+        allowSimulatorOverride: true,
+      }),
+    ).toBe('simulator');
   });
 
   it('reconnects the main real controller when another window changes Companion auth', async () => {

@@ -28,5 +28,5 @@ tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread", "sync", "
 winreg = "0.55.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.61.3", features = ["Foundation", "Media_Control", "Storage_Streams"] }
+windows = { version = "0.61.3", features = ["Foundation", "Media_Control", "Storage_Streams", "Win32_System_WinRT"] }
 windows-future = { version = "0.2.1", features = ["std"] }

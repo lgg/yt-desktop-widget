@@ -97,7 +97,8 @@ flowchart LR
   Product -->|Windows Media Session| Bridge
   Bridge --> Rust["Rust backend"]
   Rust --> Companion["YTMDesktop Companion Server API"]
-  Rust --> WMS["Windows Global System Media Transport Controls"]
+  Rust --> WMSWorker["Lazy dedicated MTA worker"]
+  WMSWorker --> WMS["Windows Global System Media Transport Controls"]
   Rust --> Storage["Keyring + settings JSON + Windows integration"]
 ```
 
@@ -146,17 +147,19 @@ Design rules:
 
 ## Windows Media Session flow
 
-Delivery constraint: `GlobalSystemMediaTransportControlsSessionManager` requires the package-manifest `globalMediaControl` capability. The current portable/unpackaged executable has no package identity and is denied before session discovery. The adapter flow below describes the implemented runtime path, but supported signed package delivery and portable coexistence remain deferred to [`project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md).
+Delivery status: Microsoft lists the package-manifest `globalMediaControl` capability for `GlobalSystemMediaTransportControlsSessionManager`. A previous isolated unpackaged probe returned `E_ACCESSDENIED`, but the production adapter also lacked an initialized WinRT apartment and blocked arbitrary Tokio worker threads. Task `0050` corrected those runtime defects and produced a portable live-validation candidate. Supported signed package delivery remains the fallback in [`project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md) until the corrected executable receives an interactive player smoke.
 
 1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
-2. The Rust adapter requests `GlobalSystemMediaTransportControlsSessionManager` and follows its current system-preferred session.
-3. While connected, one shared bounded polling task reads changed metadata, timeline, playback state, artwork, and published transport capabilities; additional window consumers attach without replacing that task.
+2. The Rust adapter lazily starts one long-lived `std::thread`, initializes it with `RoInitialize(RO_INIT_MULTITHREADED)`, and sends typed requests through an actor queue.
+3. Manager acquisition, session discovery, blocking WinRT futures, polling, metadata, timeline, artwork, and commands all execute sequentially on that worker rather than on the Tokio runtime.
 4. The shared mapping layer produces the same `PlaybackSnapshot` contract used by Companion.
 5. UI controls use capability flags rather than source-name checks.
 6. WMS Like/Dislike/Mute are disabled and remain successful no-ops in both frontend and Rust as defense in depth.
-7. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and missed polling ticks are skipped rather than replayed in a burst.
+7. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and polling waits 750 ms between unchanged snapshots rather than replaying missed async ticks in a burst.
 8. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
-9. Disconnect or source switching aborts the polling task. No WMS media data is persisted in version 3.1.0.
+9. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
+10. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Media metadata is never included in diagnostics, logs, or persistence.
+11. No WMS media data is persisted in version 3.1.0.
 
 ## Settings and persistence
 
@@ -220,6 +223,7 @@ Performance-sensitive choices in the current implementation:
 - progress is smoothed locally instead of forcing constant transport updates
 - simulator and transport logic are kept outside presentation components
 - reconnect timing is handled in the controller instead of in React render paths
+- the WMS worker starts only when WMS is first used and keeps blocking WinRT calls outside Tokio
 - UI animation is mostly CSS-driven and short in duration
 
 ## Extensibility plan

@@ -97,6 +97,36 @@ describe('createWindowsMediaGateway', () => {
       }),
     ).rejects.toMatchObject({ code: 'api_unavailable' });
     expect(unlisten).toHaveBeenCalledOnce();
+    expect(bridgeMocks.windowsMediaDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('preserves safe native diagnostics without mixing them into user copy', async () => {
+    bridgeMocks.windowsMediaConnect.mockRejectedValueOnce({
+      code: 'api_unavailable',
+      message: 'Unavailable',
+      diagnostic: {
+        stage: 'request_manager.await',
+        hresult: '0x80070005',
+        category: 'access_denied',
+      },
+    });
+    const gateway = createWindowsMediaGateway();
+
+    await expect(
+      gateway.connect({
+        onState: vi.fn(),
+        onDisconnected: vi.fn(),
+        onError: vi.fn(),
+        onConnected: vi.fn(),
+      }),
+    ).rejects.toMatchObject({
+      message: 'Unavailable',
+      diagnostic: {
+        stage: 'request_manager.await',
+        hresult: '0x80070005',
+        category: 'access_denied',
+      },
+    });
   });
 
   it('routes native status and state events through the gateway contract', async () => {

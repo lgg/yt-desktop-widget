@@ -25,6 +25,7 @@ const normalizeBridgeError = (error: unknown): GatewayError => {
           ? candidate.code
           : 'unknown',
         candidate.message,
+        candidate.diagnostic,
       );
     }
   }
@@ -123,6 +124,7 @@ export const createWindowsMediaGateway = (): CompanionGateway => ({
       } satisfies GatewayConnectResult;
     } catch (error) {
       stopListening();
+      void tauriBridge.windowsMediaDisconnect().catch(() => undefined);
       throw error;
     }
   },
