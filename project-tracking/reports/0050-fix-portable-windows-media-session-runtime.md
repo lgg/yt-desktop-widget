@@ -4,7 +4,7 @@
 
 The production WMS adapter was rebuilt around a lazy, dedicated MTA-initialized actor thread. Every blocking GSMTC manager/session/future call now executes on that worker rather than arbitrary Tokio threads. The pass also preserves safe HRESULT diagnostics, bounds caller waits, prevents cancelled connects from committing late, surfaces supported-command prerequisite errors, keeps Like/Dislike/Mute as documented no-ops, and prevents native release builds from being silently overridden by the development simulator.
 
-Automated/frontend/native/release verification is complete and a version `3.1.0` portable executable was produced. Interactive access to a live Apple Music/Spotify/Yandex session is not available to the automated harness, so task `0050` remains in progress pending the user's portable smoke. Packaged delivery task `0049` remains a fallback only if the corrected executable still receives Windows access denied.
+Automated/frontend/native/release verification is complete and a version `3.1.0` portable executable was produced. Follow-up task `0051` then proved the same unpackaged WMS access path succeeds against active Apple Music in a normal interactive Windows user session and that the rebuilt widget direct-launches without a native WMS failure. Task `0050` is complete; packaged delivery task `0049` remains only a future installer/product-delivery option.
 
 ## Done
 
@@ -89,15 +89,14 @@ Automated/frontend/native/release verification is complete and a version `3.1.0`
 | `npm run build:portable` | Passed | Portable alias completed and produced the same release executable. |
 | EXE metadata | Passed | 16,072,704 bytes; FileVersion/ProductVersion `3.1.0`; ProductName `YTM Desktop Widget`. |
 | `cargo fmt --check` | Baseline mismatch | Standard rustfmt would reformat nearly the entire existing two-space native codebase. No unrelated mass-format diff was applied; Clippy/check/tests are clean. |
-| Manual live WMS | Pending | Requires the user to run the rebuilt portable executable in an interactive Windows session with a live player. |
+| Live unpackaged WMS access | Passed in task `0051` | Same compiled probe enumerated three sessions and returned a current Apple Music session in the normal interactive context; direct-launched widget stayed responsive with no discovery/connect/poll failure log. |
 | Docs/release review | Passed | Version and portable-only packaging unchanged; no installer, capability bypass, telemetry, network exposure, or secret storage added. |
 | Time tracking review | Passed | Task, report, and time-log all use iteration `2026-07-14-0050-a`, the same timestamps, and 40 minutes. |
 
 ## Not Verified
 
-- Whether the corrected unpackaged process receives GSMTC access in the user's interactive Windows session.
 - Apple Music, Spotify, and Yandex Music application-specific metadata/control completeness.
-- A signed MSIX/sparse-package path; it remains deferred and conditional in task `0049`.
+- A signed MSIX/sparse-package path; it remains deferred as an independent installer/product-delivery choice in task `0049`.
 
 ## Questions Resolved
 
@@ -107,17 +106,17 @@ Automated/frontend/native/release verification is complete and a version `3.1.0`
 | Should a persisted simulator mode override WMS in release? | No. Native release always honors the selected production bridge; simulator overrides are development/browser-only. |
 | Should supported transport commands silently succeed without a backend/session? | No. They return safe typed errors; only the explicitly unsupported Like/Dislike/Mute actions remain no-ops. |
 | Should the actor choose another session when Windows has no current session? | No. It enumerates only safe discovery counts and continues following the Windows-selected current session. |
-| Does the earlier access-denied probe prove packaging is mandatory? | Not by itself. The corrected real portable runtime needs an interactive smoke; packaging remains a documented fallback. |
+| Does the earlier access-denied probe prove packaging is mandatory? | No. Task `0051` proved that result came from the restricted Codex sandbox context; the same unpackaged access path succeeds in the normal interactive user session. |
 
 ## Open Questions
 
 | Question | Owner | Next Step |
 | --- | --- | --- |
-| Does the rebuilt portable executable attach to current Apple Music without `E_ACCESSDENIED`? | User | Run the task `0050` smoke checklist and report success or the exact stage/HRESULT/category shown. |
+| Do Apple Music, Spotify, and Yandex Music all expose identical metadata/control capabilities? | User/live matrix | Validate player-specific behavior as release QA; GSMTC manager access itself is resolved. |
 
 ## Residual Risks
 
-- Windows may still require package identity/capability for this machine/API path; if so, task `0049` is the next supported delivery step.
+- Restricted launchers can still deny GSMTC; the app now surfaces direct-launch guidance and safe logs instead of hiding that context error.
 - A WinRT call that stalls inside Windows cannot be forcibly stopped. The caller times out without blocking Tokio, but the single actor can remain unavailable until the OS call returns or the process restarts.
 - Polling remains a 750 ms compatibility watchdog rather than event-driven GSMTC subscriptions; this is deterministic but not the lowest possible idle work.
 - RustSec's 22 allowed transitive warnings remain the documented dependency baseline and require upstream/dependency-modernization work rather than a scoped WMS patch.
@@ -127,4 +126,4 @@ Automated/frontend/native/release verification is complete and a version `3.1.0`
 1. Close any older widget instance and run the newly built portable `ytm-desktop-widget.exe`.
 2. Start a track in current Apple Music, select `Windows Media Session`, and press `Reconnect`.
 3. Confirm artwork/title/artist, real-time progress, pause/play, previous/next, seek, track change, and reconnect after an app restart.
-4. If it fails, capture the exact safe diagnostic (`stage`, `HRESULT`, `category`). `0x80070005` at `request_manager.await` moves the next pass to task `0049`; apartment/wrong-thread categories remain runtime defects.
+4. If it fails, capture the exact safe diagnostic (`stage`, `HRESULT`, `category`) and confirm the EXE was launched directly from File Explorer. `access_denied` indicates the launch/security context; apartment/wrong-thread categories remain runtime defects.

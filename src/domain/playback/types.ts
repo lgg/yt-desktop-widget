@@ -105,6 +105,7 @@ export interface DiscoveryInfo {
   supportsSeek: boolean;
   usingBrowserBridge: boolean;
   detail?: string | undefined;
+  diagnostic?: GatewayDiagnostic | undefined;
 }
 
 export interface CompanionThumbnail {
@@ -198,6 +199,7 @@ export interface ConnectionState {
   retryAttempt: number;
   retryAt?: number | null | undefined;
   lastError?: string | undefined;
+  diagnostic?: GatewayDiagnostic | undefined;
 }
 
 export interface PlaybackSessionState {

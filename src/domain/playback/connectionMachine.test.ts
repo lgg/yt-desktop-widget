@@ -33,4 +33,34 @@ describe('connectionMachine', () => {
     expect(connected.retryAt).toBeNull();
     expect(connected.authCode).toBeNull();
   });
+
+  it('retains safe Windows diagnostics while a reconnect is scheduled', () => {
+    const diagnostic = {
+      stage: 'request_manager.await',
+      hresult: '0x80070005',
+      category: 'access_denied',
+    };
+    const unavailable = reduceConnectionState(createInitialConnectionState(), {
+      type: 'availability',
+      hasStoredAuth: false,
+      discovery: {
+        available: false,
+        apiVersions: [],
+        supportsRealtime: false,
+        supportsSeek: false,
+        usingBrowserBridge: false,
+        diagnostic,
+      },
+    });
+    const retrying = reduceConnectionState(unavailable, {
+      type: 'retry_scheduled',
+      retryAttempt: 1,
+      retryAt: Date.now() + 5_000,
+      detail: 'Retrying soon.',
+      diagnostic,
+    });
+
+    expect(unavailable.diagnostic).toEqual(diagnostic);
+    expect(retrying.diagnostic).toEqual(diagnostic);
+  });
 });

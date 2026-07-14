@@ -8,16 +8,17 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 50
+- Total tracked tasks: 51
 - Open: 0
-- In progress: 1
+- In progress: 0
 - Blocked: 0
 - Deferred: 7
-- Completed: 42
+- Completed: 44
 
 ## Current Stabilization Work
 
-- In progress P1: Fix portable Windows Media Session runtime - [`0050-fix-portable-windows-media-session-runtime.md`](../tasks/0050-fix-portable-windows-media-session-runtime.md) - re-evaluates the portable failure in the real runtime by moving all blocking GSMTC work to a dedicated MTA worker, preserving safe HRESULT diagnostics, and preventing release simulator overrides before a fresh interactive Apple Music smoke test.
+- Completed P1: Diagnose unpackaged Windows Media access - [`0051-diagnose-unpackaged-windows-media-access.md`](../tasks/0051-diagnose-unpackaged-windows-media-access.md) - proved the same unpackaged WMS probe fails only under the restricted Codex sandbox and succeeds against active Apple Music in the normal interactive user session, then added localized direct-launch recovery, safe rotating diagnostics, regressions, and a fresh portable artifact.
+- Completed P1: Fix portable Windows Media Session runtime - [`0050-fix-portable-windows-media-session-runtime.md`](../tasks/0050-fix-portable-windows-media-session-runtime.md) - moved all blocking GSMTC work to a dedicated MTA worker, preserved safe HRESULT diagnostics, prevented release simulator overrides, and was validated by task `0051` in the normal interactive Windows context.
 - Completed P1: Unify Settings visibility controls and layout - [`0048-unify-settings-visibility-controls-and-layout.md`](../tasks/0048-unify-settings-visibility-controls-and-layout.md) - replaced Settings/Close switches with two-choice segmented controls while preserving booleans, made four-mode selectors use deterministic two-row grouping, and completed branch plus `master` delivery.
 - Completed P1: Deep completion audit for Windows Media Session version 3.1.0 - [`0047-deep-audit-windows-media-session-release.md`](../tasks/0047-deep-audit-windows-media-session-release.md) - verified lifecycle, concurrency, capabilities, error handling, migrations, UI, security/privacy, E2E/release behavior, fixed all confirmed defects with regressions, and completed branch plus `master` delivery.
 - Completed P1: Windows Media Session playback source and version 3.1.0 - [`0045-add-windows-media-session-playback-source.md`](../tasks/0045-add-windows-media-session-playback-source.md) - keeps Companion as the default, adds a first Settings source choice and current-session GSMTC adapter, capability-safe WMS controls, docs, migration, and a full audit; a normal interactive Windows/app compatibility smoke remains a release activity.
@@ -61,7 +62,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 ## Deferred Roadmap
 
-- Deferred P1: Supported packaged Windows Media Session delivery - [`0049-add-supported-packaged-wms-delivery.md`](../tasks/0049-add-supported-packaged-wms-delivery.md) - an earlier isolated portable probe returned access denied, while task `0050` is validating a corrected dedicated-MTA runtime in the real portable app; keep signed MSIX/sparse delivery as the supported fallback if interactive Apple Music/Spotify/Yandex testing still fails.
+- Deferred P3: Optional packaged Windows delivery - [`0049-add-supported-packaged-wms-delivery.md`](../tasks/0049-add-supported-packaged-wms-delivery.md) - package identity is not required for portable WMS; retain this only for a future user-approved installer, signing, update, or Store-style delivery pass that preserves portable as a first-class option.
 - Deferred P2: Opt-in local WMS playback history, favorites, and export - [`0046-add-opt-in-local-playback-history-favorites-and-export.md`](../tasks/0046-add-opt-in-local-playback-history-favorites-and-export.md) - default-off local history enables local favorite marking for WMS tracks plus review/copy/export/delete flows; consent, identity, retention, corruption recovery, and privacy require a dedicated design pass.
 - Deferred P3: ytw-5v6 - [`0005-track-deferred-post-v1-roadmap-items.md`](../tasks/0005-track-deferred-post-v1-roadmap-items.md) - umbrella retained only for the explicitly deferred future children below.
 - Deferred P4: ytw-5v6.2 - [`0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md)

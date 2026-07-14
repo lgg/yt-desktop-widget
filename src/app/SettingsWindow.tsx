@@ -161,6 +161,21 @@ export const SettingsWindow = () => {
             : 'companion',
         )
       : null;
+  const windowsMediaStatusDetail =
+    settings.api.playbackSource === 'windowsMediaSession'
+      ? getConnectionMessage(t, session.connection, 'windowsMediaSession')
+      : null;
+  const windowsMediaDiagnosticDetail =
+    settings.api.playbackSource === 'windowsMediaSession' &&
+    session.connection.diagnostic
+      ? t('settingsWindow.sections.source.diagnostic', {
+        stage: session.connection.diagnostic.stage,
+        hresult:
+          session.connection.diagnostic.hresult ??
+          t('settingsWindow.sections.source.diagnosticUnavailable'),
+        category: session.connection.diagnostic.category,
+      })
+      : null;
   const widgetDimensions = getWidgetReferenceDimensions(
     settings.ui.customWidgetScalePercentage,
   );
@@ -512,6 +527,16 @@ export const SettingsWindow = () => {
                 {t(`status.${session.connection.status}`)}
               </span>
             </SettingsRow>
+            {windowsMediaStatusDetail ? (
+              <p className="settings-field__hint">
+                {windowsMediaStatusDetail}
+              </p>
+            ) : null}
+            {windowsMediaDiagnosticDetail ? (
+              <p className="settings-field__hint settings-field__hint--technical">
+                {windowsMediaDiagnosticDetail}
+              </p>
+            ) : null}
           </SettingsSection>
 
           {settings.api.playbackSource === 'companion' ? (

@@ -87,6 +87,7 @@ impl CompanionManager {
           supports_seek: true,
           using_browser_bridge: false,
           detail: Some("Using the official local Companion Server API.".to_string()),
+          diagnostic: None,
         }
       }
       Ok(_) => DiscoveryInfo {
@@ -99,6 +100,7 @@ impl CompanionManager {
           "Companion Server responded unexpectedly. Make sure YTMDesktop is fully running."
             .to_string(),
         ),
+        diagnostic: None,
       },
       Err(_) => DiscoveryInfo {
         available: false,
@@ -110,6 +112,7 @@ impl CompanionManager {
           "Waiting for the YTMDesktop Companion Server on {}:{}.",
           settings.host, settings.port
         )),
+        diagnostic: None,
       },
     }
   }

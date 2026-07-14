@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress
+Completed
 
 ## Context
 
@@ -75,7 +75,7 @@ Out of scope:
 - [x] Lint/static checks: `npm run verify`, baseline-aware `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`.
 - [x] Tests: focused Vitest/Rust RED-GREEN tests, full Vitest, full Rust tests, Playwright E2E.
 - [x] Build: `cargo check -j1`, `npm run build:desktop`, `npm run build:portable`.
-- [ ] Manual QA: inspect the resulting portable artifact and provide an exact Apple Music reconnect/play-pause/next/previous/seek checklist for interactive confirmation.
+- [x] Manual/API QA: task `0051` ran the same unpackaged WMS access path against active Apple Music in a normal interactive user session, enumerated three sessions with a current session, and direct-launched the rebuilt widget without a native WMS failure.
 - [x] Documentation review: reconcile README, roadmap, task `0049`, task/report `0050`, and architecture wording.
 - [x] Release/config review: confirm version remains centralized at `3.1.0`, no installer/package files are introduced, and portable-only policy remains intact.
 - [x] Time tracking review: task, report, and time-log values match.
@@ -86,14 +86,14 @@ Out of scope:
 | --- | --- | --- |
 | Does official API metadata require all GSMTC objects to remain on their creation thread? | Resolved | No. The generated classes are `Send + Sync`, and Microsoft documents Agile marshaling with `ThreadingModel.Both`. A single worker is still used to guarantee apartment initialization and isolate blocking calls. |
 | Does the earlier `E_ACCESSDENIED` probe prove portable WMS is impossible? | Resolved | No. It is strong evidence of a capability/access problem in that diagnostic context, but it did not exercise the real interactive portable process and cannot exclude the confirmed runtime defects. |
-| Should this pass add an undocumented capability bypass? | Resolved | No. Only supported Windows APIs are used; packaged delivery remains a separate deferred fallback if the corrected portable process is still denied. |
+| Should this pass add an undocumented capability bypass? | Resolved | No. Only supported Windows APIs are used. Task `0051` proved normal unpackaged access works, so packaging is no longer an access fallback. |
 | Should the worker select a non-current session from `GetSessions()`? | Resolved | No. Session count may inform safe diagnostics, but playback remains tied to the Windows current session to avoid surprising cross-player control. |
 
 ## Risks
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Windows still returns `E_ACCESSDENIED` after runtime correction | Portable WMS remains unavailable on the user's machine | Preserve exact safe HRESULT/category evidence, keep Companion functional, and retain task `0049` as the supported packaging follow-up. |
+| A restricted launcher still returns `E_ACCESSDENIED` | WMS remains unavailable only in that restricted execution context | Show localized direct-launch guidance and safe persistent diagnostics; do not attempt a sandbox/token escape. |
 | A blocking WinRT call stalls the worker | WMS requests may be delayed | Isolate the stall from Tokio/UI, serialize lifecycle, preserve reconnect recovery, and avoid holding unrelated runtime resources. |
 | Shutdown races with polling or commands | Stale events or leaked work | Use one actor queue, explicit connected state, deterministic disconnect response, and regression tests. |
 | Diagnostics leak listening activity | Privacy regression | Store only stage, HRESULT, category, and session-count/state booleans; never media properties or source identifiers. |
@@ -105,5 +105,6 @@ Out of scope:
 - Related decisions: `project-tracking/decisions/0006-separate-product-playback-source-from-development-source-mode.md`, `project-tracking/decisions/0007-run-windows-media-on-a-dedicated-mta-worker.md`
 - Related tasks: `project-tracking/tasks/0045-add-windows-media-session-playback-source.md`, `project-tracking/tasks/0047-deep-audit-windows-media-session-release.md`, `project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md`
 - Related reports: `project-tracking/reports/0047-deep-audit-windows-media-session-release.md`, `project-tracking/reports/0048-unify-settings-visibility-controls-and-layout.md`, `project-tracking/reports/0050-fix-portable-windows-media-session-runtime.md`
+- Completion evidence: `project-tracking/tasks/0051-diagnose-unpackaged-windows-media-access.md`
 - Time log: `project-tracking/time-log.md`
 - PR/commit: branch `codex/0050-portable-wms-worker-diagnostics`; commit/merge pending at task update

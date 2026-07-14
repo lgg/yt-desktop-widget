@@ -18,4 +18,25 @@ describe('getConnectionMessage', () => {
 
     expect(message).toBe('windowsMediaConnectionMessages.apiUnavailable');
   });
+
+  it('explains access denied as a restricted Windows launch context', () => {
+    const message = getConnectionMessage(
+      (key) => key,
+      {
+        status: 'disconnected',
+        hasStoredAuth: false,
+        retryAttempt: 1,
+        retryAt: null,
+        messageKey: 'notRunning',
+        diagnostic: {
+          stage: 'request_manager.await',
+          hresult: '0x80070005',
+          category: 'access_denied',
+        },
+      },
+      'windowsMediaSession',
+    );
+
+    expect(message).toBe('windowsMediaConnectionMessages.accessDenied');
+  });
 });

@@ -135,6 +135,45 @@ describe('SettingsWindow UI display preferences', () => {
     }
   });
 
+  it('shows actionable safe diagnostics when Windows denies media access', () => {
+    const previousSource = model.settings.api.playbackSource;
+    const previousMode = model.resolvedSourceMode;
+    const previousConnection = model.session.connection;
+    model.settings.api.playbackSource = 'windowsMediaSession';
+    model.resolvedSourceMode = 'real';
+    model.session.connection = {
+      status: 'disconnected',
+      hasStoredAuth: false,
+      retryAttempt: 1,
+      retryAt: null,
+      messageKey: 'notRunning',
+      diagnostic: {
+        stage: 'request_manager.await',
+        hresult: '0x80070005',
+        category: 'access_denied',
+      },
+    };
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(
+        screen.getByText(/Run the portable EXE directly from File Explorer/i),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/request_manager\.await/)).toHaveTextContent(
+        '0x80070005',
+      );
+    } finally {
+      model.settings.api.playbackSource = previousSource;
+      model.resolvedSourceMode = previousMode;
+      model.session.connection = previousConnection;
+    }
+  });
+
   it('puts theme first and exposes track, artwork, and language preferences', () => {
     render(
       <I18nProvider>
