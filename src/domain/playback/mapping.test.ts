@@ -127,4 +127,36 @@ describe('mapCompanionState', () => {
     expect(next?.isMuted).toBe(false);
     expect(next?.likeStatus).toBe('disliked');
   });
+
+  it('maps explicit source capabilities for Windows Media Session snapshots', () => {
+    const snapshot = mapCompanionState(
+      {
+        capabilities: {
+          canPlayPause: true,
+          canGoPrevious: false,
+          canGoNext: true,
+          canSeek: false,
+          canMute: false,
+          canRate: false,
+        },
+        player: { trackState: 1, videoProgress: 12 },
+        video: {
+          id: 'wms:track-1',
+          title: 'System Session Track',
+          author: 'Windows Artist',
+          durationSeconds: 180,
+        },
+      } as Parameters<typeof mapCompanionState>[0],
+      null,
+      1_000,
+    );
+
+    const capabilities = snapshot as unknown as Record<string, unknown>;
+    expect(capabilities.canPlayPause).toBe(true);
+    expect(capabilities.canGoPrevious).toBe(false);
+    expect(capabilities.canGoNext).toBe(true);
+    expect(capabilities.canSeek).toBe(false);
+    expect(capabilities.canMute).toBe(false);
+    expect(capabilities.canRate).toBe(false);
+  });
 });

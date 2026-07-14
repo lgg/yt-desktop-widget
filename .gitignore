@@ -7,7 +7,7 @@ test-results
 .DS_Store
 *.log
 
-src-tauri/target
+src-tauri/target*
 src-tauri/gen
 src-tauri/.cargo
 src-tauri/.tauri

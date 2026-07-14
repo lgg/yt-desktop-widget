@@ -113,6 +113,14 @@
     "sections": {
       "expand": "Expand {{section}}",
       "collapse": "Collapse {{section}}",
+      "source": {
+        "title": "Playback Source",
+        "description": "Choose which Windows playback integration supplies the widget.",
+        "mode": "Playback source",
+        "companionDescription": "Use YTMDesktop Companion for the complete feature set, including authorization, mute, Like, and Dislike.",
+        "windowsMediaSessionDescription": "Follow the current Windows media session exposed by compatible players such as Apple Music, Spotify, and Yandex Music.",
+        "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player."
+      },
       "api": {
         "title": "API / Connection",
         "description": "Manage Companion API availability, pairing state, and recovery actions.",
@@ -249,6 +257,10 @@
       "auto": "Auto",
       "real": "Real API",
       "simulator": "Simulator"
+    },
+    "playbackSource": {
+      "companion": "YTMDesktop Companion",
+      "windowsMediaSession": "Windows Media Session"
     },
     "closeButtonAction": {
       "exit": "Exit app",

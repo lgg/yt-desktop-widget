@@ -15,7 +15,12 @@ import type {
 import type { CompanionAuthEventPayload } from '@/integration/companion/tauriBridge';
 
 const defaultSettings: AppSettings = {
-  api: { host: '127.0.0.1', port: 9863, sourceMode: 'real' },
+  api: {
+    host: '127.0.0.1',
+    port: 9863,
+    sourceMode: 'real',
+    playbackSource: 'companion',
+  },
   ui: {
     playbackControlsVisibility: 'hoverReserved',
     progressBarVisibility: 'always',
@@ -69,6 +74,7 @@ const appProviderMocks = vi.hoisted(() => ({
   authChangeHandler: null as
     | ((payload: CompanionAuthEventPayload) => void)
     | null,
+  createWindowsMediaGateway: vi.fn(() => ({ kind: 'windowsMediaSession' })),
   controllerInstances: [] as Array<{
     subscribe: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
@@ -93,6 +99,10 @@ vi.mock('@/integration/companion/realGateway', () => ({
 
 vi.mock('@/integration/simulator/simulatorGateway', () => ({
   createSimulatorGateway: vi.fn(() => ({ kind: 'simulator' })),
+}));
+
+vi.mock('@/integration/windowsMedia/windowsMediaGateway', () => ({
+  createWindowsMediaGateway: appProviderMocks.createWindowsMediaGateway,
 }));
 
 vi.mock('@/integration/companion/tauriBridge', () => ({
@@ -173,6 +183,7 @@ describe('AppProvider', () => {
     appProviderMocks.authChangeHandler = null;
     appProviderMocks.controllerInstances.length = 0;
     appProviderMocks.saveSettings.mockClear();
+    appProviderMocks.createWindowsMediaGateway.mockClear();
   });
 
   it('reconnects the main real controller when another window changes Companion auth', async () => {
@@ -196,6 +207,25 @@ describe('AppProvider', () => {
         appProviderMocks.controllerInstances[0]?.handleExternalAuthChanged,
       ).toHaveBeenCalledWith(true);
     });
+  });
+
+  it('uses the Windows Media gateway without installing a Companion auth listener', async () => {
+    defaultSettings.api.playbackSource = 'windowsMediaSession';
+    try {
+      render(
+        <AppProvider windowLabel="main">
+          <div />
+        </AppProvider>,
+      );
+
+      await waitFor(() => {
+        expect(appProviderMocks.createWindowsMediaGateway).toHaveBeenCalledOnce();
+        expect(appProviderMocks.controllerInstances).toHaveLength(1);
+      });
+      expect(appProviderMocks.authChangeHandler).toBeNull();
+    } finally {
+      defaultSettings.api.playbackSource = 'companion';
+    }
   });
 
   it('persists an appearance-only settings update', async () => {

@@ -16,6 +16,8 @@ export type CompanionEventPayload =
       detail?: string;
     };
 
+export type WindowsMediaEventPayload = CompanionEventPayload;
+
 export interface CompanionAuthEventPayload {
   authorized: boolean;
 }
@@ -58,6 +60,18 @@ export const tauriBridge = {
     }),
   listenToCompanionAuthChanges: (handler: (payload: CompanionAuthEventPayload) => void) =>
     listen<CompanionAuthEventPayload>('companion://auth-changed', (event) => {
+      handler(event.payload);
+    }),
+  windowsMediaDiscover: () => invoke<DiscoveryInfo>('windows_media_discover'),
+  windowsMediaConnect: () =>
+    invoke<CompanionConnectResponse>('windows_media_connect'),
+  windowsMediaDisconnect: () => invoke<void>('windows_media_disconnect'),
+  windowsMediaSendCommand: (command: PlaybackCommand) =>
+    invoke<void>('windows_media_send_command', { command }),
+  listenToWindowsMediaEvents: (
+    handler: (payload: WindowsMediaEventPayload) => void,
+  ) =>
+    listen<WindowsMediaEventPayload>('windows-media://event', (event) => {
       handler(event.payload);
     }),
 };

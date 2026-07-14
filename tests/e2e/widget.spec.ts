@@ -71,12 +71,37 @@ test('renders the simulated widget and settings views', async ({ page }) => {
 
   await page.goto('/?view=settings&source=simulator');
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  const playbackSourceHeading = page.getByText('Playback Source', {
+    exact: true,
+  });
+  await expect(playbackSourceHeading).toBeVisible();
   await expect(page.getByText('API / Connection')).toBeVisible();
+  const [sourceTop, apiTop] = await Promise.all([
+    playbackSourceHeading.evaluate(
+      (element) => element.getBoundingClientRect().top,
+    ),
+    page
+      .getByText('API / Connection')
+      .evaluate((element) => element.getBoundingClientRect().top),
+  ]);
+  expect(sourceTop).toBeLessThan(apiTop);
   await expect(page.getByText('UI / Display')).toBeVisible();
   await expect(page.getByText('Widget Layout')).toBeVisible();
   await expect(
     page.getByRole('group', { name: 'Playback controls' }),
   ).toBeVisible();
+
+  const playbackSource = page.getByRole('group', { name: 'Playback source' });
+  await playbackSource
+    .getByRole('button', { name: 'Windows Media Session' })
+    .click();
+  await expect(page.getByLabel('Companion endpoint')).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page
+      .getByRole('group', { name: 'Playback source' })
+      .getByRole('button', { name: 'Windows Media Session' }),
+  ).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('scales the full widget with presets and keeps custom dimensions linked', async ({

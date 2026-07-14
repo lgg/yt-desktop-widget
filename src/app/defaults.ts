@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     host: '127.0.0.1',
     port: 9863,
     sourceMode: 'auto',
+    playbackSource: 'companion',
   },
   ui: {
     playbackControlsVisibility: 'hoverReserved',

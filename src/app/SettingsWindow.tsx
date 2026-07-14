@@ -375,11 +375,11 @@ export const SettingsWindow = () => {
         <div className="settings-window__sections">
           <SettingsSection
             {...getSectionCollapseProps(
-              'api',
-              t('settingsWindow.sections.api.title'),
+              'source',
+              t('settingsWindow.sections.source.title'),
             )}
-            title={t('settingsWindow.sections.api.title')}
-            description={t('settingsWindow.sections.api.description')}
+            title={t('settingsWindow.sections.source.title')}
+            description={t('settingsWindow.sections.source.description')}
             actions={
               <button
                 className="secondary-button"
@@ -391,91 +391,167 @@ export const SettingsWindow = () => {
               </button>
             }
           >
-            <div className="settings-field">
-              <label
-                className="settings-field__label"
-                htmlFor="companion-endpoint"
-              >
-                {t('settingsWindow.sections.api.endpoint')}
-              </label>
-              <input
-                id="companion-endpoint"
-                className={
-                  endpointError
-                    ? 'settings-field__input settings-field__input--invalid'
-                    : 'settings-field__input'
-                }
-                value={endpointDraft}
-                placeholder={t(
-                  'settingsWindow.sections.api.endpointPlaceholder',
+            <div className="segmented-control">
+              <span className="segmented-control__label">
+                {t('settingsWindow.sections.source.mode')}
+              </span>
+              <span className="segmented-control__description">
+                {t(
+                  `settingsWindow.sections.source.${settings.api.playbackSource}Description`,
                 )}
-                onChange={(event) => setEndpointDraft(event.target.value)}
-                onBlur={() => {
-                  void commitEndpoint();
-                }}
-                onKeyDown={handleEndpointKeyDown}
-              />
-              {endpointError ? (
-                <p className="settings-field__hint settings-field__hint--error">
-                  {endpointError}
-                </p>
-              ) : null}
-            </div>
-            <div className="settings-row-grid settings-row-grid--status">
-              <SettingsRow className="settings-row--stacked settings-row--status">
-                <span className="settings-row__label">
-                  {t('settingsWindow.sections.api.connected')}
-                </span>
-                <span className="settings-row__value">
-                  {t(`status.${session.connection.status}`)}
-                </span>
-              </SettingsRow>
-              <SettingsRow className="settings-row--stacked settings-row--status">
-                <span className="settings-row__label">
-                  {t('settingsWindow.sections.api.paired')}
-                </span>
-                <span className="settings-row__value">
-                  {session.connection.hasStoredAuth
-                    ? t('settingsWindow.sections.api.pairedYes')
-                    : t('settingsWindow.sections.api.pairedNo')}
-                </span>
-              </SettingsRow>
-            </div>
-            <div className="settings-actions-row">
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => void generateAuthCode()}
-                disabled={authBusy}
+              </span>
+              <div
+                className="segmented-control__options"
+                role="group"
+                aria-label={t('settingsWindow.sections.source.mode')}
               >
-                {t('settingsWindow.actions.pair')}
-              </button>
-              <button
-                className="primary-button"
-                type="button"
-                onClick={() => void confirmAuthentication()}
-                disabled={!session.connection.authCode || authBusy}
-              >
-                {t('settingsWindow.actions.confirmPair')}
-              </button>
-              <button
-                className="ghost-button"
-                type="button"
-                onClick={() => void clearAuth()}
-              >
-                {t('settingsWindow.actions.clearAuth')}
-              </button>
-            </div>
-            {authStatusDetail ? (
-              <p className="settings-field__hint">{authStatusDetail}</p>
-            ) : null}
-            {session.connection.authCode ? (
-              <div className="code-chip code-chip--inline">
-                <span>{t('widget.auth.codeLabel')}</span>
-                <strong>{session.connection.authCode}</strong>
+                {(['companion', 'windowsMediaSession'] as const).map(
+                  (source) => (
+                    <button
+                      key={source}
+                      type="button"
+                      aria-pressed={settings.api.playbackSource === source}
+                      className={
+                        settings.api.playbackSource === source
+                          ? 'segmented-control__option segmented-control__option--active'
+                          : 'segmented-control__option'
+                      }
+                      onClick={() =>
+                        void updateSettings((current) => ({
+                          ...current,
+                          api: {
+                            ...current.api,
+                            playbackSource: source,
+                          },
+                        }))
+                      }
+                    >
+                      {t(`settingsWindow.playbackSource.${source}`)}
+                    </button>
+                  ),
+                )}
               </div>
+            </div>
+            {settings.api.playbackSource === 'windowsMediaSession' ? (
+              <p className="settings-field__hint">
+                {t('settingsWindow.sections.source.windowsMediaLimitations')}
+              </p>
             ) : null}
+            <SettingsRow className="settings-row--stacked settings-row--status">
+              <span className="settings-row__label">
+                {t('settingsWindow.sections.api.connected')}
+              </span>
+              <span className="settings-row__value">
+                {t(`status.${session.connection.status}`)}
+              </span>
+            </SettingsRow>
           </SettingsSection>
+
+          {settings.api.playbackSource === 'companion' ? (
+            <SettingsSection
+              {...getSectionCollapseProps(
+                'api',
+                t('settingsWindow.sections.api.title'),
+              )}
+              title={t('settingsWindow.sections.api.title')}
+              description={t('settingsWindow.sections.api.description')}
+              actions={
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void reconnect()}
+                >
+                  <RefreshIcon />
+                  <span>{t('settingsWindow.actions.reconnect')}</span>
+                </button>
+              }
+            >
+              <div className="settings-field">
+                <label
+                  className="settings-field__label"
+                  htmlFor="companion-endpoint"
+                >
+                  {t('settingsWindow.sections.api.endpoint')}
+                </label>
+                <input
+                  id="companion-endpoint"
+                  className={
+                    endpointError
+                      ? 'settings-field__input settings-field__input--invalid'
+                      : 'settings-field__input'
+                  }
+                  value={endpointDraft}
+                  placeholder={t(
+                    'settingsWindow.sections.api.endpointPlaceholder',
+                  )}
+                  onChange={(event) => setEndpointDraft(event.target.value)}
+                  onBlur={() => {
+                    void commitEndpoint();
+                  }}
+                  onKeyDown={handleEndpointKeyDown}
+                />
+                {endpointError ? (
+                  <p className="settings-field__hint settings-field__hint--error">
+                    {endpointError}
+                  </p>
+                ) : null}
+              </div>
+              <div className="settings-row-grid settings-row-grid--status">
+                <SettingsRow className="settings-row--stacked settings-row--status">
+                  <span className="settings-row__label">
+                    {t('settingsWindow.sections.api.connected')}
+                  </span>
+                  <span className="settings-row__value">
+                    {t(`status.${session.connection.status}`)}
+                  </span>
+                </SettingsRow>
+                <SettingsRow className="settings-row--stacked settings-row--status">
+                  <span className="settings-row__label">
+                    {t('settingsWindow.sections.api.paired')}
+                  </span>
+                  <span className="settings-row__value">
+                    {session.connection.hasStoredAuth
+                      ? t('settingsWindow.sections.api.pairedYes')
+                      : t('settingsWindow.sections.api.pairedNo')}
+                  </span>
+                </SettingsRow>
+              </div>
+              <div className="settings-actions-row">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void generateAuthCode()}
+                  disabled={authBusy}
+                >
+                  {t('settingsWindow.actions.pair')}
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => void confirmAuthentication()}
+                  disabled={!session.connection.authCode || authBusy}
+                >
+                  {t('settingsWindow.actions.confirmPair')}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => void clearAuth()}
+                >
+                  {t('settingsWindow.actions.clearAuth')}
+                </button>
+              </div>
+              {authStatusDetail ? (
+                <p className="settings-field__hint">{authStatusDetail}</p>
+              ) : null}
+              {session.connection.authCode ? (
+                <div className="code-chip code-chip--inline">
+                  <span>{t('widget.auth.codeLabel')}</span>
+                  <strong>{session.connection.authCode}</strong>
+                </div>
+              ) : null}
+            </SettingsSection>
+          ) : null}
 
           <SettingsSection
             {...getSectionCollapseProps(
@@ -522,9 +598,12 @@ export const SettingsWindow = () => {
                           className="ghost-button widget-block-order__button"
                           type="button"
                           disabled={index === 0}
-                          aria-label={t('settingsWindow.sections.layout.moveUp', {
-                            block: label,
-                          })}
+                          aria-label={t(
+                            'settingsWindow.sections.layout.moveUp',
+                            {
+                              block: label,
+                            },
+                          )}
                           onClick={() =>
                             void updateSettings((current) => ({
                               ...current,
@@ -877,10 +956,7 @@ export const SettingsWindow = () => {
                       </span>
                     </span>
                   </label>
-                  <label
-                    className="widget-size-field"
-                    htmlFor="widget-height"
-                  >
+                  <label className="widget-size-field" htmlFor="widget-height">
                     <span>{t('settingsWindow.sections.size.height')}</span>
                     <span className="widget-size-field__input-wrap">
                       <input

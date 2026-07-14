@@ -10,6 +10,9 @@ import type { PlaybackState } from '@/domain/playback/types';
 interface TransportControlsProps {
   playbackState: PlaybackState;
   disabled: boolean;
+  previousDisabled?: boolean;
+  playPauseDisabled?: boolean;
+  nextDisabled?: boolean;
   visible?: boolean;
   onPrevious: () => void;
   onPlayPause: () => void;
@@ -19,6 +22,9 @@ interface TransportControlsProps {
 export const TransportControls = ({
   playbackState,
   disabled,
+  previousDisabled = false,
+  playPauseDisabled = false,
+  nextDisabled = false,
   visible = true,
   onNext,
   onPlayPause,
@@ -39,7 +45,7 @@ export const TransportControls = ({
         className="transport-controls__button"
         type="button"
         onClick={onPrevious}
-        disabled={disabled || !visible}
+        disabled={disabled || previousDisabled || !visible}
         aria-label={t('widget.transport.previous')}
       >
         <PreviousIcon />
@@ -48,7 +54,7 @@ export const TransportControls = ({
         className="transport-controls__button transport-controls__button--primary"
         type="button"
         onClick={onPlayPause}
-        disabled={disabled || !visible}
+        disabled={disabled || playPauseDisabled || !visible}
         aria-label={
           playbackState === 'playing'
             ? t('widget.transport.pause')
@@ -61,7 +67,7 @@ export const TransportControls = ({
         className="transport-controls__button"
         type="button"
         onClick={onNext}
-        disabled={disabled || !visible}
+        disabled={disabled || nextDisabled || !visible}
         aria-label={t('widget.transport.next')}
       >
         <NextIcon />

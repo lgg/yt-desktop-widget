@@ -198,7 +198,7 @@ export const WidgetWindow = () => {
               : 'widget.artwork.play',
             { title: titleLine },
           ),
-          disabled: !canSendCommands,
+          disabled: !canSendCommands || !playback.canPlayPause,
           visible: interactionActive,
           icon:
             playback.playbackState === 'playing' ? <PauseIcon /> : <PlayIcon />,
@@ -540,7 +540,11 @@ export const WidgetWindow = () => {
                       : 'icon-button widget-window__window-action'
                   }
                   type="button"
-                  disabled={!canSendCommands || !muteButtonVisible}
+                  disabled={
+                    !canSendCommands ||
+                    !playback.canMute ||
+                    !muteButtonVisible
+                  }
                   aria-hidden={!muteButtonVisible}
                   aria-label={
                     playback.isMuted
@@ -649,7 +653,7 @@ export const WidgetWindow = () => {
           >
             <RatingControls
               likeStatus={playback.likeStatus}
-              disabled={!canSendCommands}
+              disabled={!canSendCommands || !playback.canRate}
               visible={ratingState.visible}
               onToggleLike={() =>
                 void sendCommand({ type: 'toggleLike' })
@@ -673,6 +677,9 @@ export const WidgetWindow = () => {
             <TransportControls
               playbackState={playback.playbackState}
               disabled={!canSendCommands}
+              previousDisabled={!playback.canGoPrevious}
+              playPauseDisabled={!playback.canPlayPause}
+              nextDisabled={!playback.canGoNext}
               visible={controlsState.visible}
               onPrevious={() => void sendCommand({ type: 'previous' })}
               onPlayPause={() => void sendCommand({ type: 'playPause' })}

@@ -113,6 +113,14 @@
     "sections": {
       "expand": "Развернуть {{section}}",
       "collapse": "Свернуть {{section}}",
+      "source": {
+        "title": "Источник воспроизведения",
+        "description": "Выберите интеграцию Windows, из которой виджет получает текущее воспроизведение.",
+        "mode": "Источник воспроизведения",
+        "companionDescription": "Использовать YTMDesktop Companion с полным набором функций, включая авторизацию, отключение звука и отметки нравится / не нравится.",
+        "windowsMediaSessionDescription": "Следовать за текущей медиасессией Windows совместимого проигрывателя, например Apple Music, Spotify или Яндекс Музыки.",
+        "windowsMediaLimitations": "В режиме Windows Media Session функции нравится, не нравится и отключения звука недоступны и безопасно игнорируются. Доступные команды воспроизведения зависят от текущего проигрывателя."
+      },
       "api": {
         "title": "API / Соединение",
         "description": "Управление доступностью Companion API, авторизацией и восстановлением соединения.",
@@ -249,6 +257,10 @@
       "auto": "Auto",
       "real": "Реальный API",
       "simulator": "Симулятор"
+    },
+    "playbackSource": {
+      "companion": "YTMDesktop Companion",
+      "windowsMediaSession": "Медиасессия Windows"
     },
     "closeButtonAction": {
       "exit": "Выйти из приложения",

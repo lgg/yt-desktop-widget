@@ -78,7 +78,12 @@ const createConnectedModel = ({
 } = {}): AppModel => ({
   ready: true,
   settings: {
-    api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
+    api: {
+      host: '127.0.0.1',
+      port: 9863,
+      sourceMode: 'simulator',
+      playbackSource: 'companion',
+    },
     ui: {
       playbackControlsVisibility:
         playbackControlsVisibility ??
@@ -139,6 +144,11 @@ const createConnectedModel = ({
       isAdPlaying: false,
       isLive: false,
       canSeek: true,
+      canPlayPause: true,
+      canGoPrevious: true,
+      canGoNext: true,
+      canMute: true,
+      canRate: true,
       metadataFilled: true,
       lastSyncedAt: Date.now(),
     },
@@ -370,6 +380,36 @@ describe('WidgetWindow', () => {
     expect(model.sendCommand).toHaveBeenNthCalledWith(2, {
       type: 'toggleDislike',
     });
+  });
+
+  it('keeps visible rating and mute controls safely disabled when the source lacks capabilities', () => {
+    const model = createConnectedModel({
+      likeDislikeVisibility: 'always',
+      muteButtonVisibility: 'always',
+    });
+    Object.assign(model.session.playback ?? {}, {
+      canRate: false,
+      canMute: false,
+    });
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const mute = screen.getByRole('button', { name: 'Mute' });
+    const like = screen.getByRole('button', { name: 'Like' });
+    const dislike = screen.getByRole('button', { name: 'Dislike' });
+    expect(mute).toBeDisabled();
+    expect(like).toBeDisabled();
+    expect(dislike).toBeDisabled();
+
+    fireEvent.click(mute);
+    fireEvent.click(like);
+    fireEvent.click(dislike);
+    expect(model.sendCommand).not.toHaveBeenCalled();
   });
 
   it('renders dynamic-hover blocks only inside the active pointer boundary', () => {
@@ -969,7 +1009,12 @@ describe('WidgetWindow', () => {
     mockUseAppModel.mockReturnValue({
       ready: true,
       settings: {
-        api: { host: '127.0.0.1', port: 9863, sourceMode: 'real' },
+        api: {
+          host: '127.0.0.1',
+          port: 9863,
+          sourceMode: 'real',
+          playbackSource: 'companion',
+        },
         ui: {
           playbackControlsVisibility: 'hoverReserved',
           progressBarVisibility: 'always',

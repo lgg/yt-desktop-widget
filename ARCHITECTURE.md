@@ -4,7 +4,7 @@
 
 The widget is designed around four hard constraints:
 
-- Companion API only
+- official playback integrations only: YTMDesktop Companion or Windows Media Session
 - polished always-on-top desktop widget UX
 - low idle overhead
 - easy future extension for more window modes, locales, and platforms
@@ -21,7 +21,7 @@ The widget is designed around four hard constraints:
 Responsibilities:
 
 - bootstrapping settings and runtime mode
-- choosing real vs simulator gateway
+- choosing the user-facing production source independently from the development simulator override
 - wiring theme, i18n, and window-specific UI
 - exposing a simple app model to components
 
@@ -36,7 +36,7 @@ Responsibilities:
 Responsibilities:
 
 - explicit connection state machine
-- Companion raw-state to UI-state mapping
+- source snapshot to UI-state mapping with explicit capabilities
 - reconnect scheduling with backoff
 - progress smoothing between realtime updates
 - stable command surface for UI components
@@ -44,6 +44,7 @@ Responsibilities:
 ### Integration layer
 
 - Real gateway: `src/integration/companion/realGateway.ts`
+- Windows Media gateway: `src/integration/windowsMedia/windowsMediaGateway.ts`
 - Tauri invoke/event bridge: `src/integration/companion/tauriBridge.ts`
 - Simulator gateway: `src/integration/simulator/simulatorGateway.ts`
 
@@ -58,11 +59,13 @@ Responsibilities:
 - `src-tauri/src/companion.rs`
 - `src-tauri/src/settings.rs`
 - `src-tauri/src/startup.rs`
+- `src-tauri/src/windows_media.rs`
 - `src-tauri/src/lib.rs`
 
 Responsibilities:
 
 - Companion API HTTP + realtime socket integration
+- current-session WinRT metadata, artwork, timeline, capability, and transport integration
 - token storage via keyring
 - settings persistence on disk
 - tray integration and hide-to-tray behavior
@@ -87,11 +90,14 @@ Responsibilities:
 ```mermaid
 flowchart LR
   UI["React widget UI"] --> Domain["PlaybackController + state machine"]
-  Domain --> Gateway{"Source mode"}
-  Gateway -->|real| Bridge["Tauri invoke/event bridge"]
+  Domain --> Gateway{"Development source mode"}
+  Gateway -->|real/auto in Tauri| Product{"Playback source"}
   Gateway -->|simulator| Sim["Local simulator"]
+  Product -->|Companion| Bridge["Tauri invoke/event bridge"]
+  Product -->|Windows Media Session| Bridge
   Bridge --> Rust["Rust backend"]
   Rust --> Companion["YTMDesktop Companion Server API"]
+  Rust --> WMS["Windows Global System Media Transport Controls"]
   Rust --> Storage["Keyring + settings JSON + Windows integration"]
 ```
 
@@ -138,18 +144,29 @@ Design rules:
 - it does not bypass the domain controller
 - it is opt-in and clearly separated from production integration
 
+## Windows Media Session flow
+
+1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
+2. The Rust adapter requests `GlobalSystemMediaTransportControlsSessionManager` and follows its current system-preferred session.
+3. While connected, a bounded polling task reads changed metadata, timeline, playback state, artwork, and published transport capabilities.
+4. The shared mapping layer produces the same `PlaybackSnapshot` contract used by Companion.
+5. UI controls use capability flags rather than source-name checks.
+6. WMS Like/Dislike/Mute are disabled and remain successful no-ops in both frontend and Rust as defense in depth.
+7. Disconnect or source switching aborts the polling task. No WMS media data is persisted in version 3.1.0.
+
 ## Settings and persistence
 
 Settings are grouped by feature area:
 
-1. API / Connection
-2. UI / Display
-3. Widget Layout
-4. Widget Size
-5. Transparency / Background
-6. Window / Behavior
-7. Developer controls
-8. About
+1. Playback Source
+2. API / Connection (Companion only)
+3. UI / Display
+4. Widget Layout
+5. Widget Size
+6. Transparency / Background
+7. Window / Behavior
+8. Developer controls
+9. About
 
 Persistence model:
 
@@ -160,6 +177,7 @@ Persistence model:
 - widget size: persisted as a named mode plus one canonical Custom percentage; custom width and height are derived views of that percentage
 - widget layout: persisted as a normalized permutation of six typed block IDs plus explicit visibility modes; unknown/duplicate IDs are repaired and missing IDs are appended
 - Settings disclosure state: persisted as a deduplicated whitelist of top-level section IDs
+- playback source: persisted separately from the development `sourceMode`; existing settings migrate to `companion`
 
 ## Version model
 

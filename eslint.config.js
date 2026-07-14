@@ -11,7 +11,7 @@ export default tseslint.config(
       'dist',
       'coverage',
       'playwright-report',
-      'src-tauri/target',
+      'src-tauri/target*',
       '.codex-cache',
       'eslint.config.js',
     ],

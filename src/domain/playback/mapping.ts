@@ -142,7 +142,8 @@ export const mapCompanionState = (
       ? clamp(rawVolume, 0, 100)
       : (previous?.volume ?? 100);
   const metadataFilled = video?.metadataFilled ?? true;
-  const canSeek = !video?.isLive && durationSeconds > 0;
+  const defaultCanSeek = !video?.isLive && durationSeconds > 0;
+  const capabilities = rawState.capabilities;
   const artistCandidates = splitArtists(video?.author);
   const queueArtists = splitArtists(queueItem?.author);
 
@@ -166,7 +167,12 @@ export const mapCompanionState = (
     playbackState: mapTrackState(rawState.player?.trackState),
     isAdPlaying: rawState.player?.adPlaying ?? false,
     isLive: video?.isLive ?? false,
-    canSeek,
+    canSeek: capabilities?.canSeek ?? defaultCanSeek,
+    canPlayPause: capabilities?.canPlayPause ?? true,
+    canGoPrevious: capabilities?.canGoPrevious ?? true,
+    canGoNext: capabilities?.canGoNext ?? true,
+    canMute: capabilities?.canMute ?? true,
+    canRate: capabilities?.canRate ?? true,
     metadataFilled,
     lastSyncedAt: now,
   };

@@ -706,6 +706,7 @@ mod tests {
       host: "127.0.0.1".to_string(),
       port: 9863,
       source_mode: "auto".to_string(),
+      playback_source: "companion".to_string(),
     };
 
     assert_eq!(
@@ -720,6 +721,7 @@ mod tests {
       host: "127.0.0.1".to_string(),
       port: 9863,
       source_mode: "auto".to_string(),
+      playback_source: "companion".to_string(),
     };
 
     assert_eq!(socketio_url(&settings), "http://127.0.0.1:9863");
@@ -784,6 +786,7 @@ mod tests {
       host: "127.0.0.1".to_string(),
       port,
       source_mode: "auto".to_string(),
+      playback_source: "companion".to_string(),
     };
 
     let state =
@@ -812,6 +815,7 @@ mod tests {
       host: format!("keyring-probe-{}", std::process::id()),
       port: 9863,
       source_mode: "auto".to_string(),
+      playback_source: "companion".to_string(),
     };
     let token = "a".repeat(512);
     let _ = clear_token(&settings);

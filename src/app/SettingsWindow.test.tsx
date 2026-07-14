@@ -22,7 +22,12 @@ const resolvedAction = () => Promise.resolve();
 const model: AppModel = {
   ready: true,
   settings: {
-    api: { host: '127.0.0.1', port: 9863, sourceMode: 'simulator' },
+    api: {
+      host: '127.0.0.1',
+      port: 9863,
+      sourceMode: 'simulator',
+      playbackSource: 'companion',
+    },
     ui: {
       playbackControlsVisibility: 'hoverReserved',
       progressBarVisibility: 'always',
@@ -79,6 +84,54 @@ vi.mock('@/app/AppProvider', () => ({
 }));
 
 describe('SettingsWindow UI display preferences', () => {
+  it('puts the persisted playback source selector first and switches to Windows Media Session', () => {
+    updateSettings.mockClear();
+    render(
+      <I18nProvider>
+        <SettingsWindow />
+      </I18nProvider>,
+    );
+
+    const sourceGroup = screen.getByRole('group', {
+      name: 'Playback source',
+    });
+    const firstSection = document.querySelector('.settings-section');
+    expect(firstSection).toContainElement(sourceGroup);
+
+    fireEvent.click(
+      within(sourceGroup).getByRole('button', {
+        name: 'Windows Media Session',
+      }),
+    );
+    const recipe = updateSettings.mock.calls[0]?.[0];
+    expect(
+      (
+        recipe?.(model.settings).api as unknown as Record<string, unknown>
+      ).playbackSource,
+    ).toBe('windowsMediaSession');
+  });
+
+  it('hides Companion connection and auth settings in Windows Media Session mode', () => {
+    const previous = model.settings.api.playbackSource;
+    model.settings.api.playbackSource = 'windowsMediaSession';
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(screen.queryByLabelText('Companion endpoint')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Pair' })).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/Like, Dislike, and mute are unavailable/i),
+      ).toBeInTheDocument();
+    } finally {
+      model.settings.api.playbackSource = previous;
+    }
+  });
+
   it('puts theme first and exposes track, artwork, and language preferences', () => {
     render(
       <I18nProvider>
