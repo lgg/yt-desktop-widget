@@ -53,7 +53,7 @@ Negative / tradeoffs:
 - Internal legacy names such as `CompanionRawState` remain around the shared adapter boundary in this scoped pass.
 - Windows determines the current session; users cannot pick among multiple active sessions yet.
 - WMS completeness varies by source application.
-- Portable Win32 behavior must be validated separately from future packaged/MSIX capability declarations.
+- Portable Win32 behavior is validated in the normal interactive user session; task `0051` proves a restricted launcher can still deny the same unpackaged API independently of package identity.
 
 ## Security and Privacy
 

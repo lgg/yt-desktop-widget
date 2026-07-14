@@ -11,6 +11,7 @@ import type {
   GatewayConnection,
   GatewayDisconnectOptions,
   GatewayDisconnectReason,
+  GatewayDiagnostic,
   GatewayError,
   PlaybackCommand,
   PlaybackSnapshot,
@@ -76,6 +77,14 @@ const getErrorMessageKey = (
       return fallback;
   }
 };
+
+const getErrorDiagnostic = (error: unknown): GatewayDiagnostic | undefined =>
+  typeof error === 'object' &&
+  error !== null &&
+  'diagnostic' in error &&
+  typeof (error as { diagnostic?: unknown }).diagnostic === 'object'
+    ? ((error as { diagnostic: GatewayDiagnostic }).diagnostic ?? undefined)
+    : undefined;
 
 const getDelayForAttempt = (
   reason: GatewayDisconnectReason,
@@ -145,12 +154,24 @@ const areDiscoveriesEqual = (
     left.supportsSeek === right.supportsSeek &&
     left.usingBrowserBridge === right.usingBrowserBridge &&
     left.detail === right.detail &&
+    areDiagnosticsEqual(left.diagnostic, right.diagnostic) &&
     left.apiVersions.length === right.apiVersions.length &&
     left.apiVersions.every(
       (version, index) => version === right.apiVersions[index],
     )
   );
 };
+
+const areDiagnosticsEqual = (
+  left?: GatewayDiagnostic,
+  right?: GatewayDiagnostic,
+): boolean =>
+  left === right ||
+  (left !== undefined &&
+    right !== undefined &&
+    left.stage === right.stage &&
+    left.category === right.category &&
+    left.hresult === right.hresult);
 
 const areConnectionStatesEqual = (
   left: ConnectionState,
@@ -164,6 +185,7 @@ const areConnectionStatesEqual = (
   left.retryAttempt === right.retryAttempt &&
   left.retryAt === right.retryAt &&
   left.lastError === right.lastError &&
+  areDiagnosticsEqual(left.diagnostic, right.diagnostic) &&
   areDiscoveriesEqual(left.discovery, right.discovery);
 
 const areStringArraysEqual = (left: string[], right: string[]): boolean =>
@@ -467,6 +489,7 @@ export class PlaybackController {
           message: toErrorMessage(error),
           messageKey: getErrorMessageKey(error),
           clearAuthCode: options.requireStoredAuth === true,
+          diagnostic: getErrorDiagnostic(error),
         }),
       );
       return;
@@ -500,7 +523,11 @@ export class PlaybackController {
       );
 
       if (!discovery.available) {
-        this.scheduleReconnect('not_running', discovery.detail);
+        this.scheduleReconnect(
+          'not_running',
+          discovery.detail,
+          discovery.diagnostic,
+        );
         return;
       }
 
@@ -595,6 +622,7 @@ export class PlaybackController {
             type: 'error',
             message: gatewayError.message,
             messageKey: 'authorizationDisabled',
+            diagnostic: gatewayError.diagnostic,
           }),
         );
         return;
@@ -607,6 +635,7 @@ export class PlaybackController {
               type: 'error',
               message: STORED_AUTH_REJECTED_DETAIL,
               messageKey: 'storedAuthRejected',
+              diagnostic: gatewayError.diagnostic,
             }),
           );
           return;
@@ -632,15 +661,24 @@ export class PlaybackController {
             ? 'not_running'
             : 'api_unavailable',
           gatewayError.message,
+          gatewayError.diagnostic,
         );
         return;
       }
 
-      this.scheduleReconnect('socket_error', toErrorMessage(error));
+      this.scheduleReconnect(
+        'socket_error',
+        toErrorMessage(error),
+        getErrorDiagnostic(error),
+      );
     }
   }
 
-  private scheduleReconnect(reason: GatewayDisconnectReason, detail?: string) {
+  private scheduleReconnect(
+    reason: GatewayDisconnectReason,
+    detail?: string,
+    diagnostic?: GatewayDiagnostic,
+  ) {
     if (this.disposed) {
       return;
     }
@@ -660,6 +698,7 @@ export class PlaybackController {
         retryAt,
         detail: getRetryDetail(reason, detail),
         messageKey: getRetryMessageKey(reason),
+        diagnostic,
       }),
     );
 

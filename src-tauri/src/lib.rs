@@ -246,10 +246,13 @@ async fn companion_send_command(
 
 #[tauri::command]
 async fn windows_media_discover(
+  app: AppHandle,
   state: tauri::State<'_, AppState>,
 ) -> Result<DiscoveryInfo, CommandError> {
   let manager = state.windows_media.lock().await;
-  Ok(manager.discover().await)
+  let discovery = manager.discover().await;
+  windows_media::write_diagnostic(&app, "discover", discovery.diagnostic.as_ref());
+  Ok(discovery)
 }
 
 #[tauri::command]
@@ -258,7 +261,11 @@ async fn windows_media_connect(
   state: tauri::State<'_, AppState>,
 ) -> Result<CompanionConnectResponse, CommandError> {
   let mut manager = state.windows_media.lock().await;
-  manager.connect(&app).await
+  let result = manager.connect(&app).await;
+  if let Err(error) = &result {
+    windows_media::write_diagnostic(&app, "connect", error.diagnostic.as_ref());
+  }
+  result
 }
 
 #[tauri::command]
@@ -272,11 +279,16 @@ async fn windows_media_disconnect(
 
 #[tauri::command]
 async fn windows_media_send_command(
+  app: AppHandle,
   state: tauri::State<'_, AppState>,
   command: PlaybackCommand,
 ) -> Result<(), CommandError> {
   let manager = state.windows_media.lock().await;
-  manager.send_command(&command).await
+  let result = manager.send_command(&command).await;
+  if let Err(error) = &result {
+    windows_media::write_diagnostic(&app, "send_command", error.diagnostic.as_ref());
+  }
+  result
 }
 
 fn app_window(app: &AppHandle, label: &str) -> Result<WebviewWindow, CommandError> {

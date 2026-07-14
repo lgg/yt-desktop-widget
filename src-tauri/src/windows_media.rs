@@ -135,17 +135,19 @@ fn should_dispatch_command(
 #[cfg(target_os = "windows")]
 mod platform {
   use std::{
+    fs::{self, OpenOptions},
+    io::Write,
     sync::{
       mpsc::{self, Receiver, RecvTimeoutError, Sender},
-      OnceLock,
+      Mutex, OnceLock,
     },
     thread,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
   };
 
   use base64::Engine;
   use serde_json::json;
-  use tauri::{AppHandle, Emitter};
+  use tauri::{AppHandle, Emitter, Manager};
   use tokio::sync::oneshot;
   use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSession, GlobalSystemMediaTransportControlsSessionManager,
@@ -163,6 +165,10 @@ mod platform {
 
   const POLL_INTERVAL: Duration = Duration::from_millis(750);
   const WORKER_RESPONSE_TIMEOUT: Duration = Duration::from_secs(15);
+  const DIAGNOSTIC_LOG_FILE: &str = "windows-media-diagnostics.jsonl";
+  const PREVIOUS_DIAGNOSTIC_LOG_FILE: &str = "windows-media-diagnostics.previous.jsonl";
+  const MAX_DIAGNOSTIC_LOG_BYTES: u64 = 256 * 1024;
+  static DIAGNOSTIC_LOG_LOCK: Mutex<()> = Mutex::new(());
 
   const E_POINTER: i32 = 0x8000_4003_u32 as i32;
 
@@ -203,6 +209,61 @@ mod platform {
       "{} (stage: {}; HRESULT: {}; category: {})",
       error.message, diagnostic.stage, hresult, diagnostic.category
     )
+  }
+
+  pub(super) fn diagnostic_log_line(
+    timestamp_unix_ms: u128,
+    operation: &str,
+    diagnostic: &CommandDiagnostic,
+  ) -> Result<String, serde_json::Error> {
+    serde_json::to_string(&json!({
+      "timestampUnixMs": timestamp_unix_ms,
+      "operation": operation,
+      "stage": diagnostic.stage,
+      "category": diagnostic.category,
+      "hresult": diagnostic.hresult,
+    }))
+  }
+
+  pub fn write_diagnostic(
+    app: &AppHandle,
+    operation: &str,
+    diagnostic: Option<&CommandDiagnostic>,
+  ) {
+    let Some(diagnostic) = diagnostic else {
+      return;
+    };
+    let Ok(_guard) = DIAGNOSTIC_LOG_LOCK.lock() else {
+      return;
+    };
+    let Ok(log_dir) = app.path().app_log_dir() else {
+      return;
+    };
+    if fs::create_dir_all(&log_dir).is_err() {
+      return;
+    }
+
+    let log_path = log_dir.join(DIAGNOSTIC_LOG_FILE);
+    if fs::metadata(&log_path)
+      .map(|metadata| metadata.len() >= MAX_DIAGNOSTIC_LOG_BYTES)
+      .unwrap_or(false)
+    {
+      let previous_log_path = log_dir.join(PREVIOUS_DIAGNOSTIC_LOG_FILE);
+      let _ = fs::remove_file(&previous_log_path);
+      let _ = fs::rename(&log_path, previous_log_path);
+    }
+
+    let timestamp_unix_ms = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .map(|duration| duration.as_millis())
+      .unwrap_or_default();
+    let Ok(line) = diagnostic_log_line(timestamp_unix_ms, operation, diagnostic) else {
+      return;
+    };
+    let Ok(mut log) = OpenOptions::new().create(true).append(true).open(log_path) else {
+      return;
+    };
+    let _ = writeln!(log, "{line}");
   }
 
   fn playback_track_state(status: GlobalSystemMediaTransportControlsSessionPlaybackStatus) -> i32 {
@@ -442,7 +503,7 @@ mod platform {
     })
   }
 
-  fn unavailable_discovery(error: &CommandError) -> DiscoveryInfo {
+  pub(super) fn unavailable_discovery(error: &CommandError) -> DiscoveryInfo {
     DiscoveryInfo {
       available: false,
       api_versions: Vec::new(),
@@ -450,6 +511,7 @@ mod platform {
       supports_seek: false,
       using_browser_bridge: false,
       detail: Some(diagnostic_detail(error)),
+      diagnostic: error.diagnostic.clone(),
     }
   }
 
@@ -531,6 +593,7 @@ mod platform {
           detail: Some(format!(
             "Windows Media Session is available ({count} sessions; current session {current_state})."
           )),
+          diagnostic: None,
         })
       })();
       if result.is_err() {
@@ -673,6 +736,9 @@ mod platform {
             return;
           }
           self.poll_error_active = true;
+          if let Some(app) = &self.app {
+            write_diagnostic(app, "poll", error.diagnostic.as_ref());
+          }
           self.emit_status("socket_error", Some(diagnostic_detail(&error)));
         }
       }
@@ -961,7 +1027,7 @@ mod platform {
 }
 
 #[cfg(target_os = "windows")]
-pub use platform::WindowsMediaManager;
+pub use platform::{write_diagnostic, WindowsMediaManager};
 
 #[cfg(not(target_os = "windows"))]
 #[derive(Default)]
@@ -977,6 +1043,7 @@ impl WindowsMediaManager {
       supports_seek: false,
       using_browser_bridge: false,
       detail: Some("Windows Media Session is only available on Windows.".to_string()),
+      diagnostic: None,
     }
   }
 
@@ -1000,6 +1067,14 @@ impl WindowsMediaManager {
   }
 }
 
+#[cfg(not(target_os = "windows"))]
+pub fn write_diagnostic(
+  _app: &tauri::AppHandle,
+  _operation: &str,
+  _diagnostic: Option<&CommandDiagnostic>,
+) {
+}
+
 #[cfg(test)]
 mod tests {
   use serde_json::json;
@@ -1013,7 +1088,8 @@ mod tests {
 
   #[cfg(target_os = "windows")]
   use super::platform::{
-    classify_windows_hresult, format_windows_hresult, initialized_worker_thread_ids,
+    classify_windows_hresult, diagnostic_log_line, format_windows_hresult,
+    initialized_worker_thread_ids, unavailable_discovery,
   };
 
   #[test]
@@ -1119,6 +1195,39 @@ mod tests {
     );
     assert_eq!(classify_windows_hresult(-1), "windows_error");
     assert_eq!(format_windows_hresult(0x8007_0005_u32 as i32), "0x80070005");
+  }
+
+  #[cfg(target_os = "windows")]
+  #[test]
+  fn retains_access_denied_diagnostic_in_discovery_and_whitelisted_log_line() {
+    let error = crate::models::CommandError::new(
+      "api_unavailable",
+      "Windows Media Session is unavailable.",
+    )
+    .with_diagnostic(
+      crate::models::CommandDiagnostic::new("request_manager.await", "access_denied")
+        .with_hresult("0x80070005"),
+    );
+
+    let discovery = unavailable_discovery(&error);
+    assert_eq!(
+      discovery.diagnostic.as_ref().map(|value| value.stage.as_str()),
+      Some("request_manager.await")
+    );
+
+    let diagnostic = error.diagnostic.as_ref().expect("diagnostic should exist");
+    let log_line = diagnostic_log_line(1234, "discover", diagnostic)
+      .expect("diagnostic should serialize");
+    let value: serde_json::Value =
+      serde_json::from_str(&log_line).expect("diagnostic log should be JSON");
+    assert_eq!(value["timestampUnixMs"], 1234);
+    assert_eq!(value["operation"], "discover");
+    assert_eq!(value["stage"], "request_manager.await");
+    assert_eq!(value["category"], "access_denied");
+    assert_eq!(value["hresult"], "0x80070005");
+    assert_eq!(value.as_object().map(serde_json::Map::len), Some(5));
+    assert!(!log_line.contains("track"));
+    assert!(!log_line.contains("artist"));
   }
 
   #[cfg(target_os = "windows")]

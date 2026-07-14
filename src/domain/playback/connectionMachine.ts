@@ -2,6 +2,7 @@ import type {
   ConnectionMessageKey,
   ConnectionState,
   DiscoveryInfo,
+  GatewayDiagnostic,
 } from '@/domain/playback/types';
 
 export type ConnectionEvent =
@@ -27,12 +28,14 @@ export type ConnectionEvent =
       retryAt: number;
       detail: string;
       messageKey?: ConnectionMessageKey | undefined;
+      diagnostic?: GatewayDiagnostic | undefined;
     }
   | {
       type: 'error';
       message: string;
       messageKey?: ConnectionMessageKey | undefined;
       clearAuthCode?: boolean;
+      diagnostic?: GatewayDiagnostic | undefined;
     }
   | { type: 'clear_auth' };
 
@@ -57,6 +60,7 @@ export const reduceConnectionState = (
         detail: undefined,
         messageKey: undefined,
         lastError: undefined,
+        diagnostic: undefined,
         retryAt: null,
         authCode:
           event.authCode === undefined ? state.authCode : event.authCode,
@@ -67,6 +71,7 @@ export const reduceConnectionState = (
         discovery: event.discovery,
         hasStoredAuth: event.hasStoredAuth,
         detail: event.discovery.detail,
+        diagnostic: event.discovery.diagnostic,
       };
     case 'connected':
       return {
@@ -75,6 +80,7 @@ export const reduceConnectionState = (
         detail: undefined,
         messageKey: undefined,
         lastError: undefined,
+        diagnostic: undefined,
         retryAttempt: 0,
         retryAt: null,
         authCode: null,
@@ -89,6 +95,7 @@ export const reduceConnectionState = (
         authCode: event.authCode ?? state.authCode ?? null,
         hasStoredAuth: event.hasStoredAuth ?? state.hasStoredAuth,
         retryAt: null,
+        diagnostic: undefined,
       };
     case 'authenticating':
       return {
@@ -98,6 +105,7 @@ export const reduceConnectionState = (
         detail: undefined,
         messageKey: undefined,
         lastError: undefined,
+        diagnostic: undefined,
       };
     case 'retry_scheduled':
       return {
@@ -107,6 +115,7 @@ export const reduceConnectionState = (
         messageKey: event.messageKey,
         retryAttempt: event.retryAttempt,
         retryAt: event.retryAt,
+        diagnostic: event.diagnostic ?? state.diagnostic,
       };
     case 'error':
       return {
@@ -117,6 +126,7 @@ export const reduceConnectionState = (
         lastError: event.message,
         authCode: event.clearAuthCode ? null : state.authCode,
         retryAt: null,
+        diagnostic: event.diagnostic,
       };
     case 'clear_auth':
       return {
@@ -127,6 +137,7 @@ export const reduceConnectionState = (
         detail: undefined,
         messageKey: undefined,
         retryAt: null,
+        diagnostic: undefined,
       };
     default:
       return state;

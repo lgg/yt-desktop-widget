@@ -147,7 +147,7 @@ Design rules:
 
 ## Windows Media Session flow
 
-Delivery status: Microsoft lists the package-manifest `globalMediaControl` capability for `GlobalSystemMediaTransportControlsSessionManager`. A previous isolated unpackaged probe returned `E_ACCESSDENIED`, but the production adapter also lacked an initialized WinRT apartment and blocked arbitrary Tokio worker threads. Task `0050` corrected those runtime defects and produced a portable live-validation candidate. Supported signed package delivery remains the fallback in [`project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md) until the corrected executable receives an interactive player smoke.
+Delivery status: tasks `0050` and `0051` corrected the runtime and isolated the remaining `E_ACCESSDENIED` report to the restricted Codex sandbox token. The exact same unpackaged MTA probe succeeds in the normal interactive Windows user session and sees active Apple Music. Package identity is not required for the supported portable path; [`task 0049`](project-tracking/tasks/0049-add-supported-packaged-wms-delivery.md) remains only an optional future installer/signing decision.
 
 1. The persisted `playbackSource` selects `windowsMediaSession`; Companion remains the migration/default value.
 2. The Rust adapter lazily starts one long-lived `std::thread`, initializes it with `RoInitialize(RO_INIT_MULTITHREADED)`, and sends typed requests through an actor queue.
@@ -158,8 +158,9 @@ Delivery status: Microsoft lists the package-manifest `globalMediaControl` capab
 7. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and polling waits 750 ms between unchanged snapshots rather than replaying missed async ticks in a burst.
 8. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
 9. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
-10. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Media metadata is never included in diagnostics, logs, or persistence.
-11. No WMS media data is persisted in version 3.1.0.
+10. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
+11. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
+12. No WMS media data is persisted in version 3.1.0.
 
 ## Settings and persistence
 
@@ -185,6 +186,7 @@ Persistence model:
 - widget layout: persisted as a normalized permutation of six typed block IDs plus explicit visibility modes; unknown/duplicate IDs are repaired and missing IDs are appended
 - Settings disclosure state: persisted as a deduplicated whitelist of top-level section IDs
 - playback source: persisted separately from the development `sourceMode`; existing settings migrate to `companion`
+- WMS diagnostics: bounded rotating JSONL in the native app log directory; no title, artist, artwork, source-app identity, credential, token, or command payload
 
 ## Version model
 

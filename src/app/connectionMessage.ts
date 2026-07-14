@@ -60,7 +60,15 @@ export const getConnectionMessage = (
   t: Translate,
   connection: ConnectionState,
   playbackSource: PlaybackSource = 'companion',
-): string | null =>
-  connection.messageKey
+): string | null => {
+  if (
+    playbackSource === 'windowsMediaSession' &&
+    connection.diagnostic?.category === 'access_denied'
+  ) {
+    return t('windowsMediaConnectionMessages.accessDenied');
+  }
+
+  return connection.messageKey
     ? translateConnectionMessage(t, connection.messageKey, playbackSource)
     : null;
+};

@@ -391,6 +391,8 @@ pub struct DiscoveryInfo {
   pub supports_seek: bool,
   pub using_browser_bridge: bool,
   pub detail: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub diagnostic: Option<CommandDiagnostic>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -512,7 +514,7 @@ impl From<keyring::Error> for CommandError {
 
 #[cfg(test)]
 mod tests {
-  use super::{AppSettings, CommandDiagnostic, CommandError};
+  use super::{AppSettings, CommandDiagnostic, CommandError, DiscoveryInfo};
   use serde_json::json;
 
   #[test]
@@ -724,5 +726,26 @@ mod tests {
     assert_eq!(serialized["diagnostic"]["category"], "access_denied");
     assert!(serialized.to_string().find("track").is_none());
     assert!(serialized.to_string().find("artist").is_none());
+  }
+
+  #[test]
+  fn serializes_safe_discovery_diagnostics_for_recovery_ui() {
+    let discovery = DiscoveryInfo {
+      available: false,
+      api_versions: Vec::new(),
+      supports_realtime: false,
+      supports_seek: false,
+      using_browser_bridge: false,
+      detail: Some("Windows Media Session is unavailable.".to_string()),
+      diagnostic: Some(
+        CommandDiagnostic::new("request_manager.await", "access_denied")
+          .with_hresult("0x80070005"),
+      ),
+    };
+
+    let serialized = serde_json::to_value(discovery).expect("discovery should serialize");
+    assert_eq!(serialized["diagnostic"]["stage"], "request_manager.await");
+    assert_eq!(serialized["diagnostic"]["hresult"], "0x80070005");
+    assert_eq!(serialized["diagnostic"]["category"], "access_denied");
   }
 }

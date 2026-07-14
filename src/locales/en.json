@@ -35,6 +35,7 @@
   "windowsMediaConnectionMessages": {
     "notRunning": "Windows Media Session is unavailable. Start a compatible player and try again.",
     "apiUnavailable": "Windows could not provide media-session access right now.",
+    "accessDenied": "Windows denied media-session access. Close the widget, then run the portable EXE directly from File Explorer in your normal Windows session. Avoid launching it through Codex or another restricted sandbox.",
     "socketError": "Windows media updates were interrupted. The widget will keep checking the current session.",
     "socketClosed": "The Windows media-session connection closed. Try reconnecting.",
     "unexpected": "The Windows media integration returned an unexpected error. Try reconnecting."
@@ -153,7 +154,9 @@
         "mode": "Playback source",
         "companionDescription": "Use YTMDesktop Companion for the complete feature set, including authorization, mute, Like, and Dislike.",
         "windowsMediaSessionDescription": "Follow the current Windows media session exposed by compatible players such as Apple Music, Spotify, and Yandex Music.",
-        "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player."
+        "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player.",
+        "diagnostic": "Technical diagnostic: {{stage}} · {{hresult}} · {{category}}",
+        "diagnosticUnavailable": "not available"
       },
       "api": {
         "title": "API / Connection",

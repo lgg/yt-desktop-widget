@@ -19,18 +19,22 @@ Microsoft metadata marks GSMTC manager/session objects as Agile and both-threade
 - Poll with the worker channel's 750 ms receive timeout while connected; no WinRT `.get()` runs in Tokio.
 - Bound caller waits to 15 seconds. Ignore requests already cancelled before execution and commit a prepared connection only after its result receiver accepts the response.
 - Keep public error messages generic and attach an optional non-sensitive diagnostic containing only stage, HRESULT, and category.
+- Persist WMS failures as a bounded whitelist-only JSONL log and surface the same safe diagnostic in localized recovery UI. Never record media metadata, artwork, source-app identity, credentials, or tokens.
 - Continue following only the Windows current session; do not pick an arbitrary session from `GetSessions()`.
+- Treat a normal interactive Windows user session as the supported portable execution context. Do not attempt to escape or relaunch out of restricted launchers; instruct the user to start the portable EXE directly instead.
 
 ## Consequences
 
 - Companion-only launches do not start the WMS thread.
 - WMS operations and lifecycle mutations are serialized without sharing WinRT objects across arbitrary runtime tasks.
 - A blocked Windows call cannot block a Tokio worker, although the OS call itself cannot be forcibly cancelled; later queued work may time out until the actor recovers.
-- An interactive portable smoke remains necessary because apartment correctness does not guarantee that Windows will grant session-manager access to an unpackaged process.
-- Packaged delivery task `0049` remains a fallback if the corrected portable process receives `E_ACCESSDENIED`.
+- A 2026-07-14 same-binary comparison proved that unpackaged access is available: the restricted Codex sandbox failed at `request_manager.await` with `0x80070005`, while the normal interactive-user launch enumerated three sessions and returned the active Apple Music session.
+- Package identity is not a prerequisite for the supported portable path. Task `0049` remains deferred only as a future installer/product-delivery choice, not as a WMS access fix.
+- Full widget metadata/transport behavior still requires a direct-launch smoke after meaningful WMS changes because automated tests cannot reproduce every player implementation.
 
 ## Links
 
 - Task: `project-tracking/tasks/0050-fix-portable-windows-media-session-runtime.md`
 - Report: `project-tracking/reports/0050-fix-portable-windows-media-session-runtime.md`
+- Follow-up task: `project-tracking/tasks/0051-diagnose-unpackaged-windows-media-access.md`
 - Related decision: `project-tracking/decisions/0006-separate-product-playback-source-from-development-source-mode.md`
