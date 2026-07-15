@@ -153,6 +153,16 @@ export const SettingsWindow = () => {
   const [ciderToken, setCiderTokenDraft] = useState('');
   const [ciderTokenError, setCiderTokenError] = useState<string | null>(null);
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
+  const muteButtonSupported =
+    resolvedSourceMode === 'simulator' ||
+    settings.api.playbackSource === 'companion';
+  const muteButtonDescriptionKey =
+    !muteButtonSupported &&
+    settings.api.playbackSource === 'windowsMediaSession'
+      ? 'settingsWindow.sections.ui.muteButtonVisibilityDescriptionWindowsMedia'
+      : !muteButtonSupported && settings.api.playbackSource === 'cider'
+        ? 'settingsWindow.sections.ui.muteButtonVisibilityDescriptionCider'
+        : 'settingsWindow.sections.ui.muteButtonVisibilityDescription';
   const authBusy = session.connection.status === 'authenticating';
   const authStatusDetail =
     session.connection.status === 'auth_required' ||
@@ -167,12 +177,12 @@ export const SettingsWindow = () => {
     settings.api.playbackSource === 'windowsMediaSession' &&
     session.connection.diagnostic
       ? t('settingsWindow.sections.source.diagnostic', {
-        stage: session.connection.diagnostic.stage,
-        hresult:
-          session.connection.diagnostic.hresult ??
-          t('settingsWindow.sections.source.diagnosticUnavailable'),
-        category: session.connection.diagnostic.category,
-      })
+          stage: session.connection.diagnostic.stage,
+          hresult:
+            session.connection.diagnostic.hresult ??
+            t('settingsWindow.sections.source.diagnosticUnavailable'),
+          category: session.connection.diagnostic.category,
+        })
       : null;
   const widgetDimensions = getWidgetReferenceDimensions(
     settings.ui.customWidgetScalePercentage,
@@ -552,7 +562,9 @@ export const SettingsWindow = () => {
                     autoComplete="off"
                     spellCheck={false}
                     value={ciderToken}
-                    placeholder={t('settingsWindow.sections.source.ciderTokenPlaceholder')}
+                    placeholder={t(
+                      'settingsWindow.sections.source.ciderTokenPlaceholder',
+                    )}
                     aria-invalid={Boolean(ciderTokenError)}
                     aria-describedby={
                       ciderTokenError
@@ -575,7 +587,9 @@ export const SettingsWindow = () => {
                           setCiderTokenDraft('');
                         } catch {
                           setCiderTokenError(
-                            t('settingsWindow.sections.source.ciderTokenInvalid'),
+                            t(
+                              'settingsWindow.sections.source.ciderTokenInvalid',
+                            ),
                           );
                         }
                       })()
@@ -979,9 +993,7 @@ export const SettingsWindow = () => {
                 {t('settingsWindow.sections.ui.muteButtonVisibility')}
               </span>
               <span className="segmented-control__description">
-                {t(
-                  'settingsWindow.sections.ui.muteButtonVisibilityDescription',
-                )}
+                {t(muteButtonDescriptionKey)}
               </span>
               <div
                 className="segmented-control__options"
@@ -994,6 +1006,7 @@ export const SettingsWindow = () => {
                   <button
                     key={mode}
                     type="button"
+                    disabled={!muteButtonSupported && mode !== 'hidden'}
                     aria-pressed={settings.ui.muteButtonVisibility === mode}
                     className={
                       settings.ui.muteButtonVisibility === mode
@@ -1303,9 +1316,7 @@ export const SettingsWindow = () => {
               {import.meta.env.DEV ? (
                 <button
                   className={
-                    debugMockModeActive
-                      ? 'primary-button'
-                      : 'secondary-button'
+                    debugMockModeActive ? 'primary-button' : 'secondary-button'
                   }
                   type="button"
                   onClick={() => void toggleDebugMockMode()}

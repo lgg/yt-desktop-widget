@@ -728,6 +728,14 @@ a,
   pointer-events: auto;
 }
 
+.widget-window__mute-action {
+  visibility: hidden;
+}
+
+.widget-window__mute-action.widget-window__window-action--visible {
+  visibility: visible;
+}
+
 .widget-window__connection-badge {
   opacity: 1;
   transition: opacity 160ms ease;

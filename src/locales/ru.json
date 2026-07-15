@@ -139,12 +139,36 @@
       }
     },
     "ciderStates": {
-      "discovering": { "eyebrow": "Cider", "title": "Поиск Cider", "body": "Проверяется официальный локальный API Cider на 127.0.0.1:10767." },
-      "disconnected": { "eyebrow": "Cider", "title": "Cider недоступен", "body": "Запустите Cider и включите WebSockets в разделе Connectivity." },
-      "auth_required": { "eyebrow": "Доступ к Cider", "title": "Требуется токен приложения Cider", "body": "Откройте настройки и сохраните токен, созданный в Cider в разделе Manage External Application Access." },
-      "reconnecting": { "eyebrow": "Cider", "title": "Переподключение к Cider", "body": "Виджет восстанавливает локальное realtime-соединение." },
-      "error": { "eyebrow": "Cider", "title": "Cider требует внимания", "body": "Проверьте WebSockets и токен внешнего приложения в Cider." },
-      "empty": { "eyebrow": "Cider", "title": "Ничего не воспроизводится", "body": "Запустите трек в Cider." }
+      "discovering": {
+        "eyebrow": "Cider",
+        "title": "Поиск Cider",
+        "body": "Проверяется официальный локальный API Cider на 127.0.0.1:10767."
+      },
+      "disconnected": {
+        "eyebrow": "Cider",
+        "title": "Cider недоступен",
+        "body": "Запустите Cider и включите WebSockets в разделе Connectivity."
+      },
+      "auth_required": {
+        "eyebrow": "Доступ к Cider",
+        "title": "Требуется токен приложения Cider",
+        "body": "Откройте настройки и сохраните токен, созданный в Cider в разделе Manage External Application Access."
+      },
+      "reconnecting": {
+        "eyebrow": "Cider",
+        "title": "Переподключение к Cider",
+        "body": "Виджет восстанавливает локальное realtime-соединение."
+      },
+      "error": {
+        "eyebrow": "Cider",
+        "title": "Cider требует внимания",
+        "body": "Проверьте WebSockets и токен внешнего приложения в Cider."
+      },
+      "empty": {
+        "eyebrow": "Cider",
+        "title": "Ничего не воспроизводится",
+        "body": "Запустите трек в Cider."
+      }
     },
     "auth": {
       "generate": "Создать код",
@@ -204,7 +228,9 @@
         "connectionBadgeVisibility": "Индикатор статуса соединения",
         "connectionBadgeVisibilityDescription": "Выберите, показывать ли статус LIVE всегда, только при наведении или полностью скрыть.",
         "muteButtonVisibility": "Кнопка отключения звука",
-        "muteButtonVisibilityDescription": "Показывает кнопку отключения звука без изменения или хранения уровня громкости. При включении YTMDesktop восстанавливает свой уровень.",
+        "muteButtonVisibilityDescription": "Показывает кнопку отключения звука, когда активный адаптер её поддерживает. YTMDesktop сохраняет текущую громкость и восстанавливает её своей официальной командой включения звука.",
+        "muteButtonVisibilityDescriptionWindowsMedia": "Недоступно для Windows Media Session: GSMTC не публикует управление звуком или громкостью. Настройка сохранится для поддерживаемых адаптеров.",
+        "muteButtonVisibilityDescriptionCider": "Недоступно для Cider: текущий адаптер локального API не предоставляет команды отключения и включения звука. Настройка сохранится для поддерживаемых адаптеров.",
         "hideSettingsButton": "Кнопка настроек",
         "hideSettingsButtonDescription": "Выберите, показывать кнопку настроек всегда или только при наведении на виджет.",
         "hideCloseButton": "Кнопка закрытия",

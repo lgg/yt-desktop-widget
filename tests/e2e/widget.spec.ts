@@ -601,6 +601,35 @@ test('persists v3 block controls and sends mute and rating actions', async ({
   await expect(like).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('fully hides hover-only mute while idle and reveals it on widget hover', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 720, height: 820 });
+  await page.goto('/?view=settings&source=simulator');
+  await page
+    .getByRole('group', { name: 'Mute button' })
+    .getByRole('button', { name: 'On hover' })
+    .click();
+
+  await page.setViewportSize({ width: 336, height: 620 });
+  await page.goto('/?source=simulator');
+  await page.mouse.move(2_000, 2_000);
+
+  const mute = page.locator('button[aria-label="Mute"]');
+  await expect(mute).toHaveCSS('opacity', '0');
+  await expect(mute).toHaveCSS('visibility', 'hidden');
+  await expect(mute).toHaveCSS('pointer-events', 'none');
+  await expect(mute).not.toBeDisabled();
+  await expect(mute).toHaveAttribute('tabindex', '-1');
+
+  await page.locator('.widget-window').hover();
+  await expect(page.getByRole('button', { name: 'Mute' })).toBeVisible();
+  await expect(mute).toHaveCSS('opacity', '1');
+  await expect(mute).toHaveCSS('visibility', 'visible');
+  await expect(mute).toHaveCSS('pointer-events', 'auto');
+  await expect(mute).toHaveAttribute('tabindex', '0');
+});
+
 test('advances simulator progress at wall-clock speed', async ({ page }) => {
   await page.setViewportSize({ width: 336, height: 520 });
   await page.goto('/?source=simulator');

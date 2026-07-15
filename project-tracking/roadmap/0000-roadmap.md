@@ -16,26 +16,26 @@ Version `3.1.0` is a Windows-first portable Tauri application with:
 - Vitest, Rust, and Playwright coverage plus live Windows adapter validation;
 - portable local builds, but no automated GitHub build/release workflow yet.
 
-Latest completed stabilization: [`0059-fix-source-aware-warning-and-mute-behavior.md`](../tasks/0059-fix-source-aware-warning-and-mute-behavior.md), which made warning recovery adapter-specific and removed unsupported mute controls from Cider/WMS.
+Latest completed stabilization: [`0060-fix-live-mute-visibility-state-and-restore.md`](../tasks/0060-fix-live-mute-visibility-state-and-restore.md), which made Companion mute stateful and reversible, fully hid the idle hover-only control, and documented unsupported WMS/Cider mute modes.
 
 ## Tracking Snapshot
 
-- Total tracked tasks: 59
+- Total tracked tasks: 60
 - In progress: 0
 - Open: 0
 - Deferred/planned: 10
 - Blocked: 0
-- Completed: 48
+- Completed: 50
 
 ## Ordered Delivery Path
 
-| Phase | Status | Task | Intended outcome |
-| --- | --- | --- | --- |
-| 0. Public repository baseline | Completed | [`0055`](../tasks/0055-public-repository-rename-and-documentation-audit.md) | Completed the Music Desktop Widget rename, public README, documentation/security audit, and accurate roadmap. |
-| 1. Linux + MPRIS | Planned | [`0056`](../tasks/0056-add-linux-build-and-mpris-support.md) | Make the app compile and run on Linux, add an official MPRIS/D-Bus adapter, and adapt keyring, tray, startup, and window behavior. |
-| 2. GitHub CI and releases | Planned after Linux | [`0057`](../tasks/0057-add-github-ci-builds-and-releases.md) | Verify Windows/Linux on GitHub Actions and publish reproducible versioned artifacts through a controlled release workflow. |
-| 3. Localization scale-up | Planned after CI | [`0058`](../tasks/0058-scale-localization-and-language-selection.md) | Add more locales and replace the two-button language control with a scalable accessible language picker. |
-| 4. macOS support | Planned after localization | [`0007`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md) | Adapt build, window, tray, startup, keyring, packaging, signing, and supported playback adapters for macOS. |
+| Phase                         | Status                     | Task                                                                                      | Intended outcome                                                                                                                   |
+| ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 0. Public repository baseline | Completed                  | [`0055`](../tasks/0055-public-repository-rename-and-documentation-audit.md)               | Completed the Music Desktop Widget rename, public README, documentation/security audit, and accurate roadmap.                      |
+| 1. Linux + MPRIS              | Planned                    | [`0056`](../tasks/0056-add-linux-build-and-mpris-support.md)                              | Make the app compile and run on Linux, add an official MPRIS/D-Bus adapter, and adapt keyring, tray, startup, and window behavior. |
+| 2. GitHub CI and releases     | Planned after Linux        | [`0057`](../tasks/0057-add-github-ci-builds-and-releases.md)                              | Verify Windows/Linux on GitHub Actions and publish reproducible versioned artifacts through a controlled release workflow.         |
+| 3. Localization scale-up      | Planned after CI           | [`0058`](../tasks/0058-scale-localization-and-language-selection.md)                      | Add more locales and replace the two-button language control with a scalable accessible language picker.                           |
+| 4. macOS support              | Planned after localization | [`0007`](../tasks/0007-plan-future-macos-support-for-window-tray-and-startup-behavior.md) | Adapt build, window, tray, startup, keyring, packaging, signing, and supported playback adapters for macOS.                        |
 
 ## Phase Notes
 
@@ -59,13 +59,13 @@ macOS comes after the Linux and release foundations. The phase covers native bui
 
 These tasks remain valid but do not interrupt the ordered cross-platform path unless reprioritized explicitly:
 
-| Priority | Task | Boundary |
-| --- | --- | --- |
-| Later | [`0046` — opt-in local WMS history/favorites/export](../tasks/0046-add-opt-in-local-playback-history-favorites-and-export.md) | Personal-data design is required before implementation; default remains off. |
-| Later | [`0049` — optional packaged Windows delivery](../tasks/0049-add-supported-packaged-wms-delivery.md) | Portable Windows remains first-class; signing/package model requires approval. |
-| Later | [`0009` — installer packaging](../tasks/0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md) | Revisit with CI/releases rather than adding an ad-hoc local installer. |
-| Later | [`0011` — visual refinement and alternate window modes](../tasks/0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md) | Preserve current configurable layout until a focused design pass. |
-| Later | [`0013` — richer Companion diagnostics](../tasks/0013-add-richer-diagnostics-and-logging-around-companion-reconnects-and-runti.md) | Must remain credential-safe and bounded. |
+| Priority | Task                                                                                                                                             | Boundary                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Later    | [`0046` — opt-in local WMS history/favorites/export](../tasks/0046-add-opt-in-local-playback-history-favorites-and-export.md)                    | Personal-data design is required before implementation; default remains off.   |
+| Later    | [`0049` — optional packaged Windows delivery](../tasks/0049-add-supported-packaged-wms-delivery.md)                                              | Portable Windows remains first-class; signing/package model requires approval. |
+| Later    | [`0009` — installer packaging](../tasks/0009-re-enable-installer-packaging-after-the-portable-only-test-cycle.md)                                | Revisit with CI/releases rather than adding an ad-hoc local installer.         |
+| Later    | [`0011` — visual refinement and alternate window modes](../tasks/0011-plan-deferred-visual-refinement-pass-and-alternate-widget-window-modes.md) | Preserve current configurable layout until a focused design pass.              |
+| Later    | [`0013` — richer Companion diagnostics](../tasks/0013-add-richer-diagnostics-and-logging-around-companion-reconnects-and-runti.md)               | Must remain credential-safe and bounded.                                       |
 
 The migrated umbrella task [`0005`](../tasks/0005-track-deferred-post-v1-roadmap-items.md) remains historical context, not an additional delivery phase.
 
