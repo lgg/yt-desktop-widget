@@ -96,4 +96,4 @@ Out of scope:
 - Related decisions: `project-tracking/decisions/0007-run-windows-media-on-a-dedicated-mta-worker.md`
 - Related reports: `project-tracking/reports/0050-fix-portable-windows-media-session-runtime.md`, `project-tracking/reports/0051-diagnose-unpackaged-windows-media-access.md`, `project-tracking/reports/0052-fix-live-windows-media-session-snapshot-failure.md`
 - Time log: `project-tracking/time-log.md`
-- PR/commit: branch `codex/fix-wms-add-cider-adapter`
+- PR/commit: commit `e650ba2`; merged to `master` as `42c1ec8`
