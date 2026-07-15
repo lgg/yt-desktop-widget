@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+  atomic::{AtomicBool, Ordering},
+  Arc, Mutex,
+};
 
 use futures_util::FutureExt;
 use reqwest::StatusCode;
@@ -15,9 +18,42 @@ const KEYRING_SERVICE: &str = "io.github.lgg.ytm-desktop-widget";
 const KEYRING_ACCOUNT: &str = "cider-api-token-127.0.0.1-10767";
 
 #[derive(Default)]
+struct SocketLifecycle {
+  alive: Option<Arc<AtomicBool>>,
+}
+
+impl SocketLifecycle {
+  fn start(&mut self) -> Arc<AtomicBool> {
+    let alive = Arc::new(AtomicBool::new(true));
+    self.alive = Some(Arc::clone(&alive));
+    alive
+  }
+
+  fn can_reuse(&self, has_socket: bool, has_cached_state: bool) -> bool {
+    has_socket
+      && has_cached_state
+      && self
+        .alive
+        .as_ref()
+        .is_some_and(|alive| alive.load(Ordering::SeqCst))
+  }
+
+  fn invalidate(&mut self) {
+    if let Some(alive) = self.alive.take() {
+      alive.store(false, Ordering::SeqCst);
+    }
+  }
+
+  fn mark_closed(alive: &AtomicBool) -> bool {
+    alive.swap(false, Ordering::SeqCst)
+  }
+}
+
+#[derive(Default)]
 pub struct CiderManager {
   client: reqwest::Client,
   socket: Option<Client>,
+  socket_lifecycle: SocketLifecycle,
   latest_state: Arc<Mutex<Option<Value>>>,
 }
 
@@ -41,6 +77,11 @@ impl CiderManager {
   }
 
   pub async fn connect(&mut self, app: &AppHandle, token: &str) -> Result<CompanionConnectResponse, CommandError> {
+    let cached_state = self.latest_state.lock().expect("Cider state poisoned").clone();
+    if self.socket_lifecycle.can_reuse(self.socket.is_some(), cached_state.is_some()) {
+      return Ok(CompanionConnectResponse { initial_state: cached_state });
+    }
+
     self.disconnect().await;
     let initial_state = fetch_now_playing(&self.client, token).await?;
     *self.latest_state.lock().expect("Cider state poisoned") = Some(initial_state.clone());
@@ -49,7 +90,10 @@ impl CiderManager {
     let state_app = app.clone();
     let error_app = app.clone();
     let close_app = app.clone();
-    let socket = ClientBuilder::new(CIDER_BASE_URL)
+    let socket_alive = self.socket_lifecycle.start();
+    let error_alive = Arc::clone(&socket_alive);
+    let close_alive = Arc::clone(&socket_alive);
+    let socket_result = ClientBuilder::new(CIDER_BASE_URL)
       .transport_type(TransportType::Websocket)
       .on("API:Playback", move |payload, _| {
         let state = Arc::clone(&state);
@@ -68,25 +112,38 @@ impl CiderManager {
       })
       .on("error", move |payload, _| {
         let app = error_app.clone();
+        let alive = Arc::clone(&error_alive);
         async move {
-          emit(&app, CompanionEvent::Status { status: "socket_error".to_string(), detail: Some(payload_to_string(payload)), diagnostic: None });
+          if alive.load(Ordering::SeqCst) {
+            emit(&app, CompanionEvent::Status { status: "socket_error".to_string(), detail: Some(payload_to_string(payload)), diagnostic: None });
+          }
         }.boxed()
       })
       .on("close", move |payload, _| {
         let app = close_app.clone();
+        let alive = Arc::clone(&close_alive);
         async move {
-          emit(&app, CompanionEvent::Status { status: "socket_closed".to_string(), detail: Some(payload_to_string(payload)), diagnostic: None });
+          if SocketLifecycle::mark_closed(&alive) {
+            emit(&app, CompanionEvent::Status { status: "socket_closed".to_string(), detail: Some(payload_to_string(payload)), diagnostic: None });
+          }
         }.boxed()
       })
       .connect()
-      .await
-      .map_err(|_| CommandError::new("network", "Unable to connect to Cider WebSockets on 127.0.0.1:10767."))?;
+      .await;
+    let socket = match socket_result {
+      Ok(socket) => socket,
+      Err(_) => {
+        self.socket_lifecycle.invalidate();
+        return Err(CommandError::new("network", "Unable to connect to Cider WebSockets on 127.0.0.1:10767."));
+      }
+    };
     self.socket = Some(socket);
     emit(app, CompanionEvent::Status { status: "socket_open".to_string(), detail: None, diagnostic: None });
     Ok(CompanionConnectResponse { initial_state: Some(initial_state) })
   }
 
   pub async fn disconnect(&mut self) {
+    self.socket_lifecycle.invalidate();
     if let Some(socket) = self.socket.take() {
       let _ = socket.disconnect().await;
     }
@@ -212,9 +269,10 @@ fn payload_to_string(payload: Payload) -> String { match payload { Payload::Text
 
 #[cfg(test)]
 mod tests {
-  use super::{cider_command, map_now_playing};
+  use super::{cider_command, map_now_playing, SocketLifecycle};
   use crate::models::PlaybackCommand;
   use serde_json::json;
+  use std::sync::atomic::Ordering;
 
   #[test]
   fn maps_cider_now_playing_into_the_shared_playback_contract() {
@@ -229,5 +287,25 @@ mod tests {
     assert_eq!(cider_command(&PlaybackCommand::PlayPause), Some(("playback/playpause", None)));
     assert_eq!(cider_command(&PlaybackCommand::Next), Some(("playback/next", None)));
     assert_eq!(cider_command(&PlaybackCommand::Mute), None);
+  }
+
+  #[test]
+  fn reuses_one_live_socket_across_main_and_settings_windows() {
+    let mut lifecycle = SocketLifecycle::default();
+    let alive = lifecycle.start();
+
+    assert!(lifecycle.can_reuse(true, true));
+    assert!(alive.load(Ordering::SeqCst));
+  }
+
+  #[test]
+  fn intentional_disconnect_does_not_publish_a_socket_closed_event() {
+    let mut lifecycle = SocketLifecycle::default();
+    let alive = lifecycle.start();
+
+    lifecycle.invalidate();
+
+    assert!(!SocketLifecycle::mark_closed(&alive));
+    assert!(!lifecycle.can_reuse(true, true));
   }
 }

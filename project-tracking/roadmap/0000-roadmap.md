@@ -17,7 +17,7 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 ## Current Stabilization Work
 
-- Completed P1: Fix live WMS and Cider token authentication - [`0054-fix-live-wms-and-cider-token-auth.md`](../tasks/0054-fix-live-wms-and-cider-token-auth.md) - restores every WMS/Cider Tauri IPC command in the active ACL, adds automatic handler/permission parity coverage, live-validates both adapters, and replaces the native-looking Cider token row with an accessible responsive credential card.
+- Completed P1: Fix live WMS and Cider token authentication - [`0054-fix-live-wms-and-cider-token-auth.md`](../tasks/0054-fix-live-wms-and-cider-token-auth.md) - restores every WMS/Cider Tauri IPC command in the active ACL, shares one stable Cider Socket.IO lifecycle across main and Settings, adds regressions for both boundaries, live-validates both adapters, and replaces the native-looking token row with an accessible responsive credential card.
 - Completed P1: Fix Windows Media and add a Cider adapter - [`0053-fix-windows-media-and-add-cider-adapter.md`](../tasks/0053-fix-windows-media-and-add-cider-adapter.md) - fixes first-empty/partial WMS snapshots and adds a loopback-only, keyring-backed Cider source.
 
 - Completed P1: Fix live Windows Media Session snapshot failure - [`0052-fix-live-windows-media-session-snapshot-failure.md`](../tasks/0052-fix-live-windows-media-session-snapshot-failure.md) - decouples manager attach from the initial snapshot, reacquires after transient poll failures, preserves live diagnostics end to end, passes full verification, and produces a fresh healthy WMS-selected portable build.

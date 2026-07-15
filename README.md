@@ -151,7 +151,7 @@ The first Settings section stores the user-facing production source:
 
 - `YTMDesktop Companion` (default and migration-safe): full Companion auth, realtime, mute, Like, and Dislike behavior
 - `Windows Media Session`: current Windows-selected compatible player session without pairing
-- `Cider App`: loopback-only `127.0.0.1:10767` adapter using Cider WebSockets (`API:Playback`) and `/api/v1/playback/*`; enable WebSockets and create an application token under Manage External Application Access to Cider. The token is validated natively and stored only in Windows Credential Manager.
+- `Cider App`: loopback-only `127.0.0.1:10767` adapter using Cider WebSockets (`API:Playback`) and `/api/v1/playback/*`; enable WebSockets and create an application token under Manage External Application Access to Cider. The token is validated natively and stored only in Windows Credential Manager. Main and Settings share one native live socket, so opening Settings does not replace the active session.
 
 Development builds retain three internal runtime modes:
 
@@ -277,6 +277,7 @@ On 2026-07-15, the portable `3.1.0` release was launched as a normal interactive
 
 - Cider's token-protected `/api/v1/playback/active` and `/api/v1/playback/now-playing` endpoints accepted the application token through the documented `apptoken` header.
 - Saving the token through the real Settings control stored it in Windows Credential Manager and the dedicated Cider source reached `Live` with metadata, artwork, realtime Socket.IO, and a play/pause/restore cycle.
+- The exact multi-window failure was repeated and fixed: opening Settings no longer disconnects the main window's socket, and both windows stayed healthy through sustained waits and a manual Settings reconnect.
 - Switching the same running release to Windows Media Session reached `Live`, loaded the Cider GSMTC metadata/artwork, and completed a play/pause/restore cycle without a WMS diagnostic.
 - A regression now verifies that every command registered in Tauri's `generate_handler!` is also present in the active permission manifest, preventing native adapters from being silently blocked at the IPC boundary.
 
