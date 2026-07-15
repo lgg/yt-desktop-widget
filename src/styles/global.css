@@ -1355,6 +1355,107 @@ a,
   color: var(--danger);
 }
 
+.cider-credential {
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--control-stroke);
+  background:
+    radial-gradient(circle at 0 0, var(--accent-soft), transparent 44%),
+    var(--surface-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.cider-credential__header,
+.cider-credential__footer,
+.cider-credential__status {
+  display: flex;
+  align-items: center;
+}
+
+.cider-credential__header {
+  gap: 12px;
+}
+
+.cider-credential__icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid var(--primary-stroke);
+  border-radius: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cider-credential__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cider-credential__copy {
+  min-width: 0;
+}
+
+.cider-credential__label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cider-credential__form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.cider-credential__input {
+  width: 100%;
+  min-width: 0;
+}
+
+.cider-credential__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.cider-credential__save {
+  min-height: 46px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.cider-credential__footer {
+  min-height: 38px;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--control-stroke);
+}
+
+.cider-credential__status {
+  min-width: 0;
+  gap: 8px;
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cider-credential__status svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.cider-credential__clear {
+  min-height: 36px;
+  margin-left: auto;
+  padding: 0 12px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
 .settings-about__version {
   font-size: 14px;
   line-height: 1.55;
@@ -1517,5 +1618,24 @@ a,
 
   .toggle-row__description {
     padding-top: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .cider-credential__form {
+    grid-template-columns: 1fr;
+  }
+
+  .cider-credential__save {
+    width: 100%;
+  }
+
+  .cider-credential__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cider-credential__clear {
+    margin-left: 0;
   }
 }

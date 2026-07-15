@@ -166,6 +166,7 @@
         "ciderTokenPlaceholder": "Paste token from Cider",
         "ciderTokenInvalid": "Cider rejected the token or its local API is unavailable.",
         "ciderSaveToken": "Save token securely",
+        "ciderStoredSecurely": "Stored securely in Windows Credential Manager",
         "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player.",
         "diagnostic": "Technical diagnostic: {{stage}} · {{hresult}} · {{category}}",
         "diagnosticUnavailable": "not available"

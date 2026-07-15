@@ -86,6 +86,8 @@ The portable runtime creates one lazy, long-lived MTA worker and performs manage
 
 Delivery status: the same unpackaged Rust diagnostic executable was run in two execution contexts on the same Windows machine while Apple Music was active. A restricted Codex sandbox token failed at `request_manager.await` with `0x80070005`; a normal interactive-user launch succeeded, enumerated three sessions, and returned a current session. Microsoft also publishes a normal desktop console example for this API, and multiple Rust/Tauri projects call the same contract without requiring MSIX. Package identity is therefore not a portable WMS prerequisite. Do not launch the widget from Codex or another restricted sandbox; close the old process and start the portable EXE directly from File Explorer.
 
+The complete portable widget path was live-validated again on 2026-07-15 against Cider's active GSMTC session after correcting the Tauri command ACL: Settings reached `Live`, metadata/artwork loaded, discovery returned `available: true` without a diagnostic, and play/pause changed and restored the player state. The same release was then switched back to the dedicated Cider adapter, which also reached `Live` and passed the same transport cycle.
+
 When WMS fails, Settings and the widget show the safe stage/HRESULT/category from both connect and live poll failures. The native backend also appends the same whitelist-only diagnostic to `%LOCALAPPDATA%\io.github.lgg.ytm-desktop-widget\logs\windows-media-diagnostics.jsonl`, rotating at 256 KiB to `windows-media-diagnostics.previous.jsonl`. These files contain no title, artist, artwork, source-app ID, command payload, credential, or token. Logging failures never block playback or Companion mode.
 
 - Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
@@ -268,6 +270,15 @@ The full auth approval round-trip, durable credential reload, reconnect, and liv
 Future live regression passes should still include uncommon upstream states such as:
 
 - edge cases like ads, livestreams, and transient Companion restarts
+
+## Live Cider and Windows Media validation
+
+On 2026-07-15, the portable `3.1.0` release was launched as a normal interactive Windows process against the installed Cider 4 service on `127.0.0.1:10767`:
+
+- Cider's token-protected `/api/v1/playback/active` and `/api/v1/playback/now-playing` endpoints accepted the application token through the documented `apptoken` header.
+- Saving the token through the real Settings control stored it in Windows Credential Manager and the dedicated Cider source reached `Live` with metadata, artwork, realtime Socket.IO, and a play/pause/restore cycle.
+- Switching the same running release to Windows Media Session reached `Live`, loaded the Cider GSMTC metadata/artwork, and completed a play/pause/restore cycle without a WMS diagnostic.
+- A regression now verifies that every command registered in Tauri's `generate_handler!` is also present in the active permission manifest, preventing native adapters from being silently blocked at the IPC boundary.
 
 ## Known limitations and intentional deferrals
 

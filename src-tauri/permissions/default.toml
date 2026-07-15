@@ -20,7 +20,18 @@ commands.allow = [
   "companion_request_auth_code",
   "companion_complete_auth",
   "companion_clear_auth",
-  "companion_send_command"
+  "companion_send_command",
+  "windows_media_discover",
+  "windows_media_connect",
+  "windows_media_disconnect",
+  "windows_media_send_command",
+  "cider_has_auth",
+  "cider_store_auth",
+  "cider_clear_auth",
+  "cider_discover",
+  "cider_connect",
+  "cider_disconnect",
+  "cider_send_command"
 ]
 
 [default]

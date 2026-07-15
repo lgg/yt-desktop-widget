@@ -80,6 +80,21 @@ export const SparkIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+export const LockIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <rect x="5" y="10" width="14" height="11" rx="3" />
+    <path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10" />
+    <path d="M12 14.5v2" />
+  </svg>
+);
+
+export const CheckCircleIcon = (props: SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m8 12 2.5 2.5L16 9" />
+  </svg>
+);
+
 export const VolumeIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...iconProps} {...props}>
     <path d="M5 9h4l5-4v14l-5-4H5V9Z" />
