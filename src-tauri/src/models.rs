@@ -54,7 +54,7 @@ impl<'de> Deserialize<'de> for ConnectionSettings {
       ),
       playback_source: normalize_string_enum(
         stored.playback_source,
-        &["companion", "windowsMediaSession"],
+        &["companion", "windowsMediaSession", "cider"],
         &defaults.playback_source,
       ),
     })

@@ -139,6 +139,7 @@ export const SettingsWindow = () => {
     generateAuthCode,
     confirmAuthentication,
     clearAuth,
+    setCiderToken,
     openRepository,
     toggleDebugMockMode,
   } = useAppModel();
@@ -147,6 +148,8 @@ export const SettingsWindow = () => {
     formatCompanionEndpoint(settings.api.host, settings.api.port),
   );
   const [endpointError, setEndpointError] = useState<string | null>(null);
+  const [ciderToken, setCiderTokenDraft] = useState('');
+  const [ciderTokenError, setCiderTokenError] = useState<string | null>(null);
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
   const authBusy = session.connection.status === 'authenticating';
   const authStatusDetail =
@@ -487,7 +490,7 @@ export const SettingsWindow = () => {
                 role="group"
                 aria-label={t('settingsWindow.sections.source.mode')}
               >
-                {(['companion', 'windowsMediaSession'] as const).map(
+                {(['companion', 'windowsMediaSession', 'cider'] as const).map(
                   (source) => (
                     <button
                       key={source}
@@ -518,6 +521,21 @@ export const SettingsWindow = () => {
               <p className="settings-field__hint">
                 {t('settingsWindow.sections.source.windowsMediaLimitations')}
               </p>
+            ) : null}
+            {settings.api.playbackSource === 'cider' ? (
+              <div className="settings-field">
+                <p className="settings-field__hint">{t('settingsWindow.sections.source.ciderDescription')}</p>
+                <label className="settings-field__label" htmlFor="cider-token">{t('settingsWindow.sections.source.ciderToken')}</label>
+                <div className="endpoint-field">
+                  <input id="cider-token" type="password" autoComplete="off" value={ciderToken} placeholder={t('settingsWindow.sections.source.ciderTokenPlaceholder')} onChange={(event) => { setCiderTokenDraft(event.target.value); setCiderTokenError(null); }} />
+                  <button className="secondary-button" type="button" onClick={() => void (async () => {
+                    try { await setCiderToken(ciderToken); setCiderTokenDraft(''); }
+                    catch { setCiderTokenError(t('settingsWindow.sections.source.ciderTokenInvalid')); }
+                  })()}>{t('settingsWindow.sections.source.ciderSaveToken')}</button>
+                </div>
+                {ciderTokenError ? <p className="settings-field__error">{ciderTokenError}</p> : null}
+                {session.connection.hasStoredAuth ? <button className="ghost-button" type="button" onClick={() => void clearAuth()}>{t('settingsWindow.actions.clearCiderToken')}</button> : null}
+              </div>
             ) : null}
             <SettingsRow className="settings-row--stacked settings-row--status">
               <span className="settings-row__label">

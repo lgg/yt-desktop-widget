@@ -127,6 +127,13 @@
         "body": "Start playback in a compatible Windows media app."
       }
     },
+    "ciderStates": {
+      "discovering": { "eyebrow": "Cider", "title": "Finding Cider", "body": "Checking the official local Cider API on 127.0.0.1:10767." },
+      "disconnected": { "eyebrow": "Cider", "title": "Cider is unavailable", "body": "Start Cider and enable WebSockets in Connectivity." },
+      "reconnecting": { "eyebrow": "Cider", "title": "Reconnecting to Cider", "body": "The widget is restoring the local realtime connection." },
+      "error": { "eyebrow": "Cider", "title": "Cider needs attention", "body": "Check WebSockets and the external application token in Cider." },
+      "empty": { "eyebrow": "Cider", "title": "Nothing is playing", "body": "Start a track in Cider." }
+    },
     "auth": {
       "generate": "Generate code",
       "confirm": "Confirm in YTMDesktop",
@@ -154,6 +161,11 @@
         "mode": "Playback source",
         "companionDescription": "Use YTMDesktop Companion for the complete feature set, including authorization, mute, Like, and Dislike.",
         "windowsMediaSessionDescription": "Follow the current Windows media session exposed by compatible players such as Apple Music, Spotify, and Yandex Music.",
+        "ciderDescription": "Use Cider's official local WebSockets API. Enable WebSockets and create a token under Manage External Application Access to Cider.",
+        "ciderToken": "Cider application token",
+        "ciderTokenPlaceholder": "Paste token from Cider",
+        "ciderTokenInvalid": "Cider rejected the token or its local API is unavailable.",
+        "ciderSaveToken": "Save token securely",
         "windowsMediaLimitations": "Like, Dislike, and mute are unavailable in Windows Media Session mode and are safely ignored. Available playback actions depend on the current player.",
         "diagnostic": "Technical diagnostic: {{stage}} · {{hresult}} · {{category}}",
         "diagnosticUnavailable": "not available"
@@ -246,6 +258,7 @@
       "pair": "Generate code",
       "confirmPair": "Confirm pairing",
       "clearAuth": "Clear auth",
+      "clearCiderToken": "Clear Cider token",
       "openRepo": "yt-desktop-widget",
       "runDebugMockMode": "Run debug mockup mode",
       "stopDebugMockMode": "Stop debug mockup mode",
@@ -297,7 +310,8 @@
     },
     "playbackSource": {
       "companion": "YTMDesktop Companion",
-      "windowsMediaSession": "Windows Media Session"
+      "windowsMediaSession": "Windows Media Session",
+      "cider": "Cider App"
     },
     "closeButtonAction": {
       "exit": "Exit app",

@@ -4,7 +4,7 @@
 
 The widget is designed around four hard constraints:
 
-- official playback integrations only: YTMDesktop Companion or Windows Media Session
+- official playback integrations only: YTMDesktop Companion, Windows Media Session, or Cider's local API
 - polished always-on-top desktop widget UX
 - low idle overhead
 - easy future extension for more window modes, locales, and platforms
@@ -45,6 +45,7 @@ Responsibilities:
 
 - Real gateway: `src/integration/companion/realGateway.ts`
 - Windows Media gateway: `src/integration/windowsMedia/windowsMediaGateway.ts`
+- Cider gateway: `src/integration/cider/ciderGateway.ts`
 - Tauri invoke/event bridge: `src/integration/companion/tauriBridge.ts`
 - Simulator gateway: `src/integration/simulator/simulatorGateway.ts`
 
@@ -95,8 +96,10 @@ flowchart LR
   Gateway -->|simulator| Sim["Local simulator"]
   Product -->|Companion| Bridge["Tauri invoke/event bridge"]
   Product -->|Windows Media Session| Bridge
+  Product -->|Cider local API| Bridge
   Bridge --> Rust["Rust backend"]
   Rust --> Companion["YTMDesktop Companion Server API"]
+  Rust --> Cider["Cider 127.0.0.1:10767"]
   Rust --> WMSWorker["Lazy dedicated MTA worker"]
   WMSWorker --> WMS["Windows Global System Media Transport Controls"]
   Rust --> Storage["Keyring + settings JSON + Windows integration"]
@@ -160,6 +163,15 @@ Delivery status: tasks `0050` and `0051` corrected the worker/runtime and isolat
 9. Timeline values are normalized relative to `StartTime`, seek targets are clamped to `MinSeekTime`/`MaxSeekTime`, and polling waits 750 ms between unchanged snapshots rather than replaying missed async ticks in a burst.
 10. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
 11. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
+12. The first poll publishes an explicit empty state, and field-level metadata/timeline/playback/control failures retain safe previous/default values without invalidating manager access.
+
+## Cider flow
+
+1. `playbackSource: cider` selects a dedicated gateway; it is not inferred through WMS.
+2. Native discovery and REST calls are fixed to `http://127.0.0.1:10767`; remote/LAN endpoints are intentionally rejected by design.
+3. Settings accepts a Cider external-application token, validates it against `playback/now-playing`, and stores it in Windows Credential Manager under a Cider-specific account.
+4. The adapter fetches the initial `/api/v1/playback/now-playing` state, listens for Socket.IO `API:Playback` events, and maps bounded fields into the shared playback contract.
+5. Supported transport, seek, and rating actions use `/api/v1/playback/*`; mute remains disabled rather than guessing at a volume restore value.
 12. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
 13. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
 14. No WMS media data is persisted in version 3.1.0.

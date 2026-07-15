@@ -72,6 +72,7 @@ const model: AppModel = {
   generateAuthCode: vi.fn(resolvedAction),
   confirmAuthentication: vi.fn(resolvedAction),
   clearAuth: vi.fn(resolvedAction),
+  setCiderToken: vi.fn(resolvedAction),
   sendCommand: vi.fn(resolvedAction),
   openSettings: vi.fn(resolvedAction),
   closeWidget: vi.fn(resolvedAction),

@@ -1,4 +1,5 @@
 mod companion;
+mod cider;
 mod models;
 mod settings;
 mod startup;
@@ -27,6 +28,7 @@ use tauri_plugin_opener::OpenerExt;
 const REPOSITORY_URL: &str = "https://github.com/lgg/yt-desktop-widget";
 const COMPANION_EVENT: &str = "companion://event";
 const COMPANION_AUTH_CHANGED_EVENT: &str = "companion://auth-changed";
+const CIDER_AUTH_CHANGED_EVENT: &str = "cider://auth-changed";
 const SETTINGS_CHANGED_EVENT: &str = "app-settings://changed";
 const WINDOW_VISIBILITY_EVENT: &str = "app-window://visibility";
 const WINDOW_LABELS: [&str; 2] = ["main", "settings"];
@@ -44,6 +46,7 @@ const MCP_BRIDGE_BASE_PORT: u16 = 39223;
 pub struct AppState {
   settings: SettingsStore,
   companion: tokio::sync::Mutex<CompanionManager>,
+  cider: tokio::sync::Mutex<cider::CiderManager>,
   windows_media: tokio::sync::Mutex<windows_media::WindowsMediaManager>,
   quitting: AtomicBool,
   app_has_focused_window: AtomicBool,
@@ -56,6 +59,7 @@ impl AppState {
     Self {
       settings,
       companion: tokio::sync::Mutex::new(CompanionManager::default()),
+      cider: tokio::sync::Mutex::new(cider::CiderManager::default()),
       windows_media: tokio::sync::Mutex::new(windows_media::WindowsMediaManager::default()),
       quitting: AtomicBool::new(false),
       app_has_focused_window: AtomicBool::new(false),
@@ -289,6 +293,47 @@ async fn windows_media_send_command(
     windows_media::write_diagnostic(&app, "send_command", error.diagnostic.as_ref());
   }
   result
+}
+
+#[tauri::command]
+fn cider_has_auth() -> Result<bool, CommandError> { cider::has_token() }
+
+#[tauri::command]
+async fn cider_store_auth(app: AppHandle, token: String) -> Result<(), CommandError> {
+  cider::store_token(&token).await?;
+  let _ = app.emit(CIDER_AUTH_CHANGED_EVENT, CompanionAuthEvent { authorized: true });
+  Ok(())
+}
+
+#[tauri::command]
+async fn cider_clear_auth(app: AppHandle, state: tauri::State<'_, AppState>) -> Result<(), CommandError> {
+  cider::clear_token()?;
+  state.cider.lock().await.disconnect().await;
+  let _ = app.emit(CIDER_AUTH_CHANGED_EVENT, CompanionAuthEvent { authorized: false });
+  Ok(())
+}
+
+#[tauri::command]
+async fn cider_discover(state: tauri::State<'_, AppState>) -> Result<DiscoveryInfo, CommandError> {
+  Ok(state.cider.lock().await.discover().await)
+}
+
+#[tauri::command]
+async fn cider_connect(app: AppHandle, state: tauri::State<'_, AppState>) -> Result<CompanionConnectResponse, CommandError> {
+  let token = cider::load_token()?.ok_or_else(CommandError::auth_required)?;
+  state.cider.lock().await.connect(&app, &token).await
+}
+
+#[tauri::command]
+async fn cider_disconnect(state: tauri::State<'_, AppState>) -> Result<(), CommandError> {
+  state.cider.lock().await.disconnect().await;
+  Ok(())
+}
+
+#[tauri::command]
+async fn cider_send_command(state: tauri::State<'_, AppState>, command: PlaybackCommand) -> Result<(), CommandError> {
+  let token = cider::load_token()?.ok_or_else(CommandError::auth_required)?;
+  state.cider.lock().await.send_command(&token, &command).await
 }
 
 fn app_window(app: &AppHandle, label: &str) -> Result<WebviewWindow, CommandError> {
@@ -641,7 +686,14 @@ pub fn run() {
       windows_media_discover,
       windows_media_connect,
       windows_media_disconnect,
-      windows_media_send_command
+      windows_media_send_command,
+      cider_has_auth,
+      cider_store_auth,
+      cider_clear_auth,
+      cider_discover,
+      cider_connect,
+      cider_disconnect,
+      cider_send_command
     ])
     .run(tauri::generate_context!())
     .expect("error while running YTM Desktop Widget");

@@ -25,7 +25,7 @@ export type SettingsSectionId =
   | 'about';
 export type WidgetSizeMode = 'compact' | 'default' | 'large' | 'custom';
 export type DataSourceMode = 'auto' | 'real' | 'simulator';
-export type PlaybackSource = 'companion' | 'windowsMediaSession';
+export type PlaybackSource = 'companion' | 'windowsMediaSession' | 'cider';
 export type CloseButtonAction = 'exit' | 'hideToTray';
 export type ConnectionStatus =
   | 'disconnected'
@@ -276,7 +276,7 @@ export interface GatewayConnectResult {
 }
 
 export interface CompanionGateway {
-  readonly kind: 'real' | 'windowsMediaSession' | 'simulator';
+  readonly kind: 'real' | 'windowsMediaSession' | 'cider' | 'simulator';
   discover: () => Promise<DiscoveryInfo>;
   hasStoredAuth: () => Promise<boolean>;
   connect: (handlers: GatewayEventHandlers) => Promise<GatewayConnectResult>;

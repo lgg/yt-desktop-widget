@@ -90,6 +90,23 @@ fn should_load_artwork(previous: Option<&Value>, track_id: &str) -> bool {
   })
 }
 
+#[cfg(test)]
+fn resolve_optional_snapshot_field<T: Clone, E>(
+  candidate: Result<T, E>,
+  previous: Option<&T>,
+  fallback: T,
+) -> T {
+  candidate.unwrap_or_else(|_| previous.cloned().unwrap_or(fallback))
+}
+
+fn should_publish_poll_state(
+  previous: Option<&Value>,
+  next: Option<&Value>,
+  has_published_state: bool,
+) -> bool {
+  !has_published_state || previous != next
+}
+
 fn is_unsupported_command(command: &PlaybackCommand) -> bool {
   matches!(
     command,
@@ -158,8 +175,9 @@ mod platform {
 
   use super::{
     accepted_artwork_size, ensure_command_completed, normalize_timeline, safe_artwork_content_type,
-    seek_position_ticks, should_dispatch_command, should_load_artwork, truncate_metadata, CommandDiagnostic,
-    CommandError, CompanionConnectResponse, DiscoveryInfo, PlaybackCommand, Value, WINDOWS_MEDIA_EVENT,
+    seek_position_ticks, should_dispatch_command, should_load_artwork, should_publish_poll_state,
+    truncate_metadata, CommandDiagnostic, CommandError, CompanionConnectResponse, DiscoveryInfo,
+    PlaybackCommand, Value, WINDOWS_MEDIA_EVENT,
   };
   use crate::models::CompanionEvent;
 
@@ -321,51 +339,14 @@ mod platform {
   fn snapshot_for_session(
     session: &GlobalSystemMediaTransportControlsSession,
     previous: Option<&Value>,
-  ) -> Result<Value, CommandError> {
+  ) -> Value {
     let properties = session
       .TryGetMediaPropertiesAsync()
-      .map_err(|error| {
-        windows_error(
-          "snapshot.media_properties.request",
-          "Unable to request Windows media metadata",
-          error,
-        )
-      })?
-      .get()
-      .map_err(|error| {
-        windows_error(
-          "snapshot.media_properties.await",
-          "Unable to read Windows media metadata",
-          error,
-        )
-      })?;
-    let timeline = session
-      .GetTimelineProperties()
-      .map_err(|error| {
-        windows_error(
-          "snapshot.timeline",
-          "Unable to read Windows media timeline",
-          error,
-        )
-      })?;
-    let playback = session
-      .GetPlaybackInfo()
-      .map_err(|error| {
-        windows_error(
-          "snapshot.playback_info",
-          "Unable to read Windows playback state",
-          error,
-        )
-      })?;
-    let controls = playback
-      .Controls()
-      .map_err(|error| {
-        windows_error(
-          "snapshot.controls",
-          "Unable to read Windows media controls",
-          error,
-        )
-      })?;
+      .ok()
+      .and_then(|operation| operation.get().ok());
+    let timeline = session.GetTimelineProperties().ok();
+    let playback = session.GetPlaybackInfo().ok();
+    let controls = playback.as_ref().and_then(|value| value.Controls().ok());
 
     let source_app = truncate_metadata(
       session
@@ -373,61 +354,66 @@ mod platform {
         .map(|value| value.to_string())
         .unwrap_or_default(),
     );
-    let title = truncate_metadata(properties.Title().map(|value| value.to_string()).unwrap_or_default());
-    let artist = truncate_metadata(properties.Artist().map(|value| value.to_string()).unwrap_or_default());
-    let album = properties
-      .AlbumTitle()
-      .map(|value| truncate_metadata(value.to_string()))
-      .ok()
-      .filter(|value| !value.is_empty());
-    let start_ticks = timeline.StartTime().map(|value| value.Duration).unwrap_or(0);
-    let end_ticks = timeline.EndTime().map(|value| value.Duration).unwrap_or(start_ticks);
+    let previous_title = previous.and_then(|value| value["video"]["title"].as_str()).unwrap_or_default().to_string();
+    let previous_artist = previous.and_then(|value| value["video"]["author"].as_str()).unwrap_or_default().to_string();
+    let previous_album = previous.and_then(|value| value["video"]["album"].as_str()).map(ToOwned::to_owned);
+    let title = truncate_metadata(properties.as_ref().and_then(|value| value.Title().ok()).map(|value| value.to_string()).filter(|value| !value.is_empty()).unwrap_or(previous_title));
+    let artist = truncate_metadata(properties.as_ref().and_then(|value| value.Artist().ok()).map(|value| value.to_string()).filter(|value| !value.is_empty()).unwrap_or(previous_artist));
+    let album = properties.as_ref().and_then(|value| value.AlbumTitle().ok()).map(|value| truncate_metadata(value.to_string())).filter(|value| !value.is_empty()).or(previous_album);
+    let previous_duration = previous.and_then(|value| value["video"]["durationSeconds"].as_f64()).unwrap_or(0.0);
+    let previous_elapsed = previous.and_then(|value| value["player"]["videoProgress"].as_f64()).unwrap_or(0.0);
+    let start_ticks = timeline.as_ref().and_then(|value| value.StartTime().ok()).map(|value| value.Duration).unwrap_or(0);
+    let end_ticks = timeline.as_ref().and_then(|value| value.EndTime().ok()).map(|value| value.Duration).unwrap_or(start_ticks);
     let normalized_timeline = normalize_timeline(
       start_ticks,
       end_ticks,
-      timeline.Position().map(|value| value.Duration).unwrap_or(0),
+      timeline.as_ref().and_then(|value| value.Position().ok()).map(|value| value.Duration).unwrap_or(0),
       timeline
-        .MinSeekTime()
+        .as_ref()
+        .and_then(|value| value.MinSeekTime().ok())
         .map(|value| value.Duration)
         .unwrap_or(start_ticks),
-      timeline.MaxSeekTime().map(|value| value.Duration).unwrap_or(end_ticks),
+      timeline.as_ref().and_then(|value| value.MaxSeekTime().ok()).map(|value| value.Duration).unwrap_or(end_ticks),
     );
-    let duration_seconds = normalized_timeline.duration_seconds;
-    let elapsed_seconds = normalized_timeline.elapsed_seconds;
+    let duration_seconds = if timeline.is_some() { normalized_timeline.duration_seconds } else { previous_duration };
+    let elapsed_seconds = if timeline.is_some() { normalized_timeline.elapsed_seconds } else { previous_elapsed };
     let status = playback
-      .PlaybackStatus()
-      .unwrap_or(GlobalSystemMediaTransportControlsSessionPlaybackStatus::Closed);
-    let id = format!(
+      .as_ref()
+      .and_then(|value| value.PlaybackStatus().ok());
+    let track_state = status.map(playback_track_state).or_else(|| previous.and_then(|value| value["player"]["trackState"].as_i64()).map(|value| value as i32)).unwrap_or(-1);
+    let generated_id = format!(
       "wms:{}:{}:{}:{}:{}:{:.0}",
       source_app,
       title,
       artist,
       album.as_deref().unwrap_or_default(),
-      properties.TrackNumber().unwrap_or_default(),
+      properties.as_ref().and_then(|value| value.TrackNumber().ok()).unwrap_or_default(),
       duration_seconds
     );
+    let id = if properties.is_some() { generated_id } else { previous.and_then(|value| value["video"]["id"].as_str()).unwrap_or(&generated_id).to_string() };
     let cover_url = should_load_artwork(previous, &id)
-      .then(|| artwork_data_url(&properties))
+      .then(|| properties.as_ref().and_then(artwork_data_url))
       .flatten();
 
     let thumbnails = cover_url
       .map(|url| json!([{ "url": url, "width": 1, "height": 1 }]))
+      .or_else(|| previous.map(|value| value["video"]["thumbnails"].clone()))
       .unwrap_or_else(|| json!([]));
 
-    Ok(json!({
+    let previous_capability = |name: &str| previous.and_then(|value| value["capabilities"][name].as_bool()).unwrap_or(false);
+    let control = |read: Option<bool>, name: &str| read.unwrap_or_else(|| previous_capability(name));
+
+    json!({
       "capabilities": {
-        "canPlayPause": controls.IsPlayPauseToggleEnabled().unwrap_or(false)
-          || controls.IsPlayEnabled().unwrap_or(false)
-          || controls.IsPauseEnabled().unwrap_or(false),
-        "canGoPrevious": controls.IsPreviousEnabled().unwrap_or(false),
-        "canGoNext": controls.IsNextEnabled().unwrap_or(false),
-        "canSeek": controls.IsPlaybackPositionEnabled().unwrap_or(false)
-          && normalized_timeline.max_seek_ticks > normalized_timeline.min_seek_ticks,
+        "canPlayPause": control(controls.as_ref().map(|value| value.IsPlayPauseToggleEnabled().unwrap_or(false) || value.IsPlayEnabled().unwrap_or(false) || value.IsPauseEnabled().unwrap_or(false)), "canPlayPause"),
+        "canGoPrevious": control(controls.as_ref().map(|value| value.IsPreviousEnabled().unwrap_or(false)), "canGoPrevious"),
+        "canGoNext": control(controls.as_ref().map(|value| value.IsNextEnabled().unwrap_or(false)), "canGoNext"),
+        "canSeek": if timeline.is_some() { control(controls.as_ref().map(|value| value.IsPlaybackPositionEnabled().unwrap_or(false)), "canSeek") && normalized_timeline.max_seek_ticks > normalized_timeline.min_seek_ticks } else { previous_capability("canSeek") },
         "canMute": false,
         "canRate": false
       },
       "player": {
-        "trackState": playback_track_state(status),
+        "trackState": track_state,
         "videoProgress": elapsed_seconds,
         "volume": 100,
         "adPlaying": false
@@ -442,9 +428,9 @@ mod platform {
         "artworkResolved": true,
         "durationSeconds": duration_seconds,
         "isLive": duration_seconds <= 0.0,
-        "metadataFilled": true
+        "metadataFilled": !title.is_empty()
       }
-    }))
+    })
   }
 
   fn current_session(
@@ -468,7 +454,7 @@ mod platform {
     let Some(session) = current_session(manager)? else {
       return Ok(None);
     };
-    snapshot_for_session(&session, previous).map(Some)
+    Ok(Some(snapshot_for_session(&session, previous)))
   }
 
   fn request_manager() -> Result<GlobalSystemMediaTransportControlsSessionManager, CommandError> {
@@ -544,6 +530,7 @@ mod platform {
     connected: bool,
     app: Option<AppHandle>,
     previous_state: Option<Value>,
+    has_published_state: bool,
     poll_error_active: bool,
   }
 
@@ -555,6 +542,7 @@ mod platform {
         connected: false,
         app: None,
         previous_state: None,
+        has_published_state: false,
         poll_error_active: false,
       }
     }
@@ -624,6 +612,7 @@ mod platform {
       self.connected = true;
       self.app = Some(app);
       self.previous_state = initial_state;
+      self.has_published_state = false;
       self.poll_error_active = false;
       self.emit_status("socket_open", None, None);
     }
@@ -632,6 +621,7 @@ mod platform {
       self.connected = false;
       self.app = None;
       self.previous_state = None;
+      self.has_published_state = false;
       self.poll_error_active = false;
       self.manager = None;
     }
@@ -724,11 +714,12 @@ mod platform {
             self.poll_error_active = false;
             self.emit_status("socket_open", None, None);
           }
-          if next_state == previous_state {
+          if !should_publish_poll_state(previous_state.as_ref(), next_state.as_ref(), self.has_published_state) {
             self.previous_state = previous_state;
             return;
           }
           self.previous_state = next_state.clone();
+          self.has_published_state = true;
           self.emit(CompanionEvent::State {
             state: next_state.unwrap_or_else(|| json!({})),
           });
@@ -1095,8 +1086,9 @@ mod tests {
 
   use super::{
     accepted_artwork_size, ensure_command_completed, is_unsupported_command, normalize_timeline,
-    safe_artwork_content_type, seek_position_ticks, should_dispatch_command, should_load_artwork,
-    truncate_metadata, MAX_ARTWORK_BYTES, MAX_METADATA_CHARS, TICKS_PER_SECOND,
+    resolve_optional_snapshot_field, safe_artwork_content_type, seek_position_ticks,
+    should_dispatch_command, should_load_artwork, should_publish_poll_state, truncate_metadata,
+    MAX_ARTWORK_BYTES, MAX_METADATA_CHARS, TICKS_PER_SECOND,
   };
   use crate::models::PlaybackCommand;
 
@@ -1166,6 +1158,29 @@ mod tests {
     assert!(should_load_artwork(None, "wms:track-1"));
     assert!(!should_load_artwork(Some(&previous), "wms:track-1"));
     assert!(should_load_artwork(Some(&previous), "wms:track-2"));
+  }
+
+  #[test]
+  fn publishes_the_first_empty_poll_instead_of_leaving_the_ui_waiting() {
+    assert!(should_publish_poll_state(None, None, false));
+    assert!(!should_publish_poll_state(None, None, true));
+  }
+
+  #[test]
+  fn optional_snapshot_failures_keep_the_previous_field_value() {
+    let previous = "previous".to_string();
+    assert_eq!(
+      resolve_optional_snapshot_field::<String, ()>(Err(()), Some(&previous), "fallback".to_string()),
+      "previous"
+    );
+    assert_eq!(
+      resolve_optional_snapshot_field::<String, ()>(Err(()), None, "fallback".to_string()),
+      "fallback"
+    );
+    assert_eq!(
+      resolve_optional_snapshot_field::<String, ()>(Ok("fresh".to_string()), Some(&previous), "fallback".to_string()),
+      "fresh"
+    );
   }
 
   #[test]

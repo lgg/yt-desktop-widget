@@ -104,15 +104,16 @@ export const WidgetWindow = () => {
   const windowsMediaSessionActive =
     resolvedSourceMode === 'real' &&
     settings.api.playbackSource === 'windowsMediaSession';
-  const activePlaybackSource = windowsMediaSessionActive
-    ? 'windowsMediaSession'
-    : 'companion';
+  const ciderActive = resolvedSourceMode === 'real' && settings.api.playbackSource === 'cider';
+  const activePlaybackSource = windowsMediaSessionActive ? 'windowsMediaSession' : ciderActive ? 'cider' : 'companion';
   const sourceStateKey = (
     state: 'discovering' | 'disconnected' | 'reconnecting' | 'error' | 'empty',
     field: 'eyebrow' | 'title' | 'body',
   ) =>
     windowsMediaSessionActive
       ? `widget.windowsMediaStates.${state}.${field}`
+      : ciderActive
+        ? `widget.ciderStates.${state}.${field}`
       : `widget.states.${state}.${field}`;
   const connectionMessage = getConnectionMessage(
     t,

@@ -84,4 +84,15 @@ export const tauriBridge = {
     listen<WindowsMediaEventPayload>('windows-media://event', (event) => {
       handler(event.payload);
     }),
+  ciderHasAuth: () => invoke<boolean>('cider_has_auth'),
+  ciderStoreAuth: (token: string) => invoke<void>('cider_store_auth', { token }),
+  ciderClearAuth: () => invoke<void>('cider_clear_auth'),
+  ciderDiscover: () => invoke<DiscoveryInfo>('cider_discover'),
+  ciderConnect: () => invoke<CompanionConnectResponse>('cider_connect'),
+  ciderDisconnect: () => invoke<void>('cider_disconnect'),
+  ciderSendCommand: (command: PlaybackCommand) => invoke<void>('cider_send_command', { command }),
+  listenToCiderEvents: (handler: (payload: WindowsMediaEventPayload) => void) =>
+    listen<WindowsMediaEventPayload>('cider://event', (event) => handler(event.payload)),
+  listenToCiderAuthChanges: (handler: (payload: CompanionAuthEventPayload) => void) =>
+    listen<CompanionAuthEventPayload>('cider://auth-changed', (event) => handler(event.payload)),
 };

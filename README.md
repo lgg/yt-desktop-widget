@@ -1,6 +1,6 @@
 # YTM Desktop Widget
 
-A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop through its Companion API and contains an optional Windows Media Session integration for compatible players.
+A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop Companion, Windows Media Session, and Cider's official local API as separate playback sources.
 
 Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, bootstrap-sync status, time tracking, and markdown project-tracking rules.
 
@@ -9,7 +9,7 @@ The app never scrapes player UI, injects scripts, parses window titles, or uses 
 ## What it does
 
 - Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
-- Provides a first-class playback-source selector: full YTMDesktop Companion integration or the current Windows Media Session published by a compatible player such as Apple Music, Spotify, or Yandex Music. The unpackaged portable WMS runtime works in a normal interactive Windows user session and does not require MSIX installation.
+- Provides a first-class playback-source selector: YTMDesktop Companion, the current Windows Media Session, or a dedicated Cider adapter.
 - Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
 - Persists window position, always-on-top, launch-on-startup, and display preferences.
 - Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
@@ -80,7 +80,7 @@ The real client is written so any unconfirmed response-shape differences are iso
 
 ## Windows Media Session mode
 
-Version 3.1.0 contains a source adapter that can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player.
+Version 3.1.0 contains a source adapter that can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player. The first poll always publishes either a snapshot or an explicit empty state. Metadata, timeline, playback-info, and controls reads are best-effort independently, so one unavailable field cannot discard a healthy manager or create reconnect churn.
 
 The portable runtime creates one lazy, long-lived MTA worker and performs manager discovery, session reads, polling, artwork reads, and playback commands only on that worker. Blocking WinRT futures do not run on arbitrary Tokio threads. Connection setup establishes manager access first and does not wait for a complete metadata/timeline/artwork snapshot; the current session is then read by the worker poll. A transient track/session change therefore cannot leave the frontend stuck in `Waiting`, and a failed poll discards the stale manager before the next bounded reacquisition attempt. Safe runtime status events retain only the failing stage, HRESULT, and category.
 
@@ -149,6 +149,7 @@ The first Settings section stores the user-facing production source:
 
 - `YTMDesktop Companion` (default and migration-safe): full Companion auth, realtime, mute, Like, and Dislike behavior
 - `Windows Media Session`: current Windows-selected compatible player session without pairing
+- `Cider App`: loopback-only `127.0.0.1:10767` adapter using Cider WebSockets (`API:Playback`) and `/api/v1/playback/*`; enable WebSockets and create an application token under Manage External Application Access to Cider. The token is validated natively and stored only in Windows Credential Manager.
 
 Development builds retain three internal runtime modes:
 
@@ -225,6 +226,7 @@ Beads was removed as the active tracker. Its full migration archive is preserved
 ## Auth and storage
 
 - Companion tokens are stored through the Rust `keyring` crate with its `windows-native` backend, which maps to Windows Credential Manager.
+- Cider application tokens use a separate Windows Credential Manager entry and never enter `settings.json`, frontend storage, or logs. The Cider endpoint is intentionally fixed to loopback for this release.
 - Fresh Companion tokens are accepted into the keyring only after an authenticated state request succeeds.
 - Token writes are read back through a new keyring entry before the backend reports authorization success.
 - `Stored securely` is derived only from a successful backend credential probe; the frontend never synthesizes this state.
