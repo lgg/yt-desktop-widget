@@ -531,7 +531,7 @@ export class PlaybackController {
         return;
       }
 
-      if (!hasStoredAuth && this.gateway.kind === 'real') {
+      if (!hasStoredAuth && (this.gateway.kind === 'real' || this.gateway.kind === 'cider')) {
         if (options.requireStoredAuth) {
           this.patchConnection((state) =>
             reduceConnectionState(state, {

@@ -127,6 +127,13 @@
         "body": "Запустите воспроизведение в совместимом приложении Windows."
       }
     },
+    "ciderStates": {
+      "discovering": { "eyebrow": "Cider", "title": "Поиск Cider", "body": "Проверяется официальный локальный API Cider на 127.0.0.1:10767." },
+      "disconnected": { "eyebrow": "Cider", "title": "Cider недоступен", "body": "Запустите Cider и включите WebSockets в разделе Connectivity." },
+      "reconnecting": { "eyebrow": "Cider", "title": "Переподключение к Cider", "body": "Виджет восстанавливает локальное realtime-соединение." },
+      "error": { "eyebrow": "Cider", "title": "Cider требует внимания", "body": "Проверьте WebSockets и токен внешнего приложения в Cider." },
+      "empty": { "eyebrow": "Cider", "title": "Ничего не воспроизводится", "body": "Запустите трек в Cider." }
+    },
     "auth": {
       "generate": "Создать код",
       "confirm": "Подтвердить в YTMDesktop",
@@ -154,6 +161,11 @@
         "mode": "Источник воспроизведения",
         "companionDescription": "Использовать YTMDesktop Companion с полным набором функций, включая авторизацию, отключение звука и отметки нравится / не нравится.",
         "windowsMediaSessionDescription": "Следовать за текущей медиасессией Windows совместимого проигрывателя, например Apple Music, Spotify или Яндекс Музыки.",
+        "ciderDescription": "Использовать официальный локальный WebSockets API Cider. Включите WebSockets и создайте токен в Manage External Application Access to Cider.",
+        "ciderToken": "Токен приложения Cider",
+        "ciderTokenPlaceholder": "Вставьте токен из Cider",
+        "ciderTokenInvalid": "Cider отклонил токен или локальный API недоступен.",
+        "ciderSaveToken": "Безопасно сохранить",
         "windowsMediaLimitations": "В режиме Windows Media Session функции нравится, не нравится и отключения звука недоступны и безопасно игнорируются. Доступные команды воспроизведения зависят от текущего проигрывателя.",
         "diagnostic": "Техническая диагностика: {{stage}} · {{hresult}} · {{category}}",
         "diagnosticUnavailable": "недоступно"
@@ -246,6 +258,7 @@
       "pair": "Создать код",
       "confirmPair": "Подтвердить подключение",
       "clearAuth": "Удалить авторизацию",
+      "clearCiderToken": "Удалить токен Cider",
       "openRepo": "yt-desktop-widget",
       "runDebugMockMode": "Запустить отладочный mock-режим",
       "stopDebugMockMode": "Остановить отладочный mock-режим",
@@ -297,7 +310,8 @@
     },
     "playbackSource": {
       "companion": "YTMDesktop Companion",
-      "windowsMediaSession": "Медиасессия Windows"
+      "windowsMediaSession": "Медиасессия Windows",
+      "cider": "Cider App"
     },
     "closeButtonAction": {
       "exit": "Выйти из приложения",

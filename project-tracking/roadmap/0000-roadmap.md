@@ -8,14 +8,16 @@ This roadmap is the top-level planning document for the YTM Desktop Widget proje
 
 - Source migrated from Beads export: `project-tracking/archive/beads-export-2026-07-05.jsonl`
 - Migrated Beads issues: 15
-- Total tracked tasks: 52
+- Total tracked tasks: 53
 - Open: 0
 - In progress: 0
 - Blocked: 0
 - Deferred: 7
-- Completed: 45
+- Completed: 46
 
 ## Current Stabilization Work
+
+- Completed P1: Fix Windows Media and add a Cider adapter - [`0053-fix-windows-media-and-add-cider-adapter.md`](../tasks/0053-fix-windows-media-and-add-cider-adapter.md) - fixes first-empty/partial WMS snapshots and adds a loopback-only, keyring-backed Cider source.
 
 - Completed P1: Fix live Windows Media Session snapshot failure - [`0052-fix-live-windows-media-session-snapshot-failure.md`](../tasks/0052-fix-live-windows-media-session-snapshot-failure.md) - decouples manager attach from the initial snapshot, reacquires after transient poll failures, preserves live diagnostics end to end, passes full verification, and produces a fresh healthy WMS-selected portable build.
 - Completed P1: Diagnose unpackaged Windows Media access - [`0051-diagnose-unpackaged-windows-media-access.md`](../tasks/0051-diagnose-unpackaged-windows-media-access.md) - proved the same unpackaged WMS probe fails only under the restricted Codex sandbox and succeeds against active Apple Music in the normal interactive user session, then added localized direct-launch recovery, safe rotating diagnostics, regressions, and a fresh portable artifact.

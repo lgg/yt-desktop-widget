@@ -126,7 +126,7 @@ export const normalizeSettings = (value: unknown): AppSettings => {
       ),
       playbackSource: enumOr<PlaybackSource>(
         api.playbackSource,
-        ['companion', 'windowsMediaSession'],
+        ['companion', 'windowsMediaSession', 'cider'],
         DEFAULT_SETTINGS.api.playbackSource,
       ),
     },

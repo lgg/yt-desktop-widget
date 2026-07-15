@@ -36,6 +36,7 @@ import { createRealGateway } from '@/integration/companion/realGateway';
 import { tauriBridge } from '@/integration/companion/tauriBridge';
 import { createSimulatorGateway } from '@/integration/simulator/simulatorGateway';
 import { createWindowsMediaGateway } from '@/integration/windowsMedia/windowsMediaGateway';
+import { createCiderGateway } from '@/integration/cider/ciderGateway';
 import { isTauriRuntime } from '@/utils/runtime';
 
 export interface AppModel {
@@ -50,6 +51,7 @@ export interface AppModel {
   generateAuthCode: () => Promise<void>;
   confirmAuthentication: () => Promise<void>;
   clearAuth: () => Promise<void>;
+  setCiderToken: (token: string) => Promise<void>;
   sendCommand: (command: PlaybackCommand) => Promise<void>;
   openSettings: () => Promise<void>;
   closeWidget: () => Promise<void>;
@@ -73,6 +75,7 @@ const AppContext = createContext<AppModel>({
   generateAuthCode: async () => Promise.resolve(),
   confirmAuthentication: async () => Promise.resolve(),
   clearAuth: async () => Promise.resolve(),
+  setCiderToken: async () => Promise.resolve(),
   sendCommand: async () => Promise.resolve(),
   openSettings: async () => Promise.resolve(),
   closeWidget: async () => Promise.resolve(),
@@ -198,9 +201,9 @@ const resolveGatewayKind = (
     return 'simulator';
   }
 
-  return playbackSource === 'windowsMediaSession'
-    ? 'windowsMediaSession'
-    : 'real';
+  if (playbackSource === 'windowsMediaSession') return 'windowsMediaSession';
+  if (playbackSource === 'cider') return 'cider';
+  return 'real';
 };
 
 export const AppProvider = ({
@@ -353,6 +356,16 @@ export const AppProvider = ({
   }, [ready, resolvedGatewayKind, resolvedSourceMode, windowLabel]);
 
   useEffect(() => {
+    if (!ready || windowLabel !== 'main' || resolvedSourceMode !== 'real' || resolvedGatewayKind !== 'cider' || !isTauriRuntime()) return undefined;
+    let active = true;
+    let unlisten: (() => void) | null = null;
+    void tauriBridge.listenToCiderAuthChanges((payload) => {
+      if (active) void controllerRef.current?.handleExternalAuthChanged(payload.authorized);
+    }).then((next) => { if (active) unlisten = next; else next(); }).catch(() => undefined);
+    return () => { active = false; unlisten?.(); };
+  }, [ready, resolvedGatewayKind, resolvedSourceMode, windowLabel]);
+
+  useEffect(() => {
     if (windowLabel !== 'settings' || !isTauriRuntime()) {
       setWindowVisible(true);
       return undefined;
@@ -426,7 +439,9 @@ export const AppProvider = ({
         ? createRealGateway()
         : resolvedGatewayKind === 'windowsMediaSession'
           ? createWindowsMediaGateway()
-          : createSimulatorGateway();
+          : resolvedGatewayKind === 'cider'
+            ? createCiderGateway()
+            : createSimulatorGateway();
     const controller = new PlaybackController(gateway);
     controllerRef.current = controller;
 
@@ -546,6 +561,10 @@ export const AppProvider = ({
         confirmAuthentication: async () =>
           controllerRef.current?.completeAuthentication(),
         clearAuth: async () => controllerRef.current?.clearAuth(),
+        setCiderToken: async (token) => {
+          await tauriBridge.ciderStoreAuth(token);
+          await controllerRef.current?.reconnectNow();
+        },
         sendCommand: async (command) =>
           controllerRef.current?.sendCommand(command),
         openSettings,
