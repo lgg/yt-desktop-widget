@@ -23,8 +23,41 @@ const translateConnectionMessage = (
         return t('windowsMediaConnectionMessages.socketClosed');
       case 'unexpected':
         return t('windowsMediaConnectionMessages.unexpected');
-      default:
-        break;
+      case 'authCodeReady':
+      case 'authFailed':
+      case 'authRequired':
+      case 'storedAuthRejected':
+      case 'credentialNotPersisted':
+      case 'credentialStorage':
+      case 'authorizationDisabled':
+        return t('windowsMediaConnectionMessages.unexpected');
+    }
+  }
+
+  if (playbackSource === 'cider') {
+    switch (key) {
+      case 'authCodeReady':
+      case 'authRequired':
+        return t('ciderConnectionMessages.authRequired');
+      case 'authFailed':
+      case 'storedAuthRejected':
+        return t('ciderConnectionMessages.storedAuthRejected');
+      case 'credentialNotPersisted':
+        return t('ciderConnectionMessages.credentialNotPersisted');
+      case 'credentialStorage':
+        return t('ciderConnectionMessages.credentialStorage');
+      case 'authorizationDisabled':
+        return t('ciderConnectionMessages.apiUnavailable');
+      case 'notRunning':
+        return t('ciderConnectionMessages.notRunning');
+      case 'apiUnavailable':
+        return t('ciderConnectionMessages.apiUnavailable');
+      case 'socketError':
+        return t('ciderConnectionMessages.socketError');
+      case 'socketClosed':
+        return t('ciderConnectionMessages.socketClosed');
+      case 'unexpected':
+        return t('ciderConnectionMessages.unexpected');
     }
   }
 

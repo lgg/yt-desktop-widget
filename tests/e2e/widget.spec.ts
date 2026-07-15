@@ -592,7 +592,10 @@ test('persists v3 block controls and sends mute and rating actions', async ({
   ]);
 
   await page.getByRole('button', { name: 'Mute' }).click();
-  await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible();
+  const unmute = page.getByRole('button', { name: 'Unmute' });
+  await expect(unmute).toBeVisible();
+  await unmute.click();
+  await expect(page.getByRole('button', { name: 'Mute' })).toBeVisible();
   const like = page.getByRole('button', { name: 'Like', exact: true });
   await like.click();
   await expect(like).toHaveAttribute('aria-pressed', 'true');

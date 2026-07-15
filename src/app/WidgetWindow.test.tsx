@@ -403,7 +403,7 @@ describe('WidgetWindow', () => {
     expect(screen.queryByText(/YTMDesktop/i)).not.toBeInTheDocument();
   });
 
-  it('keeps visible rating and mute controls safely disabled when the source lacks capabilities', () => {
+  it('keeps unsupported rating controls disabled and omits unsupported mute', () => {
     const model = createConnectedModel({
       likeDislikeVisibility: 'always',
       muteButtonVisibility: 'always',
@@ -420,17 +420,62 @@ describe('WidgetWindow', () => {
       </I18nProvider>,
     );
 
-    const mute = screen.getByRole('button', { name: 'Mute' });
     const like = screen.getByRole('button', { name: 'Like' });
     const dislike = screen.getByRole('button', { name: 'Dislike' });
-    expect(mute).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Mute' }),
+    ).not.toBeInTheDocument();
     expect(like).toBeDisabled();
     expect(dislike).toBeDisabled();
 
-    fireEvent.click(mute);
     fireEvent.click(like);
     fireEvent.click(dislike);
     expect(model.sendCommand).not.toHaveBeenCalled();
+  });
+
+  it('never reveals hover-only mute when the active source lacks mute capability', () => {
+    const model = createConnectedModel({ muteButtonVisibility: 'hover' });
+    model.settings.api.sourceMode = 'real';
+    model.settings.api.playbackSource = 'cider';
+    model.resolvedSourceMode = 'real';
+    if (model.session.playback) {
+      model.session.playback.canMute = false;
+    }
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    fireEvent.pointerEnter(
+      document.querySelector('.widget-window') as HTMLElement,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Mute' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('reveals supported hover-only mute only inside the interaction boundary', () => {
+    const model = createConnectedModel({ muteButtonVisibility: 'hover' });
+    mockUseAppModel.mockReturnValue(model);
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    const widget = document.querySelector('.widget-window') as HTMLElement;
+    expect(
+      screen.queryByRole('button', { name: 'Mute' }),
+    ).not.toBeInTheDocument();
+    fireEvent.pointerEnter(widget);
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeVisible();
+    fireEvent.pointerLeave(widget);
+    expect(
+      screen.queryByRole('button', { name: 'Mute' }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders dynamic-hover blocks only inside the active pointer boundary', () => {
@@ -1102,6 +1147,105 @@ describe('WidgetWindow', () => {
     expect(
       screen.getByRole('button', { name: 'Confirm in YTMDesktop' }),
     ).toBeInTheDocument();
+  });
+
+  it('renders Cider token recovery without Companion pairing actions', () => {
+    const model = createConnectedModel();
+    model.settings.api.sourceMode = 'real';
+    model.settings.api.playbackSource = 'cider';
+    model.resolvedSourceMode = 'real';
+    model.session.connection = {
+      status: 'auth_required',
+      hasStoredAuth: false,
+      retryAttempt: 0,
+      retryAt: null,
+      messageKey: 'authRequired',
+    };
+    model.session.playback = null;
+    model.session.lastKnownPlayback = null;
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByText('Cider application token required'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Open Settings and save a token created in Cider/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Authorize this widget')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Generate code' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Open settings', { selector: 'button' }));
+    expect(model.openSettings).toHaveBeenCalledOnce();
+    expect(model.generateAuthCode).not.toHaveBeenCalled();
+  });
+
+  it('opens Settings for a rejected stored Cider token', () => {
+    const model = createConnectedModel();
+    model.settings.api.sourceMode = 'real';
+    model.settings.api.playbackSource = 'cider';
+    model.resolvedSourceMode = 'real';
+    model.session.connection = {
+      status: 'error',
+      hasStoredAuth: true,
+      retryAttempt: 0,
+      retryAt: null,
+      messageKey: 'storedAuthRejected',
+    };
+    model.session.playback = null;
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByText(/Cider rejected the stored application token/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Open settings', { selector: 'button' }));
+    expect(model.openSettings).toHaveBeenCalledOnce();
+    expect(model.reconnect).not.toHaveBeenCalled();
+  });
+
+  it('never exposes Companion pairing for Windows Media Session state', () => {
+    const model = createConnectedModel();
+    model.settings.api.sourceMode = 'real';
+    model.settings.api.playbackSource = 'windowsMediaSession';
+    model.resolvedSourceMode = 'real';
+    model.session.connection = {
+      status: 'auth_required',
+      hasStoredAuth: false,
+      retryAttempt: 0,
+      retryAt: null,
+      messageKey: 'authRequired',
+    };
+    model.session.playback = null;
+    mockUseAppModel.mockReturnValue(model);
+
+    render(
+      <I18nProvider>
+        <WidgetWindow />
+      </I18nProvider>,
+    );
+
+    expect(
+      screen.getByText('The media session needs attention'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/YTMDesktop/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Generate code' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+    expect(model.reconnect).toHaveBeenCalledOnce();
   });
 
   it('localizes a connection problem without rendering raw native details', () => {

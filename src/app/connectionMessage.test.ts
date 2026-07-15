@@ -39,4 +39,64 @@ describe('getConnectionMessage', () => {
 
     expect(message).toBe('windowsMediaConnectionMessages.accessDenied');
   });
+
+  it('uses Cider token guidance instead of Companion pairing copy', () => {
+    const message = getConnectionMessage(
+      (key) => key,
+      {
+        status: 'auth_required',
+        hasStoredAuth: false,
+        retryAttempt: 0,
+        retryAt: null,
+        messageKey: 'authRequired',
+      },
+      'cider',
+    );
+
+    expect(message).toBe('ciderConnectionMessages.authRequired');
+  });
+
+  it.each([
+    ['storedAuthRejected', 'storedAuthRejected'],
+    ['credentialNotPersisted', 'credentialNotPersisted'],
+    ['credentialStorage', 'credentialStorage'],
+    ['notRunning', 'notRunning'],
+    ['apiUnavailable', 'apiUnavailable'],
+    ['socketError', 'socketError'],
+    ['socketClosed', 'socketClosed'],
+    ['unexpected', 'unexpected'],
+  ] as const)(
+    'keeps Cider %s recovery inside the Cider message namespace',
+    (messageKey, expectedKey) => {
+      const message = getConnectionMessage(
+        (key) => key,
+        {
+          status: 'error',
+          hasStoredAuth: messageKey === 'storedAuthRejected',
+          retryAttempt: 0,
+          retryAt: null,
+          messageKey,
+        },
+        'cider',
+      );
+
+      expect(message).toBe(`ciderConnectionMessages.${expectedKey}`);
+    },
+  );
+
+  it('never falls back to Companion auth copy for Windows Media Session', () => {
+    const message = getConnectionMessage(
+      (key) => key,
+      {
+        status: 'auth_required',
+        hasStoredAuth: false,
+        retryAttempt: 0,
+        retryAt: null,
+        messageKey: 'authRequired',
+      },
+      'windowsMediaSession',
+    );
+
+    expect(message).toBe('windowsMediaConnectionMessages.unexpected');
+  });
 });
