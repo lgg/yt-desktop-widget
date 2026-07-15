@@ -422,6 +422,41 @@ describe('SettingsWindow UI display preferences', () => {
     expect(recipe?.(model.settings).ui.muteButtonVisibility).toBe('hover');
   });
 
+  it('explains and disables unsupported mute modes for Windows Media Session', () => {
+    const previousSource = model.settings.api.playbackSource;
+    const previousSourceMode = model.settings.api.sourceMode;
+    const previousResolvedSourceMode = model.resolvedSourceMode;
+    model.settings.api.playbackSource = 'windowsMediaSession';
+    model.settings.api.sourceMode = 'real';
+    model.resolvedSourceMode = 'real';
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(
+        screen.getByText(/GSMTC does not publish mute or volume controls/i),
+      ).toBeInTheDocument();
+      const group = screen.getByRole('group', { name: 'Mute button' });
+      expect(
+        within(group).getByRole('button', { name: 'Always' }),
+      ).toBeDisabled();
+      expect(
+        within(group).getByRole('button', { name: 'On hover' }),
+      ).toBeDisabled();
+      expect(
+        within(group).getByRole('button', { name: 'Hidden' }),
+      ).not.toBeDisabled();
+    } finally {
+      model.settings.api.playbackSource = previousSource;
+      model.settings.api.sourceMode = previousSourceMode;
+      model.resolvedSourceMode = previousResolvedSourceMode;
+    }
+  });
+
   it('presents Settings and Close button visibility as two-choice segmented controls', () => {
     updateSettings.mockClear();
     render(

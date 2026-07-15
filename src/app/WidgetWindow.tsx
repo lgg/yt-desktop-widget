@@ -104,8 +104,13 @@ export const WidgetWindow = () => {
   const windowsMediaSessionActive =
     resolvedSourceMode === 'real' &&
     settings.api.playbackSource === 'windowsMediaSession';
-  const ciderActive = resolvedSourceMode === 'real' && settings.api.playbackSource === 'cider';
-  const activePlaybackSource = windowsMediaSessionActive ? 'windowsMediaSession' : ciderActive ? 'cider' : 'companion';
+  const ciderActive =
+    resolvedSourceMode === 'real' && settings.api.playbackSource === 'cider';
+  const activePlaybackSource = windowsMediaSessionActive
+    ? 'windowsMediaSession'
+    : ciderActive
+      ? 'cider'
+      : 'companion';
   const sourceStateKey = (
     state: 'discovering' | 'disconnected' | 'reconnecting' | 'error' | 'empty',
     field: 'eyebrow' | 'title' | 'body',
@@ -114,7 +119,7 @@ export const WidgetWindow = () => {
       ? `widget.windowsMediaStates.${state}.${field}`
       : ciderActive
         ? `widget.ciderStates.${state}.${field}`
-      : `widget.states.${state}.${field}`;
+        : `widget.states.${state}.${field}`;
   const connectionMessage = getConnectionMessage(
     t,
     session.connection,
@@ -635,12 +640,13 @@ export const WidgetWindow = () => {
                 <button
                   className={
                     muteButtonVisible
-                      ? 'icon-button widget-window__window-action widget-window__window-action--visible'
-                      : 'icon-button widget-window__window-action'
+                      ? 'icon-button widget-window__window-action widget-window__mute-action widget-window__window-action--visible'
+                      : 'icon-button widget-window__window-action widget-window__mute-action'
                   }
                   type="button"
-                  disabled={!canSendCommands || !muteButtonVisible}
+                  disabled={!canSendCommands}
                   aria-hidden={!muteButtonVisible}
+                  tabIndex={muteButtonVisible ? 0 : -1}
                   aria-label={
                     playback.isMuted
                       ? t('widget.actions.unmute')

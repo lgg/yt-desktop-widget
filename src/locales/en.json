@@ -139,12 +139,36 @@
       }
     },
     "ciderStates": {
-      "discovering": { "eyebrow": "Cider", "title": "Finding Cider", "body": "Checking the official local Cider API on 127.0.0.1:10767." },
-      "disconnected": { "eyebrow": "Cider", "title": "Cider is unavailable", "body": "Start Cider and enable WebSockets in Connectivity." },
-      "auth_required": { "eyebrow": "Cider access", "title": "Cider application token required", "body": "Open Settings and save a token created in Cider under Manage External Application Access." },
-      "reconnecting": { "eyebrow": "Cider", "title": "Reconnecting to Cider", "body": "The widget is restoring the local realtime connection." },
-      "error": { "eyebrow": "Cider", "title": "Cider needs attention", "body": "Check WebSockets and the external application token in Cider." },
-      "empty": { "eyebrow": "Cider", "title": "Nothing is playing", "body": "Start a track in Cider." }
+      "discovering": {
+        "eyebrow": "Cider",
+        "title": "Finding Cider",
+        "body": "Checking the official local Cider API on 127.0.0.1:10767."
+      },
+      "disconnected": {
+        "eyebrow": "Cider",
+        "title": "Cider is unavailable",
+        "body": "Start Cider and enable WebSockets in Connectivity."
+      },
+      "auth_required": {
+        "eyebrow": "Cider access",
+        "title": "Cider application token required",
+        "body": "Open Settings and save a token created in Cider under Manage External Application Access."
+      },
+      "reconnecting": {
+        "eyebrow": "Cider",
+        "title": "Reconnecting to Cider",
+        "body": "The widget is restoring the local realtime connection."
+      },
+      "error": {
+        "eyebrow": "Cider",
+        "title": "Cider needs attention",
+        "body": "Check WebSockets and the external application token in Cider."
+      },
+      "empty": {
+        "eyebrow": "Cider",
+        "title": "Nothing is playing",
+        "body": "Start a track in Cider."
+      }
     },
     "auth": {
       "generate": "Generate code",
@@ -204,7 +228,9 @@
         "connectionBadgeVisibility": "Connection status badge",
         "connectionBadgeVisibilityDescription": "Choose whether the LIVE status stays visible, appears only on hover, or remains fully hidden.",
         "muteButtonVisibility": "Mute button",
-        "muteButtonVisibilityDescription": "Show a mute shortcut without changing or storing the volume level. Unmute restores the level owned by YTMDesktop.",
+        "muteButtonVisibilityDescription": "Show a mute shortcut when the active adapter supports it. YTMDesktop keeps the current volume and restores it through its official unmute command.",
+        "muteButtonVisibilityDescriptionWindowsMedia": "Unavailable for Windows Media Session: GSMTC does not publish mute or volume controls. This preference stays saved for supported adapters.",
+        "muteButtonVisibilityDescriptionCider": "Unavailable for Cider: the current local API adapter does not expose mute or unmute. This preference stays saved for supported adapters.",
         "hideSettingsButton": "Settings button",
         "hideSettingsButtonDescription": "Choose whether the settings button stays visible or appears only while hovering over the widget.",
         "hideCloseButton": "Close button",

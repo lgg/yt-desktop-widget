@@ -264,6 +264,8 @@ export class PlaybackController {
   private authCode: string | null = null;
   private authCompletionCode: string | null = null;
   private authCompletionPromise: Promise<void> | null = null;
+  private companionMuteOverride: boolean | null = null;
+  private companionMuteReferenceVolume: number | null = null;
 
   constructor(private readonly gateway: CompanionGateway) {}
 
@@ -355,7 +357,32 @@ export class PlaybackController {
   }
 
   async sendCommand(command: PlaybackCommand) {
-    await this.connection?.send(command);
+    const connection = this.connection;
+    if (!connection) {
+      return;
+    }
+
+    await connection.send(command);
+    if (
+      this.disposed ||
+      connection !== this.connection ||
+      this.gateway.kind !== 'real' ||
+      (command.type !== 'mute' && command.type !== 'unmute')
+    ) {
+      return;
+    }
+
+    const playback = this.state.playback;
+    if (!playback?.canMute) {
+      return;
+    }
+
+    this.companionMuteOverride = command.type === 'mute';
+    this.companionMuteReferenceVolume = playback.volume;
+    this.publishPlayback({
+      ...playback,
+      isMuted: this.companionMuteOverride,
+    });
   }
 
   async dispose(options: DisposeOptions = {}) {
@@ -453,7 +480,31 @@ export class PlaybackController {
   }
 
   private patchPlayback(rawState: Parameters<typeof mapCompanionState>[0]) {
-    const playback = mapCompanionState(rawState, this.state.lastKnownPlayback);
+    let playback = mapCompanionState(rawState, this.state.lastKnownPlayback);
+    if (
+      playback &&
+      this.gateway.kind === 'real' &&
+      this.companionMuteOverride !== null
+    ) {
+      const volumeChangedExternally =
+        this.companionMuteReferenceVolume !== null &&
+        playback.volume !== this.companionMuteReferenceVolume;
+
+      if (volumeChangedExternally) {
+        this.companionMuteOverride = null;
+        this.companionMuteReferenceVolume = null;
+      } else {
+        playback = {
+          ...playback,
+          isMuted: this.companionMuteOverride,
+        };
+      }
+    }
+
+    this.publishPlayback(playback);
+  }
+
+  private publishPlayback(playback: PlaybackSnapshot | null) {
     if (!shouldPublishPlayback(this.state.playback, playback)) {
       return;
     }
@@ -472,6 +523,11 @@ export class PlaybackController {
   ) {
     if (this.disposed) {
       return;
+    }
+
+    if (this.gateway.kind === 'real') {
+      this.companionMuteOverride = null;
+      this.companionMuteReferenceVolume = null;
     }
 
     this.clearReconnectTimer();
@@ -531,7 +587,10 @@ export class PlaybackController {
         return;
       }
 
-      if (!hasStoredAuth && (this.gateway.kind === 'real' || this.gateway.kind === 'cider')) {
+      if (
+        !hasStoredAuth &&
+        (this.gateway.kind === 'real' || this.gateway.kind === 'cider')
+      ) {
         if (options.requireStoredAuth) {
           this.patchConnection((state) =>
             reduceConnectionState(state, {

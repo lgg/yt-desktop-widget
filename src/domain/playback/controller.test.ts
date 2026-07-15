@@ -196,6 +196,106 @@ describe('PlaybackController', () => {
     vi.useRealTimers();
   });
 
+  it('keeps Companion mute state locally until official unmute restores the player', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const send = vi.fn(() => Promise.resolve());
+    const initialState: CompanionRawState = {
+      ...makeRawState(25),
+      player: {
+        ...makeRawState(25).player,
+        volume: 37,
+      },
+    };
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send,
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState,
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    await controller.sendCommand({ type: 'mute' });
+
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 37,
+      isMuted: true,
+    });
+
+    onState(initialState);
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 37,
+      isMuted: true,
+    });
+
+    await controller.sendCommand({ type: 'unmute' });
+    expect(send).toHaveBeenNthCalledWith(1, { type: 'mute' });
+    expect(send).toHaveBeenNthCalledWith(2, { type: 'unmute' });
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 37,
+      isMuted: false,
+    });
+    vi.useRealTimers();
+  });
+
+  it('reconciles a locally muted Companion snapshot when its volume changes externally', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const initialState: CompanionRawState = {
+      ...makeRawState(25),
+      player: {
+        ...makeRawState(25).player,
+        volume: 37,
+      },
+    };
+    const gateway: CompanionGateway = {
+      kind: 'real',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send: vi.fn(() => Promise.resolve()),
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState,
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    await controller.sendCommand({ type: 'mute' });
+    onState({
+      ...initialState,
+      player: {
+        ...initialState.player,
+        volume: 52,
+      },
+    });
+
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 52,
+      isMuted: false,
+    });
+    vi.useRealTimers();
+  });
+
   it('publishes significant progress corrections such as seeks', async () => {
     let onState: GatewayEventHandlers['onState'] = () => undefined;
     const gateway: CompanionGateway = {

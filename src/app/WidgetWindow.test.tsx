@@ -467,12 +467,22 @@ describe('WidgetWindow', () => {
     );
 
     const widget = document.querySelector('.widget-window') as HTMLElement;
+    const mute = document.querySelector(
+      'button[aria-label="Mute"]',
+    ) as HTMLButtonElement;
+    expect(mute).not.toBeDisabled();
+    expect(mute).toHaveAttribute('tabindex', '-1');
+    expect(mute).toHaveClass('widget-window__window-action');
+    expect(mute).not.toHaveClass('widget-window__window-action--visible');
     expect(
       screen.queryByRole('button', { name: 'Mute' }),
     ).not.toBeInTheDocument();
     fireEvent.pointerEnter(widget);
-    expect(screen.getByRole('button', { name: 'Mute' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Mute' })).toBe(mute);
+    expect(mute).toHaveAttribute('tabindex', '0');
+    expect(mute).toHaveClass('widget-window__window-action--visible');
     fireEvent.pointerLeave(widget);
+    expect(mute).toHaveAttribute('tabindex', '-1');
     expect(
       screen.queryByRole('button', { name: 'Mute' }),
     ).not.toBeInTheDocument();

@@ -20,23 +20,23 @@ The current release is **Windows-first** and supports three production playback 
 
 ## Operating-system support
 
-| Operating system | Status | Current support |
-| --- | --- | --- |
-| Windows 11 | Supported | Primary tested platform; portable executable, tray, startup, keyring, and all current adapters. |
-| Windows 10 | Supported | Uses WebView2 and Windows GSMTC; exact adapter capabilities still depend on the player. |
-| Linux | Planned | Linux build foundation and MPRIS playback adapter are the first cross-platform milestone. |
-| macOS | Planned later | Scheduled after Linux, release automation, and localization scaling. |
+| Operating system | Status        | Current support                                                                                 |
+| ---------------- | ------------- | ----------------------------------------------------------------------------------------------- |
+| Windows 11       | Supported     | Primary tested platform; portable executable, tray, startup, keyring, and all current adapters. |
+| Windows 10       | Supported     | Uses WebView2 and Windows GSMTC; exact adapter capabilities still depend on the player.         |
+| Linux            | Planned       | Linux build foundation and MPRIS playback adapter are the first cross-platform milestone.       |
+| macOS            | Planned later | Scheduled after Linux, release automation, and localization scaling.                            |
 
 Browser preview is a development surface backed by the simulator, not a supported end-user web edition.
 
 ## Playback-adapter support
 
-| Adapter | Status | Metadata / artwork | Transport / seek | Mute | Like / Dislike | Authentication |
-| --- | --- | --- | --- | --- | --- | --- |
-| YTMDesktop Companion | Supported | Yes | Yes | Yes | Yes | YTMDesktop Companion pairing |
-| Windows Media Session | Supported on Windows | Yes, when published by the current session | Capability-dependent | No | No | None |
-| Cider App | Supported | Yes | Yes | No | Yes | Cider application token |
-| Linux MPRIS | Planned | Planned | Planned | To be defined by player capabilities | To be defined | None expected |
+| Adapter               | Status               | Metadata / artwork                         | Transport / seek     | Mute                                 | Like / Dislike | Authentication               |
+| --------------------- | -------------------- | ------------------------------------------ | -------------------- | ------------------------------------ | -------------- | ---------------------------- |
+| YTMDesktop Companion  | Supported            | Yes                                        | Yes                  | Yes                                  | Yes            | YTMDesktop Companion pairing |
+| Windows Media Session | Supported on Windows | Yes, when published by the current session | Capability-dependent | No                                   | No             | None                         |
+| Cider App             | Supported            | Yes                                        | Yes                  | No                                   | Yes            | Cider application token      |
+| Linux MPRIS           | Planned              | Planned                                    | Planned              | To be defined by player capabilities | To be defined  | None expected                |
 
 Windows Media Session follows the current session selected by Windows. Apple Music, Spotify, Yandex Music, browsers, and other compatible players may work through that system contract, but they are not separate first-class adapters and may expose different capabilities.
 
@@ -49,13 +49,13 @@ Windows Media Session follows the current session selected by Windows. Apple Mus
 3. Select **YTMDesktop Companion** in Music Desktop Widget.
 4. Generate a pairing code and approve the matching request inside YTMDesktop.
 
-The integration uses only the official [Companion Server API](https://github.com/ytmdesktop/ytmdesktop/wiki/v2-%E2%80%90-Companion-Server-API-v1). Its token is stored in Windows Credential Manager.
+The integration uses only the official [Companion Server API](https://github.com/ytmdesktop/ytmdesktop/wiki/v2-%E2%80%90-Companion-Server-API-v1). Its token is stored in Windows Credential Manager. Companion API v1 exposes separate `mute` and `unmute` commands but no muted-state field, so the widget reflects its successful mute action locally while YTMDesktop itself preserves and restores the player's volume through those official commands.
 
 ### Windows Media Session
 
 Select **Windows Media Session** and start playback in a compatible player. Windows chooses the current media session; the widget reads the metadata, artwork, timeline, playback state, and capability flags published through Global System Media Transport Controls.
 
-Like/Dislike and application volume are not part of this Windows contract, so those actions remain disabled in this mode. Run the portable executable from the normal interactive Windows session rather than a restricted automation sandbox.
+Like/Dislike, mute, and application volume are not part of this Windows contract, so those actions remain disabled in this mode. Run the portable executable from the normal interactive Windows session rather than a restricted automation sandbox.
 
 ### Cider App
 
@@ -99,17 +99,17 @@ Installers, signing, automatic updates, and GitHub release publication are inten
 
 ## Development commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Vite browser preview with simulator fallback |
-| `npm run dev:desktop` | Tauri desktop development |
-| `npm run build` | TypeScript and Vite production build |
-| `npm run build:desktop` | Portable Tauri release build without bundling |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest unit/component suite |
-| `npm run test:e2e` | Serial Playwright simulator smoke suite |
-| `npm run verify` | Version sync check, lint, tests, and web build |
-| `cargo check -j1` | Native Rust check from `src-tauri/` |
+| Command                 | Purpose                                        |
+| ----------------------- | ---------------------------------------------- |
+| `npm run dev`           | Vite browser preview with simulator fallback   |
+| `npm run dev:desktop`   | Tauri desktop development                      |
+| `npm run build`         | TypeScript and Vite production build           |
+| `npm run build:desktop` | Portable Tauri release build without bundling  |
+| `npm run lint`          | ESLint                                         |
+| `npm test`              | Vitest unit/component suite                    |
+| `npm run test:e2e`      | Serial Playwright simulator smoke suite        |
+| `npm run verify`        | Version sync check, lint, tests, and web build |
+| `cargo check -j1`       | Native Rust check from `src-tauri/`            |
 
 The root `package.json` is the only manually edited application-version source. Run `npm run version:sync` after a version change; `npm run verify` rejects version drift.
 
@@ -147,7 +147,7 @@ The detailed roadmap also records deferred Windows packaging, optional local WMS
 
 ## Development effort snapshot
 
-As of 2026-07-15, the repository records **about 2 working days and 2.5 hours (18 hours 30 minutes tracked)** of focused AI-assisted implementation, debugging, live validation, and documentation work.
+As of 2026-07-15, the repository records **about 2 working days and 3 hours (19 hours 15 minutes tracked)** of focused AI-assisted implementation, debugging, live validation, and documentation work.
 
 The same history is roughly estimated at **about 10 million text tokens** and **approximately USD 100** if performed through the standard GPT-5.6 Sol API, including repeated context reads and tool-driven development loops. This is a deliberately rounded project estimate rather than a billing record; the pricing reference is the official [GPT-5.6 Sol model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol), captured on 2026-07-15.
 
