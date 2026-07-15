@@ -70,7 +70,7 @@ Added a separate playback-controls hover mode and removed transform-based transp
 | Component RED/GREEN | Passed | New tests first failed because controls stayed mounted outside hover and height did not resync; after the fix `WidgetWindow.test.tsx` passed `11` tests. |
 | Browser smoke | Passed with cleanup caveat | `npm run test:e2e -- --workers=1` reported `ok 1` through `ok 4`; the Windows wrapper timed out after successful assertions because the child preview process kept running. |
 | Frontend verify | Passed | `npm run verify`: ESLint clean, Vitest `10` files / `45` tests passed, TypeScript and Vite production build passed. |
-| Native check | Passed | `cargo check -j1` finished successfully through `C:\Users\fgcod\.cargo\bin\cargo.exe`. |
+| Native check | Passed | `cargo check -j1` finished successfully through `%USERPROFILE%\.cargo\bin\cargo.exe`. |
 | Portable build | Passed | `npm run build:desktop` rebuilt `src-tauri/target/release/ytm-desktop-widget.exe`. |
 | Executable metadata | Passed | Final exe size `15645696`; SHA256 `B5BB538FCD2EC0AD36B26DBCF4F4D2FB72067F47BA5CF6AB654E6C5A67BB5F37`. |
 | Release/config review | Passed | No installer, Docker, permissions, or packaging-policy changes. |
@@ -106,4 +106,4 @@ Live portable feedback on 2026-07-13 invalidated the height-collapse decision: n
 
 ## Next Steps
 
-- Completed: PR #1 (`https://github.com/lgg/yt-desktop-widget/pull/1`) was merged to `master` with merge commit `8c93651`.
+- Completed: PR #1 (`https://github.com/lgg/music-desktop-widget/pull/1`) was merged to `master` with merge commit `8c93651`.

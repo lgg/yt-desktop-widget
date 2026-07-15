@@ -10,7 +10,7 @@ last_sync_report: `project-tracking/reports/0016-sync-bootstrap-rules-to-0002.md
 
 This file records which shared process rules from `lgg/chatgpt-coding-projects-bootstrap` have been adapted into this repository.
 
-This repository is a Windows-first Tauri v2 desktop app for YTMDesktop. Bootstrap rules are adapted to that context instead of copied mechanically.
+This repository is the Windows-first Tauri v2 Music Desktop Widget with YTMDesktop Companion, Windows Media Session, and Cider adapters. Bootstrap rules are adapted to that desktop context instead of copied mechanically.
 
 ## Current Status
 
@@ -46,8 +46,8 @@ This repository is a Windows-first Tauri v2 desktop app for YTMDesktop. Bootstra
 ## Project-Specific Adaptations
 
 - Docker/Coolify rules are recorded as conditional future rules only. This project currently has no Docker/Coolify deployment surface.
-- Build/release language stays focused on Tauri, portable Windows builds, and Companion Server validation.
-- Backend references are adapted to native Tauri/Rust backend and Companion API contracts.
+- Build/release language stays focused on Tauri, current portable Windows builds, and the ordered Linux/CI/macOS roadmap.
+- Backend references are adapted to the native Tauri/Rust backend and official playback-adapter contracts.
 - Frontend validation is adapted to widget/settings windows, frameless drag regions, and desktop runtime behavior.
 - Time tracking is repository-native markdown only; no billing or external time system is introduced.
 

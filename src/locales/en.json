@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "YTM Desktop Widget",
+    "title": "Music Desktop Widget",
     "loading": "Preparing the widget…",
     "settings": "Settings",
     "retry": "Reconnect",
@@ -249,7 +249,7 @@
       },
       "about": {
         "title": "About",
-        "description": "Project metadata for this desktop widget.",
+        "description": "Project information for Music Desktop Widget.",
         "repo": "GitHub repository",
         "version": "Version"
       }
@@ -260,7 +260,7 @@
       "confirmPair": "Confirm pairing",
       "clearAuth": "Clear auth",
       "clearCiderToken": "Clear Cider token",
-      "openRepo": "yt-desktop-widget",
+      "openRepo": "music-desktop-widget",
       "runDebugMockMode": "Run debug mockup mode",
       "stopDebugMockMode": "Stop debug mockup mode",
       "close": "Hide settings"

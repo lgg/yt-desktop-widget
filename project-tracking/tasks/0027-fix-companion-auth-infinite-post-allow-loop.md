@@ -67,7 +67,7 @@ Out of scope:
 - [x] Focused regression test: controller, real gateway, and Rust auth error classification tests.
 - [x] `npm run verify`: passed.
 - [x] `cargo check -j1`: passed.
-- [x] `npm run build:desktop`: first failed because `cargo` was not in PATH, then passed with `C:\Users\fgcod\.cargo\bin` prepended.
+- [x] `npm run build:desktop`: first failed because `cargo` was not in PATH, then passed with `%USERPROFILE%\.cargo\bin` prepended.
 - [x] Manual/live auth limitation: full Allow round-trip could not be completed because the live server currently reports auth requests disabled.
 - [x] Time tracking review: task/report/time-log agree.
 

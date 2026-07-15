@@ -1,9 +1,17 @@
 {
-  "name": "ytm-desktop-widget",
+  "name": "music-desktop-widget",
   "private": true,
   "version": "3.1.0",
   "type": "module",
-  "description": "A premium Windows desktop media widget powered by Tauri v2, React, TypeScript, YTMDesktop Companion, and Windows Media Session.",
+  "description": "A customizable Windows desktop media widget for YTMDesktop Companion, Windows Media Session, and Cider.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lgg/music-desktop-widget.git"
+  },
+  "homepage": "https://github.com/lgg/music-desktop-widget#readme",
+  "bugs": {
+    "url": "https://github.com/lgg/music-desktop-widget/issues"
+  },
   "engines": {
     "node": ">=24.0.0"
   },

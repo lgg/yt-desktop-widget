@@ -40,4 +40,4 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const APP_VERSION = packageJson.version;
-export const REPOSITORY_URL = 'https://github.com/lgg/yt-desktop-widget';
+export const REPOSITORY_URL = 'https://github.com/lgg/music-desktop-widget';

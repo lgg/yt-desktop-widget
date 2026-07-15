@@ -136,6 +136,8 @@ See `project-tracking/checklists/0000-definition-of-done.md`.
 
 ## 8. Project Notes
 
+- The public product/repository name is **Music Desktop Widget** / `music-desktop-widget`.
+- Compatibility-sensitive legacy runtime identifiers remain unchanged under `project-tracking/decisions/0009-rename-product-while-preserving-runtime-identifiers.md`; do not bulk-rename them without a tested settings/credential/startup migration.
 - This is a Windows-first Tauri v2 + React + TypeScript desktop widget app.
 - Production playback integrations are limited to the official YTMDesktop Companion Server API and the official Windows Media Session/GSMTC contract. Do not add scraping, injection, OCR, or window-title parsing.
 - Current manual test builds are portable-only.
@@ -187,9 +189,10 @@ Rules adapted from the bootstrap repository:
 ## 11. Security
 
 1. Do not commit secrets, tokens, private keys, real passwords, or user credentials.
-2. Companion tokens must stay in OS keyring-backed storage, not frontend storage.
-3. Auth, token storage, startup, permissions, and external integration changes require explicit risk notes in the task/report.
-4. Do not add network exposure or telemetry without an explicit task and documented decision.
+2. Do not publish personal absolute paths, local usernames, temporary clipboard paths, or private machine-specific locations in tracked documentation, reports, fixtures, or diagnostics; use portable placeholders such as `%USERPROFILE%` when the path itself matters.
+3. Companion tokens must stay in OS keyring-backed storage, not frontend storage.
+4. Auth, token storage, startup, permissions, and external integration changes require explicit risk notes in the task/report.
+5. Do not add network exposure or telemetry without an explicit task and documented decision.
 
 ## 12. Updating Rules
 

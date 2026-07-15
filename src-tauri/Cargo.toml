@@ -1,12 +1,12 @@
 [package]
-name = "ytm-desktop-widget"
+name = "music-desktop-widget"
 version = "3.1.0"
-description = "Premium Windows media widget for YTMDesktop Companion and Windows Media Session"
-authors = ["Codex"]
+description = "Customizable Windows media widget for YTMDesktop Companion, Windows Media Session, and Cider"
+authors = ["lgg"]
 edition = "2021"
 
 [lib]
-name = "ytm_desktop_widget_lib"
+name = "music_desktop_widget_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

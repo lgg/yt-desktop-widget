@@ -1,4 +1,4 @@
-# Project Tracking
+# Music Desktop Widget Project Tracking
 
 This folder is the source of truth for project work tracking.
 

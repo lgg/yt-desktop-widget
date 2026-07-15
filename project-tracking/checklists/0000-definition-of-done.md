@@ -63,6 +63,7 @@ Use this checklist before closing any non-trivial task.
 ## Security
 
 - [ ] No secrets, tokens, private keys, real passwords, or user credentials are committed.
+- [ ] No personal absolute paths, local usernames, temporary clipboard paths, or private machine-specific locations are published in tracked documentation or fixtures.
 - [ ] Companion tokens remain in OS keyring-backed storage, not frontend storage.
 - [ ] Auth, token storage, Tauri permissions, external integrations, and startup changes include risk notes.
 - [ ] No internal service, local port, or telemetry is exposed without explicit task and decision.

@@ -11,7 +11,7 @@ use tauri::{AppHandle, Emitter};
 use crate::models::{CommandError, CompanionEvent, ConnectionSettings, DiscoveryInfo, PlaybackCommand};
 
 const APP_ID: &str = "ytmdesktopwidget";
-const APP_NAME: &str = "YTM Desktop Widget";
+const APP_NAME: &str = "Music Desktop Widget";
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const KEYRING_SERVICE: &str = "io.github.lgg.ytm-desktop-widget";
 

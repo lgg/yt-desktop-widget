@@ -2,15 +2,21 @@
 
 ## Status
 
-Accepted
+Accepted, amended by later numbered decisions
 
 ## Context
 
-This file preserves the existing top-level `DECISIONS.md` content inside the markdown project-tracking decision structure.
+This file preserves the original architecture baseline. The current public index is `DECISIONS.md`; later source, platform, runtime, and rename decisions amend this record.
 
 ## Decision
 
-Keep the existing architecture decisions as accepted baseline decisions for the Windows-first Tauri v2 + React YTMDesktop widget.
+Keep the original decisions as historical baseline for the Windows-first Tauri v2 + React Music Desktop Widget, with these active amendments:
+
+- decision `0006` adds explicit Windows Media and development-source separation;
+- decision `0007` replaces the initial WMS runtime with a dedicated MTA worker;
+- decision `0008` adds the loopback Cider adapter;
+- decision `0009` applies the public rename while preserving runtime identifiers;
+- roadmap tasks `0056`–`0058` add the ordered Linux/MPRIS, CI/releases, and localization foundations before macOS.
 
 ## Preserved Decision Log
 

@@ -240,6 +240,9 @@ describe('SettingsWindow UI display preferences', () => {
     expect(screen.getByRole('button', { name: 'Russian' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Light' })).toBeInTheDocument();
     expect(screen.getByText(`Version: ${APP_VERSION}`)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'music-desktop-widget' }),
+    ).toBeInTheDocument();
   });
 
   it('persists the Russian locale through the existing settings update path', () => {

@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "YTM Desktop Widget",
+    "title": "Music Desktop Widget",
     "loading": "Подготавливаем виджет…",
     "settings": "Настройки",
     "retry": "Переподключиться",
@@ -249,7 +249,7 @@
       },
       "about": {
         "title": "О приложении",
-        "description": "Метаданные проекта этого desktop-виджета.",
+        "description": "Информация о проекте Music Desktop Widget.",
         "repo": "Репозиторий GitHub",
         "version": "Версия"
       }
@@ -260,7 +260,7 @@
       "confirmPair": "Подтвердить подключение",
       "clearAuth": "Удалить авторизацию",
       "clearCiderToken": "Удалить токен Cider",
-      "openRepo": "yt-desktop-widget",
+      "openRepo": "music-desktop-widget",
       "runDebugMockMode": "Запустить отладочный mock-режим",
       "stopDebugMockMode": "Остановить отладочный mock-режим",
       "close": "Скрыть настройки"

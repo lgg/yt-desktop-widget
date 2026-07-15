@@ -17,7 +17,7 @@ Relevant source versions:
 
 ## Goal
 
-Bring this repository's process documentation and tracking files up to bootstrap version `0002`, adapted to the YTM Desktop Widget project as a Windows-first Tauri desktop app.
+Bring this repository's process documentation and tracking files up to bootstrap version `0002`, adapted to the Music Desktop Widget project as a Windows-first Tauri desktop app.
 
 ## Scope
 

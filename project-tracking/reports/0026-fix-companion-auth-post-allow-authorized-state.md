@@ -55,7 +55,7 @@ Fixed the post-Allow Companion auth state regression where the app could show `R
 | Lint/static checks | Passed | `npm run verify` includes ESLint and TypeScript build. |
 | Tests | Passed | `npm run verify`: 10 files, 26 tests passed. |
 | Build | Passed | `npm run verify`: Vite production build completed. |
-| Native check | Passed | `C:\Users\fgcod\.cargo\bin\cargo.exe check -j1` passed on second run after the first timed out compiling dependencies. |
+| Native check | Passed | `%USERPROFILE%\.cargo\bin\cargo.exe check -j1` passed on second run after the first timed out compiling dependencies. |
 | Manual QA | Partial | `GET /metadata` returned `apiVersions: ["v1"]`; unauthenticated `GET /api/v1/state` returned `401` as expected. |
 | Docs review | Passed | Official docs confirm auth endpoints, raw `Authorization`, 30-second `/auth/request`, websocket-only realtime auth token. |
 | Release/config review | Passed | No release, packaging, or config files changed intentionally. |

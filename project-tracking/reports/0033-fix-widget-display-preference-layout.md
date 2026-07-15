@@ -63,7 +63,7 @@ Fixed the remaining connected-widget footer layout regression. `Hide playback co
 | Component RED/GREEN | Passed | New tests first failed because hidden controls and progress remained in the DOM and settings changes did not resync height; after the fix, `src/app/WidgetWindow.test.tsx` passed `8` tests. |
 | Browser smoke | Passed with cleanup caveat | `npm run test:e2e -- --workers=1` reported `ok 1` and `ok 2`; the Windows command wrapper timed out after successful assertions because the child preview process kept the command alive. |
 | Frontend verify | Passed | `npm run verify`: ESLint clean, Vitest `10` files / `42` tests passed, TypeScript and Vite production build passed. |
-| Native check | Passed | `cargo check -j1` finished successfully through `C:\Users\fgcod\.cargo\bin\cargo.exe`. |
+| Native check | Passed | `cargo check -j1` finished successfully through `%USERPROFILE%\.cargo\bin\cargo.exe`. |
 | Portable build | Passed | `npm run build:desktop` rebuilt `src-tauri/target/release/ytm-desktop-widget.exe`. |
 | Executable metadata | Passed | Final exe size `15645696`; SHA256 `98285233BAEEC53C41FEB030B7B1144A6563B5087BDAE19778B573D8782C3039`. |
 | Release/config review | Passed | No installer, Docker, permissions, or packaging-policy changes. |

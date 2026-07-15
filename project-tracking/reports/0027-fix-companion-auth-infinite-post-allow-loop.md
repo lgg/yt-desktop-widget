@@ -62,8 +62,8 @@ The post-Allow token activation retry window was also extended from about 3.4 se
 | Focused TS tests | Passed | `npm test -- src/domain/playback/controller.test.ts tests/integration/companion/realGateway.test.ts`. |
 | Focused Rust test | Passed | `cargo test companion::tests::classifies_disabled_authorization_requests_from_error_body -j1`. |
 | Full frontend verification | Passed | `npm run verify`: lint, 29 Vitest tests, and web build passed. |
-| Native check | Passed | `C:\Users\fgcod\.cargo\bin\cargo.exe check -j1`. |
-| Desktop build | Passed after PATH fix | Plain `npm run build:desktop` failed because `cargo` was not in PATH; rerun with `C:\Users\fgcod\.cargo\bin` prepended passed and built the portable exe. |
+| Native check | Passed | `%USERPROFILE%\.cargo\bin\cargo.exe check -j1`. |
+| Desktop build | Passed after PATH fix | Plain `npm run build:desktop` failed because `cargo` was not in PATH; rerun with `%USERPROFILE%\.cargo\bin` prepended passed and built the portable exe. |
 | Security review | Passed | No tokens printed, no new token storage path, no secrets committed. |
 | Time tracking review | Passed | Task, report, and time-log agree. |
 

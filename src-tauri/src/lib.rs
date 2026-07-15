@@ -25,7 +25,7 @@ use tauri::{
 };
 use tauri_plugin_opener::OpenerExt;
 
-const REPOSITORY_URL: &str = "https://github.com/lgg/yt-desktop-widget";
+const REPOSITORY_URL: &str = "https://github.com/lgg/music-desktop-widget";
 const COMPANION_EVENT: &str = "companion://event";
 const COMPANION_AUTH_CHANGED_EVENT: &str = "companion://auth-changed";
 const CIDER_AUTH_CHANGED_EVENT: &str = "cider://auth-changed";
@@ -577,7 +577,7 @@ fn setup_tray(app: &AppHandle) -> Result<(), CommandError> {
 
   let mut tray_builder = TrayIconBuilder::with_id("main-tray")
     .menu(&menu)
-    .tooltip("YTM Desktop Widget");
+    .tooltip("Music Desktop Widget");
 
   if let Some(icon) = app.default_window_icon().cloned() {
     tray_builder = tray_builder.icon(icon);
@@ -696,7 +696,7 @@ pub fn run() {
       cider_send_command
     ])
     .run(tauri::generate_context!())
-    .expect("error while running YTM Desktop Widget");
+    .expect("error while running Music Desktop Widget");
 }
 
 #[cfg(test)]

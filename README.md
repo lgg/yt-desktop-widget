@@ -1,291 +1,163 @@
-# YTM Desktop Widget
+# Music Desktop Widget
 
-A premium Windows desktop media widget built with Tauri v2, React, TypeScript, and Vite. It supports YTMDesktop Companion, Windows Media Session, and Cider's official local API as separate playback sources.
+A customizable desktop music widget built with Tauri, React, TypeScript, and Rust. It presents artwork, track details, progress, and playback controls in a compact always-on-top window while keeping player integrations explicit and local.
 
-Before working on this repository, read [AGENTS.md](./AGENTS.md). It defines the project workflow, validation expectations, bootstrap-sync status, time tracking, and markdown project-tracking rules.
+The current release is **Windows-first** and supports three production playback adapters: YTMDesktop Companion, Windows Media Session, and Cider. Linux/MPRIS and macOS support are planned in the [roadmap](./project-tracking/roadmap/0000-roadmap.md).
 
-The app never scrapes player UI, injects scripts, parses window titles, or uses OCR. YTMDesktop integration uses only the official Companion Server API; the optional multi-player mode uses only the official Windows Global System Media Transport Controls session selected by Windows.
+> Current version: **3.1.0**. Distribution is portable-only for now; automated GitHub builds and releases are planned but not yet available.
 
-## What it does
+## Highlights
 
-- Shows current cover art, blurred art-derived background, title, artists, elapsed time, duration, and progress.
-- Provides a first-class playback-source selector: YTMDesktop Companion, the current Windows Media Session, or a dedicated Cider adapter.
-- Supports previous, play/pause, next, mute/unmute, Like/Dislike, reconnect, auth, and settings flows.
-- Persists window position, always-on-top, launch-on-startup, and display preferences.
-- Provides persisted window-surface, artwork-background, and gradient-overlay opacity controls with one-click reset to the original appearance.
-- Provides Compact (85%), unchanged Default (100%), Large (125%), and linked Custom widget sizing; artwork, text, controls, spacing, progress UI, background, and intrinsic window height scale together.
-- Track details, progress, Like/Dislike, and playback controls each support four display modes: always visible, hover/focus with reserved space, hover/focus with dynamic window height, or fully hidden.
-- The six primary widget blocks can be reordered vertically from Settings without changing the controls inside each block.
-- Mute is an optional header action with always, hover/focus, and hidden modes. It delegates mute/unmute restoration to YTMDesktop and never writes a numeric volume.
-- Settings and Close header actions can each remain always visible or appear only on hover/focus, using the same segmented Settings control style as the other visibility preferences.
-- Windows Media Session exposes source-specific capabilities: unsupported buttons are disabled, and Like/Dislike/Mute are also safe no-ops at both gateway boundaries.
-- The full artwork can optionally act as an accessible play/pause control whose standalone semi-transparent action glyph appears on hover or keyboard focus.
-- The connection-status badge can stay visible, appear only on hover or keyboard focus, or remain fully hidden while its non-interactive area stays draggable.
-- Top-level Settings sections can be collapsed, and their collapsed state persists between launches.
-- Hides to tray instead of quitting by default.
-- Ships with real Companion and Windows Media Session clients plus a separate simulator for local development and tests.
-- Uses matching English and Russian i18n JSON bundles, with English as the default and a persisted language selector in Settings.
+- Artwork-driven glass UI with dark, light, and system themes.
+- Compact, Default, Large, and linked Custom size modes.
+- Reorderable widget blocks and per-block always/hover/hidden visibility.
+- Previous, play/pause, next, seek, mute, and rating controls when the selected adapter exposes them.
+- Configurable transparency for the window surface, artwork background, and gradient.
+- Always-on-top, launch-on-startup, close behavior, tray lifecycle, and remembered window positions.
+- English and Russian UI with persisted language selection.
+- Local simulator for UI development and deterministic tests.
+- No player scraping, DOM injection, OCR, or window-title parsing.
 
-## Stack
+## Operating-system support
 
-- Tauri v2 for a lightweight Windows desktop shell, tray integration, custom windows, and native storage access.
-- React 19 + TypeScript for UI composition and stateful interactions.
-- Vite for fast development and production builds.
-- Rust backend bridge for Companion API networking, Windows Media Session/WinRT access, keyring-backed token storage, and Windows-specific behavior.
-- Vitest + Testing Library for unit/component coverage.
-- Playwright for browser-level simulator smoke coverage.
+| Operating system | Status | Current support |
+| --- | --- | --- |
+| Windows 11 | Supported | Primary tested platform; portable executable, tray, startup, keyring, and all current adapters. |
+| Windows 10 | Supported | Uses WebView2 and Windows GSMTC; exact adapter capabilities still depend on the player. |
+| Linux | Planned | Linux build foundation and MPRIS playback adapter are the first cross-platform milestone. |
+| macOS | Planned later | Scheduled after Linux, release automation, and localization scaling. |
 
-## Why Tauri
+Browser preview is a development surface backed by the simulator, not a supported end-user web edition.
 
-Tauri keeps the widget small, fast, and close to the platform while still letting the UI stay in React. That matters here because the product needs:
+## Playback-adapter support
 
-- a frameless transparent widget window,
-- tray behavior,
-- launch-on-startup,
-- always-on-top,
-- native credential storage,
-- and clean future paths toward macOS support.
+| Adapter | Status | Metadata / artwork | Transport / seek | Mute | Like / Dislike | Authentication |
+| --- | --- | --- | --- | --- | --- | --- |
+| YTMDesktop Companion | Supported | Yes | Yes | Yes | Yes | YTMDesktop Companion pairing |
+| Windows Media Session | Supported on Windows | Yes, when published by the current session | Capability-dependent | No | No | None |
+| Cider App | Supported | Yes | Yes | No | Yes | Cider application token |
+| Linux MPRIS | Planned | Planned | Planned | To be defined by player capabilities | To be defined | None expected |
 
-## Companion API research and verified assumptions
+Windows Media Session follows the current session selected by Windows. Apple Music, Spotify, Yandex Music, browsers, and other compatible players may work through that system contract, but they are not separate first-class adapters and may expose different capabilities.
 
-Integration design is based on the official YTMDesktop Companion Server API documentation for YTMDesktop v2.0.0 and higher:
+## Adapter setup
 
-- Official wiki page: <https://github.com/ytmdesktop/ytmdesktop/wiki/v2-%E2%80%90-Companion-Server-API-v1>
+### YTMDesktop Companion
 
-Verified from upstream docs during the latest protocol audit:
+1. Start YTMDesktop 2.0 or newer.
+2. Enable its Companion Server.
+3. Select **YTMDesktop Companion** in Music Desktop Widget.
+4. Generate a pairing code and approve the matching request inside YTMDesktop.
 
-- Base API path: `http://<host>:<port>/api/v1`
-- Public metadata endpoint: `GET /metadata` without the `/api/v1` prefix
-- Auth code endpoint: `POST /api/v1/auth/requestcode`
-  - request body: `appId`, `appName`, `appVersion`
-  - `appId` must be lowercase alphanumeric, without spaces, 2-32 characters
-- Auth completion endpoint: `POST /api/v1/auth/request`
-  - request body: `appId`, `code`
-- Authenticated REST requests pass the token as the raw `Authorization` header value
-- Pairing codes are single-use once `POST /api/v1/auth/request` begins
-- A newly issued token is verified against `GET /api/v1/state` before it is stored
-- Stored Companion credentials are removed only by the explicit `Clear auth` action, not by a transient `401`
-- Playback state endpoint: `GET /api/v1/state`
-- Companion `player.videoProgress` is elapsed playback time in seconds, while `videoDetails.durationSeconds` is total duration in seconds; the frontend derives the progress ratio from those two values.
-- Playback command endpoint: `POST /api/v1/command`
-  - body examples: `{ "command": "playPause" }`, `{ "command": "next" }`, `{ "command": "mute" }`, `{ "command": "toggleLike" }`, `{ "command": "seekTo", "data": 42 }`
-- Realtime Socket.IO base URL: `http://<host>:<port>`
-- Realtime Socket.IO namespace: `/api/v1/realtime`
-- Realtime transport: websocket only
-- Realtime auth payload contains the token at `auth.token`
-- Realtime event: `state-update`
-- Upstream guidance prefers `127.0.0.1` over `localhost` to avoid IPv6 localhost issues on some systems
+The integration uses only the official [Companion Server API](https://github.com/ytmdesktop/ytmdesktop/wiki/v2-%E2%80%90-Companion-Server-API-v1). Its token is stored in Windows Credential Manager.
 
-The real client is written so any unconfirmed response-shape differences are isolated to the backend bridge and mapping layer.
+### Windows Media Session
 
-## Windows Media Session mode
+Select **Windows Media Session** and start playback in a compatible player. Windows chooses the current media session; the widget reads the metadata, artwork, timeline, playback state, and capability flags published through Global System Media Transport Controls.
 
-Version 3.1.0 contains a source adapter that can follow the current system-preferred session returned by Windows `GlobalSystemMediaTransportControlsSessionManager`. The app reads the metadata, artwork, timeline, playback state, and control capabilities published by that session. Windows—not the widget—chooses the current session, and feature completeness varies by player. The first poll always publishes either a snapshot or an explicit empty state. Metadata, timeline, playback-info, and controls reads are best-effort independently, so one unavailable field cannot discard a healthy manager or create reconnect churn.
+Like/Dislike and application volume are not part of this Windows contract, so those actions remain disabled in this mode. Run the portable executable from the normal interactive Windows session rather than a restricted automation sandbox.
 
-The portable runtime creates one lazy, long-lived MTA worker and performs manager discovery, session reads, polling, artwork reads, and playback commands only on that worker. Blocking WinRT futures do not run on arbitrary Tokio threads. Connection setup establishes manager access first and does not wait for a complete metadata/timeline/artwork snapshot; the current session is then read by the worker poll. A transient track/session change therefore cannot leave the frontend stuck in `Waiting`, and a failed poll discards the stale manager before the next bounded reacquisition attempt. Safe runtime status events retain only the failing stage, HRESULT, and category.
+### Cider App
 
-Delivery status: the same unpackaged Rust diagnostic executable was run in two execution contexts on the same Windows machine while Apple Music was active. A restricted Codex sandbox token failed at `request_manager.await` with `0x80070005`; a normal interactive-user launch succeeded, enumerated three sessions, and returned a current session. Microsoft also publishes a normal desktop console example for this API, and multiple Rust/Tauri projects call the same contract without requiring MSIX. Package identity is therefore not a portable WMS prerequisite. Do not launch the widget from Codex or another restricted sandbox; close the old process and start the portable EXE directly from File Explorer.
+1. In Cider, enable **WebSockets API** under Connectivity.
+2. Open **Manage External Application Access to Cider** and create an application token.
+3. Select **Cider App** in the widget and save that token in Settings.
 
-The complete portable widget path was live-validated again on 2026-07-15 against Cider's active GSMTC session after correcting the Tauri command ACL: Settings reached `Live`, metadata/artwork loaded, discovery returned `available: true` without a diagnostic, and play/pause changed and restored the player state. The same release was then switched back to the dedicated Cider adapter, which also reached `Live` and passed the same transport cycle.
+The adapter is fixed to Cider's loopback service at `127.0.0.1:10767`. The token is validated by Rust, stored only in Windows Credential Manager, and never written to frontend settings or logs. Main and Settings windows share one native Socket.IO session.
 
-When WMS fails, Settings and the widget show the safe stage/HRESULT/category from both connect and live poll failures. The native backend also appends the same whitelist-only diagnostic to `%LOCALAPPDATA%\io.github.lgg.ytm-desktop-widget\logs\windows-media-diagnostics.jsonl`, rotating at 256 KiB to `windows-media-diagnostics.previous.jsonl`. These files contain no title, artist, artwork, source-app ID, command payload, credential, or token. Logging failures never block playback or Companion mode.
-
-- Supported when published by the player: artwork/metadata, progress, seek, previous, play/pause, and next.
-- Not provided by this Windows contract: application volume/mute and service-specific Like/Dislike. Those controls remain safely disabled/no-op in this mode even if their display preference is enabled.
-- Timeline positions are normalized against the session start and clamped to the published seek range, so non-zero-origin sessions cannot make the progress clock run fast or seek outside the player contract.
-- External text and artwork are bounded in memory; oversized or active/non-raster artwork payloads are rejected, and an accepted artwork payload is sent only when resolving a new track rather than on every polling tick.
-- No playback metadata or artwork is persisted, logged, or transmitted by WMS mode in 3.1.0.
-- Local WMS history, local favorites, copy/export, retention, and deletion are deferred to the separately designed, default-off roadmap task `0046`.
-
-References: [Microsoft session manager documentation](https://learn.microsoft.com/en-us/uwp/api/windows.media.control.globalsystemmediatransportcontrolssessionmanager), [Microsoft desktop console example](https://devblogs.microsoft.com/oldnewthing/20231108-00/?p=108980), [Windows app capability declarations](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/app-capability-declarations), [win-gsmtc Rust wrapper](https://docs.rs/win-gsmtc/latest/gsmtc/), and [Current Song 2 standalone Windows releases](https://github.com/Nerixyz/current-song2/releases).
-
-## Tauri MCP support
-
-This project is configured for the Tauri MCP server named `tauri`.
-
-- MCP server repo: <https://github.com/hypothesi/mcp-server-tauri>
-- Debug builds register `tauri-plugin-mcp-bridge`
-- `withGlobalTauri` is enabled in `src-tauri/tauri.conf.json`
-- `mcp-bridge:default` is granted in `src-tauri/capabilities/default.json`
-
-Current debug MCP and dev-tool port configuration in this repo:
-
-- Tauri MCP bridge base port: `39223`
-- Vite dev server port: `31420`
-- Vite preview port: `34173`
-- Playwright preview port: `34174`
-
-## Windows development setup
+## Build from source
 
 ### Prerequisites
 
-- Node.js 24+
-- Rust stable toolchain with the MSVC target
-- WebView2 runtime on Windows
-- YTMDesktop, if you want to test the Companion flow
-- A Windows Media Session-compatible player, if you want to validate the portable multi-player mode; launch the EXE in a normal interactive Windows user session rather than through a restricted sandbox
+- Windows 10 or 11
+- Node.js 24 or newer
+- Rust stable with the MSVC target
+- Microsoft WebView2 Runtime
 
-### Install
+### Install and run
 
-```bash
+```powershell
 npm install
-```
-
-### Run in desktop mode
-
-```bash
 npm run dev:desktop
 ```
 
-### Run the browser-only preview
+Browser-only simulator preview:
 
-```bash
+```powershell
 npm run dev
 ```
 
-The browser preview automatically falls back to the simulator unless you override the source mode.
+Build the current portable executable:
 
-## Playback source vs development source mode
+```powershell
+npm run build:desktop
+```
 
-The first Settings section stores the user-facing production source:
+Output: `src-tauri/target/release/music-desktop-widget.exe`.
 
-- `YTMDesktop Companion` (default and migration-safe): full Companion auth, realtime, mute, Like, and Dislike behavior
-- `Windows Media Session`: current Windows-selected compatible player session without pairing
-- `Cider App`: loopback-only `127.0.0.1:10767` adapter using Cider WebSockets (`API:Playback`) and `/api/v1/playback/*`; enable WebSockets and create an application token under Manage External Application Access to Cider. The token is validated natively and stored only in Windows Credential Manager. Main and Settings share one native live socket, so opening Settings does not replace the active session.
+Installers, signing, automatic updates, and GitHub release publication are intentionally not part of the current build path.
 
-Development builds retain three internal runtime modes:
+## Development commands
 
-- `auto`: uses the selected production source in Tauri and the simulator in browser preview
-- `real`: always uses the selected Tauri/Rust production bridge
-- `simulator`: use the development simulator in development/browser workflows
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Vite browser preview with simulator fallback |
+| `npm run dev:desktop` | Tauri desktop development |
+| `npm run build` | TypeScript and Vite production build |
+| `npm run build:desktop` | Portable Tauri release build without bundling |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest unit/component suite |
+| `npm run test:e2e` | Serial Playwright simulator smoke suite |
+| `npm run verify` | Version sync check, lint, tests, and web build |
+| `cargo check -j1` | Native Rust check from `src-tauri/` |
 
-The Developer section and its About-page mock-mode shortcut are omitted from native release builds. A legacy persisted `sourceMode: simulator`, query override, or environment override cannot supersede the selected production source in a native release; browser preview and development builds keep simulator support.
+The root `package.json` is the only manually edited application-version source. Run `npm run version:sync` after a version change; `npm run verify` rejects version drift.
 
-You can also override source mode during development:
+## Privacy and security
 
-- query string: `?source=real` or `?source=simulator`
-- env for web preview / Playwright: `VITE_YTM_DATA_SOURCE=simulator`
+- Companion and Cider credentials stay in the OS keyring, not `localStorage`, `settings.json`, diagnostics, or source files.
+- Player metadata and artwork are not persisted by the current production adapters.
+- Cider is loopback-only; the app does not expose a LAN control endpoint.
+- Windows Media diagnostics contain only a bounded stage/category/HRESULT allowlist and rotate at 256 KiB.
+- External text and artwork are bounded before they cross the native/frontend bridge.
+- No telemetry, accounts, cloud sync, scraping, injection, OCR, or window-title parsing is included.
 
-## Current rebuild policy
+Please report security issues without publishing credentials, tokens, personal listening data, or diagnostic files that have not been reviewed.
 
-For the near-term testing cycle, rebuilds are intentionally portable-only.
+## Architecture and project workflow
 
-- `npm run build:desktop` builds only the portable release executable
-- `npm run build:portable` is the same portable-only build path
-- installer / setup artifacts are intentionally disabled in default config for now
+- [Architecture](./ARCHITECTURE.md)
+- [Engineering decisions](./DECISIONS.md)
+- [Roadmap](./project-tracking/roadmap/0000-roadmap.md)
+- [Project tracking](./project-tracking/README.md)
+- [Definition of Done](./project-tracking/checklists/0000-definition-of-done.md)
 
-## Scripts
+Before making a substantial change, read [AGENTS.md](./AGENTS.md). It preserves the repository's branch, validation, security, project-tracking, and time-accounting rules. Work is tracked through numbered tasks and reports under `project-tracking/`; that history is intentionally kept separate from this public product overview.
 
-- `npm run dev` - browser preview
-- `npm run dev:desktop` - Tauri desktop development
-- `npm run build` - TypeScript + Vite production build
-- `npm run build:desktop` - portable Tauri release build without bundling
-- `npm run build:portable` - portable Tauri release build without bundling
-- `npm run lint` - ESLint
-- `npm test` - Vitest
-- `npm run test:e2e` - deterministic serial Playwright simulator suite; its Windows wrapper owns and always stops the temporary Vite preview process
-- `npm run version:sync` - synchronize Cargo/lock metadata from the root `package.json` version
-- `npm run version:check` - fail if any required version copy or Tauri version source is out of sync
-- `npm run verify` - version consistency + lint + tests + web build
+## Roadmap summary
 
-## Version source
+The ordered cross-platform path is:
 
-The root `package.json` is the only version value edited manually. The UI imports it directly, Tauri resolves its version from that file, and the Companion client reports Cargo's package version. After changing the root version, run `npm run version:sync`; `npm run verify` includes `version:check` so drift cannot pass normal validation.
+1. Linux foundation, native build support, and MPRIS.
+2. GitHub CI builds and release automation.
+3. More locales and a language selector designed for a larger catalog.
+4. macOS platform support.
 
-Read the current application version from the root `package.json`. The Settings
-window and native build metadata consume the same centralized value.
+The detailed roadmap also records deferred Windows packaging, optional local WMS history/favorites, diagnostics, and future visual work. See the [dedicated roadmap file](./project-tracking/roadmap/0000-roadmap.md) for current status and acceptance boundaries.
 
-## Build outputs
+## Development effort snapshot
 
-Current Windows testing output:
+As of 2026-07-15, the repository records **about 2 working days and 2 hours (17 hours 57 minutes tracked)** of focused AI-assisted implementation, debugging, live validation, and documentation work.
 
-- Portable executable: `src-tauri/target/release/ytm-desktop-widget.exe`
+The same history is roughly estimated at **about 10 million text tokens** and **approximately USD 100** if performed through the standard GPT-5.6 Sol API, including repeated context reads and tool-driven development loops. This is a deliberately rounded project estimate rather than a billing record; the pricing reference is the official [GPT-5.6 Sol model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol), captured on 2026-07-15.
 
-Installer outputs are intentionally not produced by default right now.
+That development effort is already invested in the public project. Build it, use it, improve it, and enjoy the result without a project usage fee; third-party music services may still have their own terms or subscriptions.
 
-## Architecture map
+## Current limitations
 
-- High-level architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- Key engineering decisions: [DECISIONS.md](./DECISIONS.md)
-- Project tracking, roadmap, tasks, reports, decisions, checklists, bootstrap sync, and time log: [project-tracking/README.md](./project-tracking/README.md)
-
-## Project tracking
-
-Markdown files under `project-tracking/` are the source of truth for work planning and reports.
-
-- Roadmap: [project-tracking/roadmap/0000-roadmap.md](./project-tracking/roadmap/0000-roadmap.md)
-- Current tasks: [project-tracking/tasks/](./project-tracking/tasks/)
-- Completion and verification reports: [project-tracking/reports/](./project-tracking/reports/)
-- Decisions: [project-tracking/decisions/](./project-tracking/decisions/)
-- Definition of Done: [project-tracking/checklists/0000-definition-of-done.md](./project-tracking/checklists/0000-definition-of-done.md)
-- Bootstrap sync status: [project-tracking/bootstrap-sync.md](./project-tracking/bootstrap-sync.md)
-- AI iteration time log: [project-tracking/time-log.md](./project-tracking/time-log.md)
-
-Before a substantial AI iteration, record start time in the task. Before handoff, record finish time and duration in the task, matching report, and `project-tracking/time-log.md`.
-
-Beads was removed as the active tracker. Its full migration archive is preserved in [project-tracking/archive/beads-export-2026-07-05.jsonl](./project-tracking/archive/beads-export-2026-07-05.jsonl), with the ID-to-file map in [project-tracking/archive/beads-migration-map.md](./project-tracking/archive/beads-migration-map.md).
-
-## Auth and storage
-
-- Companion tokens are stored through the Rust `keyring` crate with its `windows-native` backend, which maps to Windows Credential Manager.
-- Cider application tokens use a separate Windows Credential Manager entry and never enter `settings.json`, frontend storage, or logs. The Cider endpoint is intentionally fixed to loopback for this release.
-- Fresh Companion tokens are accepted into the keyring only after an authenticated state request succeeds.
-- Token writes are read back through a new keyring entry before the backend reports authorization success.
-- `Stored securely` is derived only from a successful backend credential probe; the frontend never synthesizes this state.
-- Reconnect and command failures never erase a stored token automatically; the user controls credential removal through `Clear auth`.
-- App settings are persisted in the Tauri app config directory as JSON.
-- Browser preview stores settings in `localStorage` only for local development.
-- The Companion `appId` used for auth is `ytmdesktopwidget`, matching the v2 API lowercase-alphanumeric constraint.
-
-## Bootstrap sync
-
-This repository adapts shared process rules from <https://github.com/lgg/chatgpt-coding-projects-bootstrap>.
-
-Current sync status is tracked in `project-tracking/bootstrap-sync.md`. The rules are adapted to this project as a Windows-first Tauri desktop app. Server-only Docker/Coolify examples from the bootstrap are not copied into the app root unless a future numbered task introduces deployment support.
-
-## Validation history
-
-Previously validated in earlier workspaces:
-
-- `npm run lint`
-- `npm test`
-- `npm run build`
-- `npm run verify`
-- `npm run test:e2e`
-- `cargo check -j1` for the Tauri/Rust backend
-- Tauri MCP attach via the `tauri` server against a live `tauri dev` process
-
-Because that machine was low on free disk space during Rust validation, the Rust checks were run with:
-
-- `CARGO_INCREMENTAL=0`
-- `CARGO_PROFILE_DEV_DEBUG=0`
-- `CARGO_PROFILE_DEV_SPLIT_DEBUGINFO=off`
-
-Those environment variables were only a local validation workaround. They are not required by the project itself.
-
-## Live Companion validation
-
-The full auth approval round-trip, durable credential reload, reconnect, and live realtime state updates were confirmed by the user against YTMDesktop v2.0.11 on 2026-07-09. On 2026-07-13, the user also confirmed the latest portable build's playback commands, seek/progress timing, hover behavior, settings interaction, and window behavior.
-
-Future live regression passes should still include uncommon upstream states such as:
-
-- edge cases like ads, livestreams, and transient Companion restarts
-
-## Live Cider and Windows Media validation
-
-On 2026-07-15, the portable `3.1.0` release was launched as a normal interactive Windows process against the installed Cider 4 service on `127.0.0.1:10767`:
-
-- Cider's token-protected `/api/v1/playback/active` and `/api/v1/playback/now-playing` endpoints accepted the application token through the documented `apptoken` header.
-- Saving the token through the real Settings control stored it in Windows Credential Manager and the dedicated Cider source reached `Live` with metadata, artwork, realtime Socket.IO, and a play/pause/restore cycle.
-- The exact multi-window failure was repeated and fixed: opening Settings no longer disconnects the main window's socket, and both windows stayed healthy through sustained waits and a manual Settings reconnect.
-- Switching the same running release to Windows Media Session reached `Live`, loaded the Cider GSMTC metadata/artwork, and completed a play/pause/restore cycle without a WMS diagnostic.
-- A regression now verifies that every command registered in Tauri's `generate_handler!` is also present in the active permission manifest, preventing native adapters from being silently blocked at the IPC boundary.
-
-## Known limitations and intentional deferrals
-
-- Widget sizing is intentionally proportional and controlled from Settings; free non-proportional border dragging remains disabled.
-- Windows-only delivery focus
-- English and Russian are the only bundled locales
-- No macOS packaging work yet
-- The unpackaged WMS manager path is confirmed against an active Apple Music session from a normal interactive-user process. The complete widget metadata and transport flow still needs a direct File Explorer launch smoke after each meaningful WMS runtime change.
-- Further visual refinements and alternate window modes are intentionally deferred
+- End-user support is Windows-only today.
+- Builds are portable-only and are not yet published automatically through GitHub Releases.
+- Windows Media capabilities vary by player and current session.
+- Cider requires its local WebSockets API and an application token.
+- Only English and Russian are currently bundled.
+- Local playback history, cloud sync, telemetry, and automatic updating are not implemented.

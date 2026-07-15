@@ -17,7 +17,7 @@ const replacements = [
     file: 'package-lock.json',
     update(content) {
       let replacementCount = 0;
-      const updated = content.replace(/("version": ")[^"]+("[\s\S]*?"packages": \{[\s\S]*?"": \{[\s\S]*?"name": "ytm-desktop-widget",[\r\n]+\s+"version": ")[^"]+("),/, (...args) => {
+      const updated = content.replace(/("version": ")[^"]+("[\s\S]*?"packages": \{[\s\S]*?"": \{[\s\S]*?"name": "music-desktop-widget",[\r\n]+\s+"version": ")[^"]+("),/, (...args) => {
         replacementCount += 1;
         return `${args[1]}${version}${args[2]}${version}${args[3]},`;
       });
@@ -41,7 +41,7 @@ const replacements = [
     update(content) {
       return replaceOne(
         content,
-        /(\[\[package\]\][\r\n]+name = "ytm-desktop-widget"[\r\n]+version = ")[^"]+("[ \t]*$)/m,
+        /(\[\[package\]\][\r\n]+name = "music-desktop-widget"[\r\n]+version = ")[^"]+("[ \t]*$)/m,
         (_match, before, after) => `${before}${version}${after}`,
         'src-tauri/Cargo.lock',
       );

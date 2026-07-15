@@ -79,7 +79,7 @@ mod tests {
   #[test]
   fn failed_disk_write_does_not_replace_the_cached_settings() {
     let unwritable_file = std::env::temp_dir().join(format!(
-      "ytm-desktop-widget-settings-write-failure-{}",
+      "music-desktop-widget-settings-write-failure-{}",
       std::process::id()
     ));
     std::fs::create_dir_all(&unwritable_file).expect("create write-failure directory");

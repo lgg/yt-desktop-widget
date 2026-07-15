@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "YTM Desktop Widget",
+  "productName": "Music Desktop Widget",
   "version": "../package.json",
   "identifier": "io.github.lgg.ytm-desktop-widget",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "YTM Desktop Widget",
+        "title": "Music Desktop Widget",
         "width": 336,
         "height": 438,
         "minWidth": 252,
@@ -34,7 +34,7 @@
       },
       {
         "label": "settings",
-        "title": "YTM Desktop Widget Settings",
+        "title": "Music Desktop Widget Settings",
         "width": 720,
         "height": 760,
         "minWidth": 620,

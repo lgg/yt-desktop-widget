@@ -1,4 +1,4 @@
-# Architecture
+# Music Desktop Widget Architecture
 
 ## Goals
 
@@ -58,6 +58,7 @@ Responsibilities:
 ### Native backend
 
 - `src-tauri/src/companion.rs`
+- `src-tauri/src/cider.rs`
 - `src-tauri/src/settings.rs`
 - `src-tauri/src/startup.rs`
 - `src-tauri/src/windows_media.rs`
@@ -66,6 +67,7 @@ Responsibilities:
 Responsibilities:
 
 - Companion API HTTP + realtime socket integration
+- Cider loopback REST + shared application-wide Socket.IO integration
 - current-session WinRT metadata, artwork, timeline, capability, and transport integration
 - token storage via keyring
 - settings persistence on disk
@@ -164,6 +166,9 @@ Delivery status: tasks `0050` and `0051` corrected the worker/runtime and isolat
 10. Media text and raster artwork are bounded. Artwork is resolved once per track and omitted from subsequent state events so base64 data is not repeatedly copied through IPC.
 11. Requests have a 15-second caller bound; cancelled connects are not committed, and disconnect/source switching clears the worker's manager, consumer handle, snapshot, and polling state.
 12. The first poll publishes an explicit empty state, and field-level metadata/timeline/playback/control failures retain safe previous/default values without invalidating manager access.
+13. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
+14. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
+15. No WMS media data is persisted in version 3.1.0.
 
 ## Cider flow
 
@@ -172,9 +177,7 @@ Delivery status: tasks `0050` and `0051` corrected the worker/runtime and isolat
 3. Settings accepts a Cider external-application token, validates it against `playback/now-playing`, and stores it in Windows Credential Manager under a Cider-specific account.
 4. The adapter fetches the initial `/api/v1/playback/now-playing` state, listens for Socket.IO `API:Playback` events, and maps bounded fields into the shared playback contract.
 5. Supported transport, seek, and rating actions use `/api/v1/playback/*`; mute remains disabled rather than guessing at a volume restore value.
-12. Public errors stay generic while an optional diagnostic object preserves only stage, HRESULT, and category. Access denied produces localized guidance to launch the portable EXE directly in the normal interactive user session; the app never attempts to escape a restricted launcher.
-13. Native WMS failures append only timestamp, operation, stage, category, and optional HRESULT to a 256 KiB rotating JSONL file under the app log directory. Logging is best-effort and never controls playback success.
-14. No WMS media data is persisted in version 3.1.0.
+6. Main and Settings controllers reuse one live native socket. Intentional disconnect/replacement invalidates the lifecycle before close so it cannot publish a false global transport failure; a genuine close is published once.
 
 ## Settings and persistence
 
@@ -249,7 +252,10 @@ The current structure is intentionally ready for:
 - future alternate responsive/reflowing window layouts beyond the current proportional size modes
 - optional free border resize if a later task defines safe persistence and aspect-ratio behavior
 - additional locale JSON bundles beyond the current English/Russian pair
-- future macOS window behavior work
+- Linux platform services and an official MPRIS/D-Bus adapter before macOS work
+- GitHub CI/release automation for each supported native platform
+- a scalable language picker and additional complete locale bundles
+- macOS window, tray, startup, keychain, build, and signing behavior after the Linux/CI foundations
 - richer diagnostics and logging around Companion reconnects
 - enabling or disabling seek behavior with minimal UI churn
 

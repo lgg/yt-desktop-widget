@@ -2,7 +2,7 @@
 
 ## Summary
 
-Synchronized this repository with `lgg/chatgpt-coding-projects-bootstrap` through version `0002`, adapted to the YTM Desktop Widget Tauri desktop context.
+Synchronized this repository with `lgg/chatgpt-coding-projects-bootstrap` through version `0002`, adapted to the Music Desktop Widget Tauri desktop context.
 
 The sync adds a downstream bootstrap marker, a project-level AI iteration time log, and time-tracking requirements in the task/report templates, Definition of Done, PR checklist, README, and AGENTS.
 

@@ -2305,6 +2305,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "music-desktop-widget"
+version = "3.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "futures-util",
+ "keyring",
+ "reqwest 0.12.28",
+ "rust_socketio",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-mcp-bridge",
+ "tauri-plugin-opener",
+ "thiserror 2.0.18",
+ "tokio",
+ "windows",
+ "windows-future",
+ "winreg",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6259,28 +6281,6 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "synstructure",
-]
-
-[[package]]
-name = "ytm-desktop-widget"
-version = "3.1.0"
-dependencies = [
- "base64 0.22.1",
- "futures-util",
- "keyring",
- "reqwest 0.12.28",
- "rust_socketio",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-mcp-bridge",
- "tauri-plugin-opener",
- "thiserror 2.0.18",
- "tokio",
- "windows",
- "windows-future",
- "winreg",
 ]
 
 [[package]]

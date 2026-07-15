@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { APP_VERSION } from '@/app/defaults';
+import { APP_VERSION, REPOSITORY_URL } from '@/app/defaults';
 import packageJson from '../../package.json';
 import tauriConfig from '../../src-tauri/tauri.conf.json';
 
@@ -32,12 +32,38 @@ describe('application version', () => {
     );
     expect(cargoLock).toMatch(
       new RegExp(
-        `name = "ytm-desktop-widget"\\r?\\nversion = "${escapedVersion}"`,
+        `name = "music-desktop-widget"\\r?\\nversion = "${escapedVersion}"`,
       ),
     );
     expect(packageLock.version).toBe(packageJson.version);
     expect(packageLock.packages['']?.version).toBe(packageJson.version);
     expect(companionSource).toContain('env!("CARGO_PKG_VERSION")');
     expect(packageJson.scripts['version:check']).toBeTypeOf('string');
+  });
+
+  it('keeps the public product and repository identity synchronized', () => {
+    const cargoManifest = readFileSync(
+      resolve(process.cwd(), 'src-tauri/Cargo.toml'),
+      'utf8',
+    );
+    const htmlEntry = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+
+    expect(packageJson.name).toBe('music-desktop-widget');
+    expect(tauriConfig.productName).toBe('Music Desktop Widget');
+    expect(tauriConfig.app.windows.map((window) => window.title)).toEqual([
+      'Music Desktop Widget',
+      'Music Desktop Widget Settings',
+    ]);
+    expect(cargoManifest).toMatch(
+      /\[package\][\s\S]*?name = "music-desktop-widget"/,
+    );
+    expect(cargoManifest).toContain('name = "music_desktop_widget_lib"');
+    expect(REPOSITORY_URL).toBe(
+      'https://github.com/lgg/music-desktop-widget',
+    );
+    expect(htmlEntry).toContain('Music Desktop Widget');
+    expect(htmlEntry).toContain(
+      'YTMDesktop Companion, Windows Media Session, and Cider',
+    );
   });
 });
