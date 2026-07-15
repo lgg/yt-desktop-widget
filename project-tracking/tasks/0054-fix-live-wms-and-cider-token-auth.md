@@ -113,4 +113,4 @@ Excluded:
 - Report: `project-tracking/reports/0054-fix-live-wms-and-cider-token-auth.md`
 - Relevant decisions: `project-tracking/decisions/0007-run-windows-media-on-a-dedicated-mta-worker.md`, `project-tracking/decisions/0008-use-a-loopback-keyring-backed-cider-adapter.md`
 - Time log: `project-tracking/time-log.md`
-- PR/commit: initial branch `codex/0054-fix-live-wms-cider-auth`; lifecycle follow-up branch `codex/0054-stabilize-cider-realtime`; final SHAs recorded in handoff
+- PR/commit: initial branch commit `1f6d149`, merged as `10d7806`; lifecycle follow-up branch commit `f82aeaf`, merged as `fabe4c9`

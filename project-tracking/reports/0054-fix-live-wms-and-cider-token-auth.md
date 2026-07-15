@@ -39,6 +39,7 @@ The initial two live failures had one shared cause: Tauri's active custom-comman
 | Time spent minutes | `12` |
 | Tracking status | `tracked` |
 | Time log row | `project-tracking/time-log.md#2026-07-15-0054-b` |
+| Delivery | Branch commit `f82aeaf`; merged to `master` as `fabe4c9` |
 
 ## Changed Areas
 
