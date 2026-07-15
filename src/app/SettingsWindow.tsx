@@ -157,18 +157,11 @@ export const SettingsWindow = () => {
   const authStatusDetail =
     session.connection.status === 'auth_required' ||
     session.connection.status === 'authenticating'
-      ? getConnectionMessage(
-          t,
-          session.connection,
-          resolvedSourceMode === 'real' &&
-            settings.api.playbackSource === 'windowsMediaSession'
-            ? 'windowsMediaSession'
-            : 'companion',
-        )
+      ? getConnectionMessage(t, session.connection, 'companion')
       : null;
-  const windowsMediaStatusDetail =
-    settings.api.playbackSource === 'windowsMediaSession'
-      ? getConnectionMessage(t, session.connection, 'windowsMediaSession')
+  const playbackSourceStatusDetail =
+    resolvedSourceMode === 'real' && settings.api.playbackSource !== 'companion'
+      ? getConnectionMessage(t, session.connection, settings.api.playbackSource)
       : null;
   const windowsMediaDiagnosticDetail =
     settings.api.playbackSource === 'windowsMediaSession' &&
@@ -627,9 +620,9 @@ export const SettingsWindow = () => {
                 {t(`status.${session.connection.status}`)}
               </span>
             </SettingsRow>
-            {windowsMediaStatusDetail ? (
+            {playbackSourceStatusDetail ? (
               <p className="settings-field__hint">
-                {windowsMediaStatusDetail}
+                {playbackSourceStatusDetail}
               </p>
             ) : null}
             {windowsMediaDiagnosticDetail ? (

@@ -16,11 +16,11 @@ Version `3.1.0` is a Windows-first portable Tauri application with:
 - Vitest, Rust, and Playwright coverage plus live Windows adapter validation;
 - portable local builds, but no automated GitHub build/release workflow yet.
 
-Latest stabilization: [`0054-fix-live-wms-and-cider-token-auth.md`](../tasks/0054-fix-live-wms-and-cider-token-auth.md). The public-repository baseline was completed in [`0055-public-repository-rename-and-documentation-audit.md`](../tasks/0055-public-repository-rename-and-documentation-audit.md).
+Latest completed stabilization: [`0059-fix-source-aware-warning-and-mute-behavior.md`](../tasks/0059-fix-source-aware-warning-and-mute-behavior.md), which made warning recovery adapter-specific and removed unsupported mute controls from Cider/WMS.
 
 ## Tracking Snapshot
 
-- Total tracked tasks: 58
+- Total tracked tasks: 59
 - In progress: 0
 - Open: 0
 - Deferred/planned: 10

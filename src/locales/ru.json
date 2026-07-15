@@ -40,6 +40,17 @@
     "socketClosed": "Подключение к медиасессии Windows закрыто. Попробуйте переподключиться.",
     "unexpected": "Интеграция с медиасессией Windows вернула непредвиденную ошибку. Попробуйте переподключиться."
   },
+  "ciderConnectionMessages": {
+    "authRequired": "Cider требуется токен приложения. Откройте настройки и сохраните токен, созданный в Cider.",
+    "storedAuthRejected": "Cider отклонил сохранённый токен приложения. Создайте или скопируйте действующий токен в Cider и замените его в настройках.",
+    "credentialNotPersisted": "Защищённое хранилище не сохранило токен Cider. Проверьте Диспетчер учётных данных Windows и сохраните токен снова.",
+    "credentialStorage": "Защищённое хранилище недоступно. Проверьте Диспетчер учётных данных Windows и повторите попытку.",
+    "notRunning": "Cider недоступен. Запустите Cider и включите WebSockets в разделе Connectivity.",
+    "apiUnavailable": "Локальный API Cider недоступен. Проверьте WebSockets и доступ внешних приложений в Cider.",
+    "socketError": "Обновления Cider в реальном времени прервались. Виджет скоро повторит подключение.",
+    "socketClosed": "Соединение с Cider закрыто. Попробуйте переподключиться.",
+    "unexpected": "Интеграция с Cider вернула непредвиденную ошибку. Проверьте доступ к Cider в настройках."
+  },
   "widget": {
     "transport": {
       "previous": "Предыдущий трек",
@@ -130,6 +141,7 @@
     "ciderStates": {
       "discovering": { "eyebrow": "Cider", "title": "Поиск Cider", "body": "Проверяется официальный локальный API Cider на 127.0.0.1:10767." },
       "disconnected": { "eyebrow": "Cider", "title": "Cider недоступен", "body": "Запустите Cider и включите WebSockets в разделе Connectivity." },
+      "auth_required": { "eyebrow": "Доступ к Cider", "title": "Требуется токен приложения Cider", "body": "Откройте настройки и сохраните токен, созданный в Cider в разделе Manage External Application Access." },
       "reconnecting": { "eyebrow": "Cider", "title": "Переподключение к Cider", "body": "Виджет восстанавливает локальное realtime-соединение." },
       "error": { "eyebrow": "Cider", "title": "Cider требует внимания", "body": "Проверьте WebSockets и токен внешнего приложения в Cider." },
       "empty": { "eyebrow": "Cider", "title": "Ничего не воспроизводится", "body": "Запустите трек в Cider." }

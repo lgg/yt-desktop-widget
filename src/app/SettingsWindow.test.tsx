@@ -173,6 +173,45 @@ describe('SettingsWindow UI display preferences', () => {
     }
   });
 
+  it('shows source-specific Cider authorization guidance', () => {
+    const previousSource = model.settings.api.playbackSource;
+    const previousSourceMode = model.settings.api.sourceMode;
+    const previousResolvedSourceMode = model.resolvedSourceMode;
+    const previousConnection = { ...model.session.connection };
+    model.settings.api.playbackSource = 'cider';
+    model.settings.api.sourceMode = 'real';
+    model.resolvedSourceMode = 'real';
+    model.session.connection = {
+      status: 'auth_required',
+      hasStoredAuth: false,
+      retryAttempt: 0,
+      retryAt: null,
+      messageKey: 'authRequired',
+      detail: 'sensitive Cider response',
+    };
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(
+        screen.getByText(/Cider needs an application token/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Companion authorization is required/i),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('sensitive Cider response')).toBeNull();
+    } finally {
+      model.settings.api.playbackSource = previousSource;
+      model.settings.api.sourceMode = previousSourceMode;
+      model.resolvedSourceMode = previousResolvedSourceMode;
+      model.session.connection = previousConnection;
+    }
+  });
+
   it('shows actionable safe diagnostics when Windows denies media access', () => {
     const previousSource = model.settings.api.playbackSource;
     const previousMode = model.resolvedSourceMode;

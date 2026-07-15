@@ -40,6 +40,17 @@
     "socketClosed": "The Windows media-session connection closed. Try reconnecting.",
     "unexpected": "The Windows media integration returned an unexpected error. Try reconnecting."
   },
+  "ciderConnectionMessages": {
+    "authRequired": "Cider needs an application token. Open Settings and save a token created in Cider.",
+    "storedAuthRejected": "Cider rejected the stored application token. Create or copy a valid token in Cider, then replace it in Settings.",
+    "credentialNotPersisted": "Secure credential storage did not retain the Cider token. Check Windows Credential Manager and save it again.",
+    "credentialStorage": "Secure credential storage is unavailable. Check Windows Credential Manager and try again.",
+    "notRunning": "Cider is unavailable. Start Cider and enable WebSockets in Connectivity.",
+    "apiUnavailable": "Cider's local API is unavailable. Check WebSockets and external application access in Cider.",
+    "socketError": "Cider realtime updates were interrupted. The widget will retry shortly.",
+    "socketClosed": "The Cider connection closed. Try reconnecting.",
+    "unexpected": "The Cider integration returned an unexpected error. Check Cider access in Settings."
+  },
   "widget": {
     "transport": {
       "previous": "Previous",
@@ -130,6 +141,7 @@
     "ciderStates": {
       "discovering": { "eyebrow": "Cider", "title": "Finding Cider", "body": "Checking the official local Cider API on 127.0.0.1:10767." },
       "disconnected": { "eyebrow": "Cider", "title": "Cider is unavailable", "body": "Start Cider and enable WebSockets in Connectivity." },
+      "auth_required": { "eyebrow": "Cider access", "title": "Cider application token required", "body": "Open Settings and save a token created in Cider under Manage External Application Access." },
       "reconnecting": { "eyebrow": "Cider", "title": "Reconnecting to Cider", "body": "The widget is restoring the local realtime connection." },
       "error": { "eyebrow": "Cider", "title": "Cider needs attention", "body": "Check WebSockets and the external application token in Cider." },
       "empty": { "eyebrow": "Cider", "title": "Nothing is playing", "body": "Start a track in Cider." }

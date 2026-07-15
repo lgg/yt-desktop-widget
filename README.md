@@ -147,7 +147,7 @@ The detailed roadmap also records deferred Windows packaging, optional local WMS
 
 ## Development effort snapshot
 
-As of 2026-07-15, the repository records **about 2 working days and 2 hours (17 hours 57 minutes tracked)** of focused AI-assisted implementation, debugging, live validation, and documentation work.
+As of 2026-07-15, the repository records **about 2 working days and 2.5 hours (18 hours 30 minutes tracked)** of focused AI-assisted implementation, debugging, live validation, and documentation work.
 
 The same history is roughly estimated at **about 10 million text tokens** and **approximately USD 100** if performed through the standard GPT-5.6 Sol API, including repeated context reads and tool-driven development loops. This is a deliberately rounded project estimate rather than a billing record; the pricing reference is the official [GPT-5.6 Sol model page](https://developers.openai.com/api/docs/models/gpt-5.6-sol), captured on 2026-07-15.
 

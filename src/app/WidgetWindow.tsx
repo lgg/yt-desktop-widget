@@ -172,7 +172,8 @@ export const WidgetWindow = () => {
   const connectionBadgeVisible =
     settings.ui.connectionBadgeVisibility === 'always' ||
     (settings.ui.connectionBadgeVisibility === 'hover' && interactionActive);
-  const muteButtonRendered = settings.ui.muteButtonVisibility !== 'hidden';
+  const muteButtonRendered =
+    settings.ui.muteButtonVisibility !== 'hidden' && playback?.canMute === true;
   const muteButtonVisible =
     settings.ui.muteButtonVisibility === 'always' ||
     (settings.ui.muteButtonVisibility === 'hover' && interactionActive);
@@ -425,6 +426,48 @@ export const WidgetWindow = () => {
           />
         );
       case 'auth_required':
+        if (ciderActive) {
+          return (
+            <WidgetStateCard
+              eyebrow={t('widget.ciderStates.auth_required.eyebrow')}
+              title={t('widget.ciderStates.auth_required.title')}
+              body={
+                connectionMessage ?? t('widget.ciderStates.auth_required.body')
+              }
+              actions={
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void openSettings()}
+                >
+                  {t('widget.actions.openSettings')}
+                </button>
+              }
+            />
+          );
+        }
+
+        if (windowsMediaSessionActive) {
+          return (
+            <WidgetStateCard
+              eyebrow={t('widget.windowsMediaStates.error.eyebrow')}
+              title={t('widget.windowsMediaStates.error.title')}
+              body={
+                connectionMessage ?? t('widget.windowsMediaStates.error.body')
+              }
+              actions={
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void handleReconnect()}
+                >
+                  {t('app.retry')}
+                </button>
+              }
+            />
+          );
+        }
+
         return (
           <WidgetStateCard
             eyebrow={t('widget.states.auth_required.eyebrow')}
@@ -507,6 +550,30 @@ export const WidgetWindow = () => {
           />
         );
       case 'error':
+        if (
+          ciderActive &&
+          (session.connection.messageKey === 'authRequired' ||
+            session.connection.messageKey === 'storedAuthRejected' ||
+            session.connection.messageKey === 'credentialNotPersisted' ||
+            session.connection.messageKey === 'credentialStorage')
+        ) {
+          return (
+            <WidgetStateCard
+              body={connectionMessage ?? t(sourceStateKey('error', 'body'))}
+              compact
+              actions={
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void openSettings()}
+                >
+                  {t('widget.actions.openSettings')}
+                </button>
+              }
+            />
+          );
+        }
+
         return (
           <WidgetStateCard
             body={connectionMessage ?? t(sourceStateKey('error', 'body'))}
@@ -572,9 +639,7 @@ export const WidgetWindow = () => {
                       : 'icon-button widget-window__window-action'
                   }
                   type="button"
-                  disabled={
-                    !canSendCommands || !playback.canMute || !muteButtonVisible
-                  }
+                  disabled={!canSendCommands || !muteButtonVisible}
                   aria-hidden={!muteButtonVisible}
                   aria-label={
                     playback.isMuted
@@ -776,7 +841,8 @@ export const WidgetWindow = () => {
           {settings.ui.widgetBlockOrder.map(renderWidgetBlock)}
 
           {session.connection.authCode &&
-          session.connection.status === 'auth_required' ? (
+          session.connection.status === 'auth_required' &&
+          activePlaybackSource === 'companion' ? (
             <div className="code-chip code-chip--floating">
               <span>{t('widget.auth.codeLabel')}</span>
               <strong>{session.connection.authCode}</strong>
