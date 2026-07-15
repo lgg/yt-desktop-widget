@@ -136,6 +136,43 @@ describe('SettingsWindow UI display preferences', () => {
     }
   });
 
+  it('presents the Cider token as one accessible secure credential form', () => {
+    const previousSource = model.settings.api.playbackSource;
+    model.settings.api.playbackSource = 'cider';
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      const credentialForm = screen.getByRole('group', {
+        name: 'Cider application token',
+      });
+      const tokenInput = within(credentialForm).getByLabelText(
+        'Cider application token',
+      );
+      const saveButton = within(credentialForm).getByRole('button', {
+        name: 'Save token securely',
+      });
+
+      expect(credentialForm).toHaveClass('cider-credential');
+      expect(tokenInput).toHaveClass('cider-credential__input');
+      expect(saveButton).toBeDisabled();
+      expect(within(credentialForm).getByRole('status')).toHaveTextContent(
+        'Stored securely in Windows Credential Manager',
+      );
+      expect(
+        within(credentialForm).getByRole('button', {
+          name: 'Clear Cider token',
+        }),
+      ).toHaveClass('cider-credential__clear');
+    } finally {
+      model.settings.api.playbackSource = previousSource;
+    }
+  });
+
   it('shows actionable safe diagnostics when Windows denies media access', () => {
     const previousSource = model.settings.api.playbackSource;
     const previousMode = model.resolvedSourceMode;

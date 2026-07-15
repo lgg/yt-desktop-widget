@@ -166,6 +166,7 @@
         "ciderTokenPlaceholder": "Вставьте токен из Cider",
         "ciderTokenInvalid": "Cider отклонил токен или локальный API недоступен.",
         "ciderSaveToken": "Безопасно сохранить",
+        "ciderStoredSecurely": "Надёжно сохранено в диспетчере учётных данных Windows",
         "windowsMediaLimitations": "В режиме Windows Media Session функции нравится, не нравится и отключения звука недоступны и безопасно игнорируются. Доступные команды воспроизведения зависят от текущего проигрывателя.",
         "diagnostic": "Техническая диагностика: {{stage}} · {{hresult}} · {{category}}",
         "diagnosticUnavailable": "недоступно"

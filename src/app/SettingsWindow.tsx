@@ -28,10 +28,12 @@ import {
 } from '@/app/widgetSize';
 import { ArtworkBackground } from '@/components/ArtworkBackground';
 import {
+  CheckCircleIcon,
   CloseIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   GitHubIcon,
+  LockIcon,
   RefreshIcon,
   SparkIcon,
 } from '@/components/icons';
@@ -523,18 +525,98 @@ export const SettingsWindow = () => {
               </p>
             ) : null}
             {settings.api.playbackSource === 'cider' ? (
-              <div className="settings-field">
-                <p className="settings-field__hint">{t('settingsWindow.sections.source.ciderDescription')}</p>
-                <label className="settings-field__label" htmlFor="cider-token">{t('settingsWindow.sections.source.ciderToken')}</label>
-                <div className="endpoint-field">
-                  <input id="cider-token" type="password" autoComplete="off" value={ciderToken} placeholder={t('settingsWindow.sections.source.ciderTokenPlaceholder')} onChange={(event) => { setCiderTokenDraft(event.target.value); setCiderTokenError(null); }} />
-                  <button className="secondary-button" type="button" onClick={() => void (async () => {
-                    try { await setCiderToken(ciderToken); setCiderTokenDraft(''); }
-                    catch { setCiderTokenError(t('settingsWindow.sections.source.ciderTokenInvalid')); }
-                  })()}>{t('settingsWindow.sections.source.ciderSaveToken')}</button>
+              <div
+                className="settings-field cider-credential"
+                role="group"
+                aria-labelledby="cider-token-label"
+              >
+                <div className="cider-credential__header">
+                  <span className="cider-credential__icon" aria-hidden="true">
+                    <LockIcon />
+                  </span>
+                  <div className="cider-credential__copy">
+                    <label
+                      className="settings-field__label cider-credential__label"
+                      id="cider-token-label"
+                      htmlFor="cider-token"
+                    >
+                      {t('settingsWindow.sections.source.ciderToken')}
+                    </label>
+                    <p
+                      className="settings-field__hint"
+                      id="cider-token-description"
+                    >
+                      {t('settingsWindow.sections.source.ciderDescription')}
+                    </p>
+                  </div>
                 </div>
-                {ciderTokenError ? <p className="settings-field__error">{ciderTokenError}</p> : null}
-                {session.connection.hasStoredAuth ? <button className="ghost-button" type="button" onClick={() => void clearAuth()}>{t('settingsWindow.actions.clearCiderToken')}</button> : null}
+
+                <div className="cider-credential__form">
+                  <input
+                    className={`settings-field__input cider-credential__input${ciderTokenError ? ' settings-field__input--invalid' : ''}`}
+                    id="cider-token"
+                    type="password"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={ciderToken}
+                    placeholder={t('settingsWindow.sections.source.ciderTokenPlaceholder')}
+                    aria-invalid={Boolean(ciderTokenError)}
+                    aria-describedby={
+                      ciderTokenError
+                        ? 'cider-token-description cider-token-error'
+                        : 'cider-token-description'
+                    }
+                    onChange={(event) => {
+                      setCiderTokenDraft(event.target.value);
+                      setCiderTokenError(null);
+                    }}
+                  />
+                  <button
+                    className="primary-button cider-credential__save"
+                    type="button"
+                    disabled={!ciderToken.trim()}
+                    onClick={() =>
+                      void (async () => {
+                        try {
+                          await setCiderToken(ciderToken);
+                          setCiderTokenDraft('');
+                        } catch {
+                          setCiderTokenError(
+                            t('settingsWindow.sections.source.ciderTokenInvalid'),
+                          );
+                        }
+                      })()
+                    }
+                  >
+                    {t('settingsWindow.sections.source.ciderSaveToken')}
+                  </button>
+                </div>
+
+                {ciderTokenError ? (
+                  <p
+                    className="settings-field__hint settings-field__hint--error"
+                    id="cider-token-error"
+                    role="alert"
+                  >
+                    {ciderTokenError}
+                  </p>
+                ) : null}
+
+                {session.connection.hasStoredAuth ? (
+                  <div className="cider-credential__footer">
+                    <span className="cider-credential__status" role="status">
+                      <CheckCircleIcon />
+                      {t('settingsWindow.sections.source.ciderStoredSecurely')}
+                    </span>
+                    <button
+                      className="ghost-button cider-credential__clear"
+                      type="button"
+                      onClick={() => void clearAuth()}
+                    >
+                      {t('settingsWindow.actions.clearCiderToken')}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             <SettingsRow className="settings-row--stacked settings-row--status">

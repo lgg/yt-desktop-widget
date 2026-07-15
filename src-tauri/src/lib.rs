@@ -711,3 +711,30 @@ mod window_size_tests {
     assert_eq!(clamp_main_window_size(f64::NAN, f64::INFINITY), (336.0, 438.0));
   }
 }
+
+#[cfg(test)]
+mod command_permission_tests {
+  const LIB_SOURCE: &str = include_str!("lib.rs");
+  const PERMISSION_MANIFEST: &str = include_str!("../permissions/default.toml");
+
+  #[test]
+  fn permission_manifest_allows_every_registered_app_command() {
+    let handler_block = LIB_SOURCE
+      .split_once(".invoke_handler(tauri::generate_handler![")
+      .and_then(|(_, suffix)| suffix.split_once("])"))
+      .map(|(block, _)| block)
+      .expect("registered Tauri command block must remain parseable by the ACL regression");
+    let registered_commands = handler_block
+      .lines()
+      .map(str::trim)
+      .map(|line| line.trim_end_matches(','))
+      .filter(|line| !line.is_empty());
+
+    for command in registered_commands {
+      assert!(
+        PERMISSION_MANIFEST.contains(&format!("\"{command}\"")),
+        "Tauri permission manifest does not allow registered command `{command}`"
+      );
+    }
+  }
+}
