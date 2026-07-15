@@ -13,6 +13,7 @@ The two live failures had one shared cause: Tauri's active custom-command permis
 - Switched the same release between Cider and WMS with normal UI controls. Both showed `Live`, loaded metadata/artwork, toggled play/pause, and returned to the starting playback state.
 - Added a RED/GREEN Settings regression for a single accessible Cider credential form, then replaced the unstyled native input/button row with a localized glass card, lock/success iconography, empty-submit guard, safe error semantics, secure-storage status, and compact clear action.
 - Measured the rebuilt card in the real 720 px Settings WebView: input/save were aligned at 46 px, all children remained inside the card, and the page had no horizontal overflow while Cider remained `Live`.
+- During the final handoff check, Cider's external local server temporarily stopped listening; the widget correctly showed `Attention`, and after restarting Cider and waiting for its API startup, the normal Reconnect action returned the release to `Live`.
 - Restored the user's original Cider source selection and left one fresh portable process open for inspection.
 
 ## Time Tracking
@@ -21,8 +22,8 @@ The two live failures had one shared cause: Tauri's active custom-command permis
 | --- | --- |
 | Iteration ID | `2026-07-15-0054-a` |
 | Started at | `2026-07-15T06:34:52+03:00` |
-| Finished at | `2026-07-15T07:15:40+03:00` |
-| Time spent minutes | `41` |
+| Finished at | `2026-07-15T07:19:55+03:00` |
+| Time spent minutes | `46` |
 | Tracking status | `tracked` |
 | Time log row | `project-tracking/time-log.md#2026-07-15-0054-a` |
 
@@ -72,6 +73,7 @@ The two live failures had one shared cause: Tauri's active custom-command permis
 | `npm run build:desktop` | Passed | Portable `3.1.0` release built at `src-tauri/target/release/ytm-desktop-widget.exe`; 16,428,544 bytes; SHA-256 `95AFB20EF74631889F25E5F25E5DBAC2E75128BAF8EC9D443EA64C123D15F77A`. |
 | Live Cider REST/auth | Passed | Protected endpoints: `403` without token, `200` with `apptoken`; values were not printed. |
 | Live Cider portable flow | Passed | Real Settings save, Credential Manager reload, `Live`, artwork/metadata, established socket, play/pause/restore. |
+| Final live handoff | Passed | After Cider's own API restart delay, Settings Reconnect restored `Live`; both Cider and the portable widget were left responsive. |
 | Live WMS portable flow | Passed | `available: true`, no diagnostic, `Live`, artwork/metadata, play/pause/restore. |
 | Visual QA | Passed | Reviewed both source-selected `Live` states plus the rebuilt credential card in the real WebView. Card: 617×223 px; input/save: 46 px aligned; compact clear: 153×36 px; no clipping or horizontal overflow. |
 | Secret scan | Passed | Disposable token absent from repository files; no response values or credentials were added to diagnostics. |
