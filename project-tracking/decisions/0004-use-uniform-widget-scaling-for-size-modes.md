@@ -19,7 +19,7 @@ Use these modes:
 - Compact: 85%.
 - Default: 100% and visually identical to the current widget.
 - Large: 125%.
-- Custom: a persisted 75%-150% percentage.
+- Custom: a persisted 75%-600% percentage. This provides a maximum 2016 x 2628 reference geometry and accepts an exact 2000 px width while retaining the canonical ratio.
 
 Custom width and height fields are two views of one canonical scale percentage. Editing either dimension derives and clamps the percentage, then recalculates the other dimension from the 336 x 438 reference ratio. Free non-proportional resizing is not supported.
 
@@ -48,6 +48,7 @@ Negative / tradeoffs:
 - The custom width/height ratio is intentionally locked.
 - Text is transformed with the rest of the widget rather than reflowed at a new logical width.
 - Native window bounds must cover every scaled intrinsic state.
+- The 600% ceiling expands the maximum dynamic native height to 4680 px (`780 x 6`) while the minimum and all preset behavior remain unchanged.
 
 ## Implementation Notes
 
@@ -63,6 +64,6 @@ Review if the product introduces free border resizing, alternate window composit
 
 ## Links
 
-- Related tasks: [`0043-add-widget-size-presets-and-custom-dimensions.md`](../tasks/0043-add-widget-size-presets-and-custom-dimensions.md), [`0006-add-future-widget-size-presets-and-manual-resize-support.md`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md)
+- Related tasks: [`0043-add-widget-size-presets-and-custom-dimensions.md`](../tasks/0043-add-widget-size-presets-and-custom-dimensions.md), [`0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`](../tasks/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md), [`0006-add-future-widget-size-presets-and-manual-resize-support.md`](../tasks/0006-add-future-widget-size-presets-and-manual-resize-support.md)
 - Related reports: [`0043-add-widget-size-presets-and-custom-dimensions.md`](../reports/0043-add-widget-size-presets-and-custom-dimensions.md)
 - Related PRs: branch `codex/0043-widget-size-presets-custom-dimensions`

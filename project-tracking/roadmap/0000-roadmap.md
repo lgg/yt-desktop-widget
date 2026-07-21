@@ -16,12 +16,12 @@ Version `3.1.0` is a Windows-first portable Tauri application with:
 - Vitest, Rust, and Playwright coverage plus live Windows adapter validation;
 - portable local builds, but no automated GitHub build/release workflow yet.
 
-Latest completed stabilization: [`0060-fix-live-mute-visibility-state-and-restore.md`](../tasks/0060-fix-live-mute-visibility-state-and-restore.md), which made Companion mute stateful and reversible, fully hid the idle hover-only control, and documented unsupported WMS/Cider mute modes.
+Current stabilization: [`0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`](../tasks/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md) has implemented and freshly verified proportional widget sizing beyond 2000 px plus Cider's official volume-backed mute/unmute contract. Direct SSH Git publication and merge were explicitly authorized on 2026-07-21.
 
 ## Tracking Snapshot
 
-- Total tracked tasks: 60
-- In progress: 0
+- Total tracked tasks: 61
+- In progress: 1
 - Open: 0
 - Deferred/planned: 10
 - Blocked: 0

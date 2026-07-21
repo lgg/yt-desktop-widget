@@ -67,18 +67,24 @@ describe('widget size calculations', () => {
     });
   });
 
-  it('clamps custom dimensions to the safe 75%-150% range', () => {
+  it('accepts an exact 2000px linked width and clamps only beyond 600%', () => {
     expect(WIDGET_CUSTOM_MIN_PERCENTAGE).toBe(75);
-    expect(WIDGET_CUSTOM_MAX_PERCENTAGE).toBe(150);
+    expect(WIDGET_CUSTOM_MAX_PERCENTAGE).toBe(600);
     expect(getCustomWidgetScaleFromWidth(1)).toBe(75);
-    expect(getCustomWidgetScaleFromHeight(10_000)).toBe(150);
+    expect(getCustomWidgetScaleFromHeight(10_000)).toBe(600);
     expect(getWidgetReferenceDimensions(75)).toEqual({
       width: 252,
       height: 329,
     });
-    expect(getWidgetReferenceDimensions(150)).toEqual({
-      width: 504,
-      height: 657,
+    const scaleFrom2000px = getCustomWidgetScaleFromWidth(2000);
+    expect(scaleFrom2000px).toBeCloseTo(595.238095, 5);
+    expect(getWidgetReferenceDimensions(scaleFrom2000px)).toEqual({
+      width: 2000,
+      height: 2607,
+    });
+    expect(getWidgetReferenceDimensions(600)).toEqual({
+      width: 2016,
+      height: 2628,
     });
   });
 });

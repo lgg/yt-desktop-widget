@@ -174,10 +174,13 @@ Delivery status: tasks `0050` and `0051` corrected the worker/runtime and isolat
 
 1. `playbackSource: cider` selects a dedicated gateway; it is not inferred through WMS.
 2. Native discovery and REST calls are fixed to `http://127.0.0.1:10767`; remote/LAN endpoints are intentionally rejected by design.
-3. Settings accepts a Cider external-application token, validates it against `playback/now-playing`, and stores it in Windows Credential Manager under a Cider-specific account.
-4. The adapter fetches the initial `/api/v1/playback/now-playing` state, listens for Socket.IO `API:Playback` events, and maps bounded fields into the shared playback contract.
-5. Supported transport, seek, and rating actions use `/api/v1/playback/*`; mute remains disabled rather than guessing at a volume restore value.
-6. Main and Settings controllers reuse one live native socket. Intentional disconnect/replacement invalidates the lifecycle before close so it cannot publish a false global transport failure; a genuine close is published once.
+3. Settings accepts a Cider external-application token, validates it against `playback/now-playing`, and stores it in Windows Credential Manager under a Cider-specific account. Native requests send it only in the `apptoken` header; it is not placed in URLs, frontend settings, events, logs, or public errors.
+4. The adapter requires the initial `/api/v1/playback/now-playing` state and independently attempts `GET /api/v1/playback/volume`. A volume failure leaves now-playing connected with `canMute: false`; a later valid REST retry or socket event recovers capability without restarting the app.
+5. Valid finite Cider volume values stay in the native `0..1` domain and are normalized to the shared `0..100` playback contract. Socket.IO `API:Playback` events of type `playerStatus.volumeDidChange` update only volume/capability memory and preserve track metadata.
+6. Mute and unmute use `POST /api/v1/playback/volume`. Mute posts zero after remembering a reliable non-zero level; unmute restores the current connection's last non-zero value, then manager-level memory retained across reconnect, then a conservative 25% fallback. State changes are published only after successful REST confirmation, while repeated already-satisfied commands are idempotent.
+7. Supported transport, seek, and rating actions continue to use `/api/v1/playback/*`. Windows Media Session remains mute-unsupported; Companion keeps its distinct official mute/unmute path.
+8. Main and Settings controllers reuse one live native socket, one authoritative playback/volume cache, and one actor-style command queue. The Tauri manager lock is released before a command waits on HTTP, and the short playback-cache lock is never held across network I/O.
+9. Intentional disconnect/replacement invalidates the lifecycle before close so it cannot publish a false global transport failure; a genuine close is published once.
 
 ## Settings and persistence
 

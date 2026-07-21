@@ -164,7 +164,7 @@ describe('settingsRepository browser persistence', () => {
     );
     const invalidSettings = await loadSettings();
     expect(invalidSettings.ui.widgetSizeMode).toBe('default');
-    expect(invalidSettings.ui.customWidgetScalePercentage).toBe(150);
+    expect(invalidSettings.ui.customWidgetScalePercentage).toBe(600);
 
     window.localStorage.setItem(
       STORAGE_KEY,

@@ -342,7 +342,7 @@ fn normalize_widget_size_mode(value: Option<String>, fallback: &str) -> String {
 fn normalize_custom_widget_scale_percentage(value: Option<f64>, fallback: f64) -> f64 {
   value
     .filter(|candidate| candidate.is_finite())
-    .map(|candidate| candidate.clamp(75.0, 150.0))
+    .map(|candidate| candidate.clamp(75.0, 600.0))
     .unwrap_or(fallback)
 }
 
@@ -613,7 +613,7 @@ mod tests {
 
     let serialized = serde_json::to_value(settings).expect("settings should serialize");
     assert_eq!(serialized["ui"]["widgetSizeMode"], "default");
-    assert_eq!(serialized["ui"]["customWidgetScalePercentage"], 150.0);
+    assert_eq!(serialized["ui"]["customWidgetScalePercentage"], 600.0);
   }
 
   #[test]

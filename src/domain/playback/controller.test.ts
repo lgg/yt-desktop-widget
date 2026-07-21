@@ -8,6 +8,7 @@ import type {
   GatewayConnectResult,
   GatewayConnection,
   GatewayEventHandlers,
+  PlaybackCommand,
 } from '@/domain/playback/types';
 
 const makeDiscovery = (): DiscoveryInfo => ({
@@ -247,6 +248,65 @@ describe('PlaybackController', () => {
       volume: 37,
       isMuted: false,
     });
+    vi.useRealTimers();
+  });
+
+  it('uses authoritative Cider volume events instead of the Companion-only mute override', async () => {
+    let onState: GatewayEventHandlers['onState'] = () => undefined;
+    const initialState: CompanionRawState = {
+      ...makeRawState(25),
+      capabilities: { canMute: true },
+      player: {
+        ...makeRawState(25).player,
+        volume: 42,
+      },
+    };
+    const send = vi.fn((command: PlaybackCommand) => {
+      onState({
+        ...initialState,
+        player: {
+          ...initialState.player,
+          volume: command.type === 'mute' ? 0 : 42,
+        },
+      });
+      return Promise.resolve();
+    });
+    const gateway: CompanionGateway = {
+      kind: 'cider',
+      discover: vi.fn(() => Promise.resolve(makeDiscovery())),
+      hasStoredAuth: vi.fn(() => Promise.resolve(true)),
+      connect: vi.fn((handlers: GatewayEventHandlers) => {
+        onState = handlers.onState;
+        return Promise.resolve({
+          connection: {
+            send,
+            disconnect: vi.fn(() => Promise.resolve()),
+          },
+          initialState,
+        });
+      }),
+      requestAuthCode: vi.fn(() => Promise.resolve({ code: 'unused' })),
+      completeAuth: vi.fn(() => Promise.resolve()),
+      clearAuth: vi.fn(() => Promise.resolve()),
+    };
+
+    const controller = new PlaybackController(gateway);
+    await controller.start();
+    await controller.sendCommand({ type: 'mute' });
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 0,
+      isMuted: true,
+      canMute: true,
+    });
+
+    await controller.sendCommand({ type: 'unmute' });
+    expect(controller.getSnapshot().playback).toMatchObject({
+      volume: 42,
+      isMuted: false,
+      canMute: true,
+    });
+    expect(send).toHaveBeenNthCalledWith(1, { type: 'mute' });
+    expect(send).toHaveBeenNthCalledWith(2, { type: 'unmute' });
     vi.useRealTimers();
   });
 

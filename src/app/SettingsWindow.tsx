@@ -155,12 +155,12 @@ export const SettingsWindow = () => {
   const debugMockModeActive = settings.api.sourceMode === 'simulator';
   const muteButtonSupported =
     resolvedSourceMode === 'simulator' ||
-    settings.api.playbackSource === 'companion';
+    settings.api.playbackSource !== 'windowsMediaSession';
   const muteButtonDescriptionKey =
     !muteButtonSupported &&
     settings.api.playbackSource === 'windowsMediaSession'
       ? 'settingsWindow.sections.ui.muteButtonVisibilityDescriptionWindowsMedia'
-      : !muteButtonSupported && settings.api.playbackSource === 'cider'
+      : settings.api.playbackSource === 'cider'
         ? 'settingsWindow.sections.ui.muteButtonVisibilityDescriptionCider'
         : 'settingsWindow.sections.ui.muteButtonVisibilityDescription';
   const authBusy = session.connection.status === 'authenticating';

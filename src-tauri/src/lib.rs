@@ -37,9 +37,9 @@ const WINDOW_FOCUS_LOSS_DELAY: Duration = Duration::from_millis(80);
 const MAIN_WINDOW_DEFAULT_WIDTH: f64 = 336.0;
 const MAIN_WINDOW_DEFAULT_HEIGHT: f64 = 438.0;
 const MAIN_WINDOW_MIN_WIDTH: f64 = 252.0;
-const MAIN_WINDOW_MAX_WIDTH: f64 = 504.0;
+const MAIN_WINDOW_MAX_WIDTH: f64 = 2016.0;
 const MAIN_WINDOW_MIN_HEIGHT: f64 = 270.0;
-const MAIN_WINDOW_MAX_HEIGHT: f64 = 1170.0;
+const MAIN_WINDOW_MAX_HEIGHT: f64 = 4680.0;
 #[cfg(debug_assertions)]
 const MCP_BRIDGE_BASE_PORT: u16 = 39223;
 
@@ -333,7 +333,11 @@ async fn cider_disconnect(state: tauri::State<'_, AppState>) -> Result<(), Comma
 #[tauri::command]
 async fn cider_send_command(state: tauri::State<'_, AppState>, command: PlaybackCommand) -> Result<(), CommandError> {
   let token = cider::load_token()?.ok_or_else(CommandError::auth_required)?;
-  state.cider.lock().await.send_command(&token, &command).await
+  let command_client = {
+    let manager = state.cider.lock().await;
+    manager.command_client()?
+  };
+  command_client.send(token, command).await
 }
 
 fn app_window(app: &AppHandle, label: &str) -> Result<WebviewWindow, CommandError> {
@@ -707,7 +711,8 @@ mod window_size_tests {
   fn clamps_main_window_dimensions_to_supported_scaled_bounds() {
     assert_eq!(clamp_main_window_size(336.0, 438.0), (336.0, 438.0));
     assert_eq!(clamp_main_window_size(1.0, 1.0), (252.0, 270.0));
-    assert_eq!(clamp_main_window_size(10_000.0, 10_000.0), (504.0, 1170.0));
+    assert_eq!(clamp_main_window_size(2000.0, 2607.0), (2000.0, 2607.0));
+    assert_eq!(clamp_main_window_size(10_000.0, 10_000.0), (2016.0, 4680.0));
     assert_eq!(clamp_main_window_size(f64::NAN, f64::INFINITY), (336.0, 438.0));
   }
 }
