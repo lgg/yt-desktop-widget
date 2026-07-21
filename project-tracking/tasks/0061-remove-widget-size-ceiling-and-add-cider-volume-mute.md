@@ -2,9 +2,9 @@
 
 ## Status
 
-In Progress
+Completed
 
-Implementation, documentation, audits, and local verification are complete. Publication resumed on 2026-07-21 after the user explicitly authorized console Git push and merge through the repository's SSH remote; GitHub CLI authentication remains unavailable and is not required for that direct Git path.
+Implementation, documentation, audits, fresh local verification, SSH branch publication, and merge into the pushed `master` branch are complete. The user explicitly authorized direct console Git push and merge on 2026-07-21, superseding the earlier draft-PR handoff while GitHub CLI authentication remained unavailable.
 
 ## Context
 
@@ -71,8 +71,8 @@ Out of scope:
 | --- | --- |
 | Iteration ID | `2026-07-21-0061-b` |
 | Started at | `2026-07-21T18:26:52.3114665+03:00` |
-| Finished at | `2026-07-21T18:41:26.6154352+03:00` |
-| Time spent minutes | `15` |
+| Finished at | `2026-07-21T18:48:39.5057515+03:00` |
+| Time spent minutes | `22` |
 | Tracking status | `tracked` |
 | Time log row | [`project-tracking/time-log.md`](../time-log.md) (`2026-07-21-0061-b`) |
 
@@ -91,7 +91,7 @@ Out of scope:
 - [x] English/Russian UI copy, README matrices, architecture/decisions, roadmap, task/report, and time log match the delivered behavior.
 - [x] Two post-implementation audits cover capability truthfulness/data flow and concurrency/security/backward compatibility respectively, with findings resolved or recorded.
 - [x] Relevant Rust/Vitest/Playwright/static/build checks pass, and any unavailable live Cider test is stated rather than implied.
-- [ ] Changes are committed on `codex/0061-large-widget-cider-volume`, pushed, and a pull request is opened.
+- [x] Changes are committed on `codex/0061-large-widget-cider-volume`, pushed, and merged into pushed `master` through the user-authorized direct Git workflow.
 - [x] Related code, docs, tests, config, roadmap, task, report, bootstrap-sync, and time-log files are updated when relevant. Bootstrap rules did not change, so `bootstrap-sync.md` required no edit.
 - [x] Time tracking is filled in task, report, and `project-tracking/time-log.md`, or the reason for approximate/missing tracking is explicit.
 - [x] No mismatch remains between frontend, native backend, Companion API assumptions, tests, docs, and release/config.
@@ -134,4 +134,4 @@ Out of scope:
 - Related decisions: [`0004-use-uniform-widget-scaling-for-size-modes.md`](../decisions/0004-use-uniform-widget-scaling-for-size-modes.md), [`0008-use-a-loopback-keyring-backed-cider-adapter.md`](../decisions/0008-use-a-loopback-keyring-backed-cider-adapter.md)
 - Related reports: [`0060-fix-live-mute-visibility-state-and-restore.md`](../reports/0060-fix-live-mute-visibility-state-and-restore.md), [`0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`](../reports/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md)
 - Time log: [`project-tracking/time-log.md`](../time-log.md) (`2026-07-15-0061-a`)
-- PR/commit: branch `codex/0061-large-widget-cider-volume`; direct SSH push and merge authorized, commit/merge pending
+- Commit/merge: implementation `405533f3ec23a233167f231bfdce3b9fae77750a`; merge `90598a9214e5e98ae2c3ef19fdc3363816fb23ea`; branch and `master` pushed to `origin`

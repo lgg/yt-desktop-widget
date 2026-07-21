@@ -2,7 +2,7 @@
 
 ## Summary
 
-The widget's proportional custom-size ceiling now permits an exact 2000 px width and scales safely up to a 2016 x 4680 native window. Cider now exposes truthful live volume and mute capability, performs reversible mute/unmute through its official loopback REST API, shares authoritative state across windows, and retains a conservative 25% recovery fallback. Implementation, documentation, two focused audits, and the complete local verification suite succeeded. On 2026-07-21 the user explicitly authorized direct SSH Git push and merge while GitHub CLI authentication remained unavailable.
+The widget's proportional custom-size ceiling now permits an exact 2000 px width and scales safely up to a 2016 x 4680 native window. Cider now exposes truthful live volume and mute capability, performs reversible mute/unmute through its official loopback REST API, shares authoritative state across windows, and retains a conservative 25% recovery fallback. Implementation, documentation, two focused audits, and the complete local verification suite succeeded. The task branch and merge commit were pushed to GitHub through the direct SSH Git workflow explicitly authorized by the user on 2026-07-21.
 
 ## Done
 
@@ -34,8 +34,8 @@ The widget's proportional custom-size ceiling now permits an exact 2000 px width
 | --- | --- |
 | Iteration ID | `2026-07-21-0061-b` |
 | Started at | `2026-07-21T18:26:52.3114665+03:00` |
-| Finished at | `2026-07-21T18:41:26.6154352+03:00` |
-| Time spent minutes | `15` |
+| Finished at | `2026-07-21T18:48:39.5057515+03:00` |
+| Time spent minutes | `22` |
 | Tracking status | `tracked` |
 | Time log row | [`project-tracking/time-log.md`](../time-log.md) (`2026-07-21-0061-b`) |
 
@@ -51,7 +51,7 @@ The widget's proportional custom-size ceiling now permits an exact 2000 px width
 | Build/release/config | Changed | Increased only the Tauri main-window maximum bounds; portable-only packaging policy is unchanged. |
 | Bootstrap sync | Not applicable | No shared process rule changed. |
 | Time tracking | Changed | Recorded iteration `2026-07-15-0061-a` consistently. |
-| Project tracking | Changed | Added task/report 0061 and marked publication blocked. |
+| Project tracking | Completed | Added and completed task/report 0061, updated the roadmap, and recorded both tracked iterations. |
 
 ## Changed Files
 
@@ -115,7 +115,12 @@ The widget's proportional custom-size ceiling now permits an exact 2000 px width
 ## Not Verified
 
 - A live authenticated Cider mute/unmute/reconnect round trip was not executed. The required elevated credential access was rejected before the test ran because the environment reported its Codex usage limit; no credential was read and no volume was changed.
-- GitHub CLI remains unauthenticated, so no PR is created through `gh`. The user explicitly authorized direct SSH Git push and merge for this continuation.
+
+## Git Completion
+
+- Implementation commit `405533f3ec23a233167f231bfdce3b9fae77750a` was pushed on `codex/0061-large-widget-cider-volume`.
+- Merge commit `90598a9214e5e98ae2c3ef19fdc3363816fb23ea` was pushed to `origin/master`.
+- GitHub CLI remained unauthenticated. The user explicitly requested and authorized direct console Git push and merge, so no pull request was created for this completed direct-merge workflow.
 
 ## Questions Resolved
 
@@ -130,7 +135,7 @@ The widget's proportional custom-size ceiling now permits an exact 2000 px width
 
 | Question | Owner | Next Step |
 | --- | --- | --- |
-| Can the exact installed Cider version be live-smoked before merge? | User/Codex | Optionally run the portable build against Cider after publication/authentication; automated official-contract coverage is already green. |
+| Can the exact installed Cider version be live-smoked after merge? | User/Codex | Optionally run the published portable build against Cider; automated official-contract coverage is already green. |
 
 ## Residual Risks
 
@@ -140,5 +145,4 @@ The widget's proportional custom-size ceiling now permits an exact 2000 px width
 
 ## Next Steps
 
-- Commit as `lgg`, push `codex/0061-large-widget-cider-volume` through the verified SSH remote, and merge it into `master` as explicitly requested.
-- Optionally perform a live Cider mute/unmute/reconnect smoke before merge.
+- Optionally perform a live Cider mute/unmute/reconnect smoke with the installed Cider build.

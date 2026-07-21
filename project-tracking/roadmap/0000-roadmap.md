@@ -16,16 +16,16 @@ Version `3.1.0` is a Windows-first portable Tauri application with:
 - Vitest, Rust, and Playwright coverage plus live Windows adapter validation;
 - portable local builds, but no automated GitHub build/release workflow yet.
 
-Current stabilization: [`0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`](../tasks/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md) has implemented and freshly verified proportional widget sizing beyond 2000 px plus Cider's official volume-backed mute/unmute contract. Direct SSH Git publication and merge were explicitly authorized on 2026-07-21.
+Latest completed stabilization: [`0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`](../tasks/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md) expanded proportional widget sizing beyond 2000 px and added Cider's official volume-backed mute/unmute contract. It was freshly verified, pushed, and merged into `master` on 2026-07-21.
 
 ## Tracking Snapshot
 
 - Total tracked tasks: 61
-- In progress: 1
+- In progress: 0
 - Open: 0
 - Deferred/planned: 10
 - Blocked: 0
-- Completed: 50
+- Completed: 51
 
 ## Ordered Delivery Path
 
