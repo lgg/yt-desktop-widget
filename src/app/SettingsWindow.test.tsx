@@ -457,6 +457,38 @@ describe('SettingsWindow UI display preferences', () => {
     }
   });
 
+  it('keeps Cider mute visibility configurable through its official volume API', () => {
+    const previousSource = model.settings.api.playbackSource;
+    const previousSourceMode = model.settings.api.sourceMode;
+    const previousResolvedSourceMode = model.resolvedSourceMode;
+    model.settings.api.playbackSource = 'cider';
+    model.settings.api.sourceMode = 'real';
+    model.resolvedSourceMode = 'real';
+
+    try {
+      render(
+        <I18nProvider>
+          <SettingsWindow />
+        </I18nProvider>,
+      );
+
+      expect(
+        screen.getByText(/Cider's official local volume API/i),
+      ).toBeInTheDocument();
+      const group = screen.getByRole('group', { name: 'Mute button' });
+      expect(
+        within(group).getByRole('button', { name: 'Always' }),
+      ).not.toBeDisabled();
+      expect(
+        within(group).getByRole('button', { name: 'On hover' }),
+      ).not.toBeDisabled();
+    } finally {
+      model.settings.api.playbackSource = previousSource;
+      model.settings.api.sourceMode = previousSourceMode;
+      model.resolvedSourceMode = previousResolvedSourceMode;
+    }
+  });
+
   it('presents Settings and Close button visibility as two-choice segmented controls', () => {
     updateSettings.mockClear();
     render(
@@ -736,9 +768,9 @@ describe('SettingsWindow UI display preferences', () => {
       expect(width).toHaveValue(336);
       expect(height).toHaveValue(438);
       expect(width).toHaveAttribute('min', '252');
-      expect(width).toHaveAttribute('max', '504');
+      expect(width).toHaveAttribute('max', '2016');
       expect(height).toHaveAttribute('min', '329');
-      expect(height).toHaveAttribute('max', '657');
+      expect(height).toHaveAttribute('max', '2628');
       expect(screen.getByText('Proportions are locked.')).toBeInTheDocument();
 
       fireEvent.change(width, { target: { value: '400' } });
@@ -748,6 +780,14 @@ describe('SettingsWindow UI display preferences', () => {
       expect(
         recipe?.(model.settings).ui.customWidgetScalePercentage,
       ).toBeCloseTo(119.047619, 5);
+
+      updateSettings.mockClear();
+      fireEvent.change(width, { target: { value: '2000' } });
+      fireEvent.blur(width);
+      recipe = updateSettings.mock.calls[0]?.[0];
+      expect(
+        recipe?.(model.settings).ui.customWidgetScalePercentage,
+      ).toBeCloseTo(595.238095, 5);
 
       updateSettings.mockClear();
       fireEvent.change(height, { target: { value: '600' } });

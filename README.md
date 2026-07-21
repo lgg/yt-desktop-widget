@@ -9,7 +9,7 @@ The current release is **Windows-first** and supports three production playback 
 ## Highlights
 
 - Artwork-driven glass UI with dark, light, and system themes.
-- Compact, Default, Large, and linked Custom size modes.
+- Compact, Default, Large, and linked Custom size modes; Custom accepts proportional widths up to 2016 px, including an exact 2000 px width.
 - Reorderable widget blocks and per-block always/hover/hidden visibility.
 - Previous, play/pause, next, seek, mute, and rating controls when the selected adapter exposes them.
 - Configurable transparency for the window surface, artwork background, and gradient.
@@ -35,7 +35,7 @@ Browser preview is a development surface backed by the simulator, not a supporte
 | --------------------- | -------------------- | ------------------------------------------ | -------------------- | ------------------------------------ | -------------- | ---------------------------- |
 | YTMDesktop Companion  | Supported            | Yes                                        | Yes                  | Yes                                  | Yes            | YTMDesktop Companion pairing |
 | Windows Media Session | Supported on Windows | Yes, when published by the current session | Capability-dependent | No                                   | No             | None                         |
-| Cider App             | Supported            | Yes                                        | Yes                  | No                                   | Yes            | Cider application token      |
+| Cider App             | Supported            | Yes                                        | Yes                  | Yes, through the official volume API | Yes            | Cider application token      |
 | Linux MPRIS           | Planned              | Planned                                    | Planned              | To be defined by player capabilities | To be defined  | None expected                |
 
 Windows Media Session follows the current session selected by Windows. Apple Music, Spotify, Yandex Music, browsers, and other compatible players may work through that system contract, but they are not separate first-class adapters and may expose different capabilities.
@@ -63,7 +63,9 @@ Like/Dislike, mute, and application volume are not part of this Windows contract
 2. Open **Manage External Application Access to Cider** and create an application token.
 3. Select **Cider App** in the widget and save that token in Settings.
 
-The adapter is fixed to Cider's loopback service at `127.0.0.1:10767`. The token is validated by Rust, stored only in Windows Credential Manager, and never written to frontend settings or logs. Main and Settings windows share one native Socket.IO session.
+The adapter is fixed to Cider's loopback service at `127.0.0.1:10767`. The token is validated by Rust, stored only in Windows Credential Manager, sent only in the `apptoken` header, and never written to frontend settings or logs. Main and Settings windows share one native Socket.IO session and one serialized command worker.
+
+The widget reads the actual `0..1` level from Cider's official `GET /api/v1/playback/volume` endpoint, follows `playerStatus.volumeDidChange`, and normalizes the value to the shared `0..100` UI contract. Mute posts `0`; unmute restores the last reliable non-zero level from the current connection, then the manager's remembered level after reconnect. If neither exists, it uses a conservative 25% fallback instead of jumping to full volume. A temporary volume-endpoint failure does not break now-playing; mute stays capability-disabled until a later valid REST response or socket event recovers it.
 
 ## Build from source
 

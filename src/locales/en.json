@@ -230,7 +230,7 @@
         "muteButtonVisibility": "Mute button",
         "muteButtonVisibilityDescription": "Show a mute shortcut when the active adapter supports it. YTMDesktop keeps the current volume and restores it through its official unmute command.",
         "muteButtonVisibilityDescriptionWindowsMedia": "Unavailable for Windows Media Session: GSMTC does not publish mute or volume controls. This preference stays saved for supported adapters.",
-        "muteButtonVisibilityDescriptionCider": "Unavailable for Cider: the current local API adapter does not expose mute or unmute. This preference stays saved for supported adapters.",
+        "muteButtonVisibilityDescriptionCider": "Use Cider's official local volume API to mute at 0% and restore the last reliable non-zero level when unmuting.",
         "hideSettingsButton": "Settings button",
         "hideSettingsButtonDescription": "Choose whether the settings button stays visible or appears only while hovering over the widget.",
         "hideCloseButton": "Close button",

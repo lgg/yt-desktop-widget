@@ -5,7 +5,7 @@ export const WIDGET_BASE_HEIGHT = 438;
 export const WIDGET_BASE_MIN_HEIGHT = 360;
 export const WIDGET_BASE_MAX_HEIGHT = 780;
 export const WIDGET_CUSTOM_MIN_PERCENTAGE = 75;
-export const WIDGET_CUSTOM_MAX_PERCENTAGE = 150;
+export const WIDGET_CUSTOM_MAX_PERCENTAGE = 600;
 
 export const WIDGET_SIZE_MODES = [
   'compact',

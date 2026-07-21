@@ -10,6 +10,10 @@ Cider is a separate explicit playback source using its official local Socket.IO 
 
 The Rust manager owns one live Socket.IO session for the whole Tauri application. Repeated connection requests from the main and Settings windows are idempotent while that session and its cached state remain healthy. Intentional disconnect/replacement invalidates the lifecycle before closing the client, so only an unexpected close produces the global recovery event.
 
+Cider volume is authoritative native state. On connect, Rust reads `GET /api/v1/playback/volume`, accepts only finite `0..1` values, and normalizes them into the shared `0..100` playback contract. `playerStatus.volumeDidChange` keeps that state current. A temporary volume failure does not fail now-playing and is recoverable through a later REST retry or valid socket event.
+
+Mute and unmute are stateful `POST /api/v1/playback/volume` operations handled by one actor-style command queue shared by all windows. Mute posts zero; unmute restores the connection's last reliable non-zero level, then manager-level memory retained across reconnect, then 25% as a conservative fallback. Successful REST confirmation precedes local state publication. Neither the Tauri manager mutex nor the playback-cache mutex is held while a command waits on the network.
+
 ## Consequences
 
 - Cider can provide richer metadata, realtime progress, rating, seek, and transport actions without relying on GSMTC completeness.
@@ -19,6 +23,8 @@ The Rust manager owns one live Socket.IO session for the whole Tauri application
 - The installed Cider 4 contract was live-confirmed on 2026-07-15: token-protected REST accepts the `apptoken` header, Socket.IO connects on the same loopback service, and the portable release maps metadata/artwork and transport state successfully.
 - Tauri's custom-command ACL is part of the adapter boundary. A native command is not considered delivered unless it is both registered in `generate_handler!` and allowed by `src-tauri/permissions/default.toml`; an automated parity regression enforces this.
 - Main and Settings may each create a frontend controller, but they share the one native socket. Opening Settings must not replace a healthy session, and an intentional reconnect must not be reported as an unexpected transport failure.
+- Main and Settings also share one serialized command worker, so concurrent mute/unmute requests cannot independently race the remembered-volume state.
+- Cider's token remains keyring-only and is transmitted only through the `apptoken` header; volume bodies contain only the validated numeric level.
 
 ## Links
 
@@ -26,3 +32,4 @@ The Rust manager owns one live Socket.IO session for the whole Tauri application
 - Report: `project-tracking/reports/0053-fix-windows-media-and-add-cider-adapter.md`
 - Live-fix task: `project-tracking/tasks/0054-fix-live-wms-and-cider-token-auth.md`
 - Live-fix report: `project-tracking/reports/0054-fix-live-wms-and-cider-token-auth.md`
+- Volume/mute task: `project-tracking/tasks/0061-remove-widget-size-ceiling-and-add-cider-volume-mute.md`
